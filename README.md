@@ -45,3 +45,7 @@ Arkiv testnet: everything written here is public.
 ## License
 
 [MIT](./LICENSE)
+
+## Brand assets
+
+The MIT license covers the code. The Arkiv logos and brand assets in `public/brand/` belong to Golem Factory and are not covered by it.
