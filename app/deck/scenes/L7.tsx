@@ -21,26 +21,29 @@ export function L7(_props: SceneContentProps) {
   return (
     <Slide headline="Everything you saw, in a few lines" wash={0.86}>
       <Rise delay={0.1} className="absolute left-[120px] top-[200px] w-[1680px]">
-        <pre className="font-mono text-[21px] leading-[1.45] text-[var(--stage-muted)]">
+        <pre className="font-mono text-[19px] leading-[1.45] text-[var(--stage-muted)]">
           {codeHeader(profile)}
           {"\n"}
           <span className="text-[var(--stage-fg)]">{setupCode(profile)}</span>
         </pre>
       </Rise>
-      <div className="absolute left-[120px] top-[430px] grid w-[1680px] grid-cols-2 gap-6">
+      <div className="absolute left-[120px] top-[372px] grid w-[1680px] grid-cols-2 gap-5">
         {blocks.map((b, i) => (
           <motion.div
             key={b.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 + i * 0.1, ease: EASE }}
-            className="rounded-[20px] border border-[var(--panel-border)] bg-[rgba(17,17,17,0.88)] px-7 py-5"
+            className={`rounded-[20px] bg-[rgba(17,17,17,0.88)] px-7 py-4 ${b.appSide ? "border-2 border-dashed border-[var(--app-side)]" : "border border-[var(--panel-border)]"}`}
           >
-            <p className="mb-3 text-[26px]">
+            <p className="mb-2 flex items-center gap-3 text-[24px]">
               <span className="font-semibold text-[var(--arkiv-orange)]">{b.title}</span>
-              <span className="text-[var(--stage-muted)]"> · {b.verb}</span>
+              <span className="text-[var(--stage-muted)]">· {b.verb}</span>
+              {b.appSide ? (
+                <span className="ml-auto font-mono text-[18px] uppercase tracking-[0.12em] text-[var(--app-side)]">app-side</span>
+              ) : null}
             </p>
-            <pre className="whitespace-pre font-mono text-[20px] leading-[1.42] text-[var(--stage-fg)]">{b.code}</pre>
+            <pre className="whitespace-pre font-mono text-[19px] leading-[1.4] text-[var(--stage-fg)]">{b.code}</pre>
           </motion.div>
         ))}
       </div>

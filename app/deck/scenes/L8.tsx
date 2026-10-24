@@ -7,7 +7,8 @@
 import { BookOpen, Bot, Plug, Trophy, type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { Blok, EASE, Slide } from "../ui";
+import { Mascot } from "../Mascot";
+import { EASE, Slide } from "../ui";
 
 export const RESOURCES: { title: string; line: string | null; url: string | null; icon: LucideIcon }[] = [
   { title: "Docs", line: null, url: "docs.arkiv.network", icon: BookOpen },
@@ -43,7 +44,7 @@ export function L8(_props: SceneContentProps) {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
       >
-        <Blok pose="flat-wave-smile" height={300} />
+        <Mascot pose="wave" mood="smile" height={300} />
       </motion.div>
     </Slide>
   );

@@ -3,7 +3,6 @@
 // Building blocks shared by every scene. Everything is drawn in stage pixels (1920x1080).
 // Slides sit on translucent dark panels so the globe keeps showing behind them.
 
-import Image from "next/image";
 import { motion, MotionConfig, type Transition } from "motion/react";
 import type { CSSProperties, ReactNode } from "react";
 
@@ -101,7 +100,7 @@ export function Slide({
             </Rise>
           ) : null}
           <Rise delay={0.05}>
-            <h1 className="max-w-[1500px] text-[84px] font-semibold leading-[1.04] tracking-[-0.02em]">{headline}</h1>
+            <h1 className="max-w-[1680px] text-[80px] font-semibold leading-[1.04] tracking-[-0.02em]">{headline}</h1>
           </Rise>
           {under ? (
             <Rise delay={0.15}>
@@ -168,54 +167,6 @@ export function Chip({ children, tone = "orange" }: { children: ReactNode; tone?
         ? "border-[var(--arkiv-blue)] text-[var(--arkiv-sand)] bg-[rgba(24,30,169,0.75)]"
         : "border-[var(--panel-border)] text-[var(--stage-fg)]";
   return <span className={`inline-flex items-center gap-3 rounded-full border-2 px-7 py-3 text-[32px] font-medium ${styles}`}>{children}</span>;
-}
-
-/** `flat-*` variants have a Sand outline for dark backgrounds; `claro-*` an Ink outline for light ones. */
-export type BlokPose =
-  | "flat-wave-smile"
-  | "flat-stand-smile"
-  | "flat-stand-serious"
-  | "flat-wave-serious"
-  | "claro-flat-wave-serious"
-  | "3d-wave-smile";
-
-const BLOK_SIZE: Record<BlokPose, [number, number]> = {
-  "flat-wave-smile": [768, 1024],
-  "flat-stand-smile": [768, 1024],
-  "flat-stand-serious": [768, 1024],
-  "flat-wave-serious": [768, 1024],
-  "claro-flat-wave-serious": [768, 1024],
-  "3d-wave-smile": [728, 1024],
-};
-
-/** BLOK, the Arkiv mascot, from the official assets in public/deck/blok/. */
-export function Blok({
-  pose = "flat-stand-smile",
-  height,
-  className,
-  style,
-  flip = false,
-}: {
-  pose?: BlokPose;
-  height: number;
-  className?: string;
-  style?: CSSProperties;
-  flip?: boolean;
-}) {
-  const [w, h] = BLOK_SIZE[pose];
-  const width = Math.round((height * w) / h);
-  return (
-    <Image
-      src={`/deck/blok/blok-${pose}.png`}
-      alt="BLOK, the Arkiv mascot"
-      width={width}
-      height={height}
-      className={className}
-      style={{ ...style, transform: flip ? "scaleX(-1)" : style?.transform }}
-      draggable={false}
-      priority={pose === "3d-wave-smile"}
-    />
-  );
 }
 
 /** Mono label used for Arkiv fields (`$key`, `$owner`, ...). */

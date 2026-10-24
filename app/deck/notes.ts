@@ -9,7 +9,7 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   S1: [
     "Storage keeps the bytes. Indexing data helps you find them.",
-    "→ reveals BLOK's Drake meme: scroll through gigabytes of videos vs search a tiny card.",
+    "→ reveals the mascot meme: scroll through gigabytes of videos vs search a tiny card.",
   ],
   S2: [
     "When you filter 'cafés, open now, 4 stars or more', you search the pins, never the photos.",
@@ -69,6 +69,7 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   L7: [
     "This is the code that ran today. Copy it.",
+    "Write, query and extend are the real calls (the create shows sample values). Own it is labeled app-side: today's finale was a demo view, this is the call for your app.",
   ],
   L8: [
     "Docs, the Arkiv AI plugin (your agent already knows Arkiv), the Arkiv MCP.",

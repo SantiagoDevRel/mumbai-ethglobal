@@ -1,10 +1,10 @@
 "use client";
 
-// S1 · Every app does two jobs. Keep the stuff vs find the stuff, then BLOK's Drake meme.
+// S1 · Every app does two jobs. Keep the stuff vs find the stuff, then the reject / approve meme.
 
 import { Image as ImageIcon, Video } from "lucide-react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { DrakeMeme } from "../memes";
+import { RejectApproveMeme } from "../memes";
 import { Panel, Reveal, Rise, Slide } from "../ui";
 
 function PhotoAlbum() {
@@ -50,7 +50,7 @@ function IndexCard() {
 export function S1({ step }: SceneContentProps) {
   return (
     <Slide headline="Every app does two jobs">
-      <div className="absolute left-[120px] top-[300px] flex w-[880px] flex-col gap-8">
+      <div className="absolute left-[120px] top-[300px] flex w-[820px] flex-col gap-8">
         <Rise delay={0.2}>
           <Panel className="flex items-center gap-10 p-8">
             <PhotoAlbum />
@@ -70,8 +70,8 @@ export function S1({ step }: SceneContentProps) {
           </Panel>
         </Rise>
       </div>
-      <Reveal step={step} at={1} className="absolute left-[1060px] top-[300px]">
-        <DrakeMeme
+      <Reveal step={step} at={1} className="absolute left-[1000px] top-[290px]">
+        <RejectApproveMeme
           no="Scroll through 4 GB of videos to find one café"
           yes="Search a tiny card that points to it"
         />

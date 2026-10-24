@@ -7,7 +7,8 @@ import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { useStage } from "../../../lib/stage/store";
-import { Blok, Caption, EASE, OverlayShell, Rise } from "../ui";
+import { Mascot } from "../Mascot";
+import { Caption, EASE, OverlayShell, Rise } from "../ui";
 
 export function L1(_props: SceneContentProps) {
   return (
@@ -161,7 +162,7 @@ export function L9(_props: SceneContentProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.7, ease: EASE }}
         >
-          <Blok pose="flat-wave-smile" height={220} />
+          <Mascot pose="wave" mood="smile" height={220} />
         </motion.div>
       </div>
     </OverlayShell>

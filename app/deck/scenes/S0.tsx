@@ -1,11 +1,12 @@
 "use client";
 
-// S0 · Title over a dark, empty, slowly turning globe. Small BLOK waving.
+// S0 · Title over a dark, empty, slowly turning globe. The mascot waving.
 
 import Image from "next/image";
 import { motion, MotionConfig } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { Blok, EASE, Rise } from "../ui";
+import { Mascot } from "../Mascot";
+import { EASE, Rise } from "../ui";
 
 export function S0(_props: SceneContentProps) {
   return (
@@ -43,7 +44,7 @@ export function S0(_props: SceneContentProps) {
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
             style={{ transformOrigin: "50% 100%" }}
           >
-            <Blok pose="3d-wave-smile" height={300} />
+            <Mascot pose="wave" mood="smile" height={300} />
           </motion.div>
         </motion.div>
       </div>

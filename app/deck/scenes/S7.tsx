@@ -9,7 +9,8 @@ import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { useStage } from "../../../lib/stage/store";
 import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC } from "../../../shared/types";
 import { CharacterSelect } from "../memes";
-import { Blok, EASE, Rise, Slide } from "../ui";
+import { Mascot } from "../Mascot";
+import { EASE, Rise, Slide } from "../ui";
 
 const BEATS = ["3", "2", "1", "write!"] as const;
 const BEAT_MS = 1000;
@@ -52,7 +53,7 @@ function Countdown() {
         ) : (
           <motion.div key="wait" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}>
-              <Blok pose="flat-stand-smile" height={240} />
+              <Mascot pose="wave" mood="smile" height={240} />
             </motion.div>
           </motion.div>
         )}
@@ -62,12 +63,12 @@ function Countdown() {
 }
 
 export function S7(_props: SceneContentProps) {
-  const lifespans = [LIFETIME_MIN_SEC, 60, 90, LIFETIME_MAX_SEC].map(formatLifetime);
+  const lifespans = [LIFETIME_MIN_SEC, 40, 60, LIFETIME_MAX_SEC].map((sec) => ({ sec, label: formatLifetime(sec) }));
   return (
     <Slide headline="Doors open" under="Name. Color. Country. Lifetime: 20 seconds to 2 minutes." wash={0.8}>
       {/* The QR is drawn by the app in the center; the left and right columns stay clear of it. */}
-      <Rise delay={0.2} className="absolute left-[120px] top-[330px]">
-        <CharacterSelect lifespans={lifespans} />
+      <Rise delay={0.2} className="absolute left-[96px] top-[300px]">
+        <CharacterSelect lifespans={lifespans} maxSec={LIFETIME_MAX_SEC} />
       </Rise>
       <div className="absolute left-[1340px] top-[420px] w-[460px]">
         <Countdown />
