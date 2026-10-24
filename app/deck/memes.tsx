@@ -183,7 +183,7 @@ export function CharacterSelect({ lifespans, maxSec }: { lifespans: { label: str
                   transition={{ type: "spring", stiffness: 500, damping: 34 }}
                 />
               ) : null}
-              <Mascot pose={SLOT_POSES[i % SLOT_POSES.length]} unit={12} still />
+              <Mascot pose={SLOT_POSES[i % SLOT_POSES.length]} unit={15} />
               <p className={`font-mono text-[24px] font-semibold ${isSel ? "text-[var(--arkiv-orange)]" : ""}`}>{label}</p>
             </div>
           );
