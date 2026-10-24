@@ -115,7 +115,7 @@ export function S1({ step }: SceneContentProps) {
       <Reveal step={step} at={1} className="absolute left-[912px] top-[260px]">
         {step >= 1 ? (
           <RejectApproveMeme
-            no="Scroll through 4 GB of videos to find one café"
+            no={"Scroll through 4 GB of videos to find one café"}
             yes="Search a tiny card that points to it"
           />
         ) : null}

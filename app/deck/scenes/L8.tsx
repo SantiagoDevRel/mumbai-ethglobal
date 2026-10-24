@@ -3,7 +3,7 @@
 // L8 · Your turn: build it this weekend. Every URL here was checked with a live request
 // (docs.arkiv.network 200; hub.arkiv.network/ai-tools 200 with #arkiv-ai-plugin and #mcp anchors).
 // Prizes stay a placeholder: never invent amounts or details. The right column belongs to the big
-// QR (about 320 px at (1480, 300)); the mascot stands under it.
+// QR card (1464-1816, 284-756); the mascot stands fully below it, from y 782, centered on it.
 
 import { BookOpen, Bot, Plug, Trophy, type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
@@ -40,12 +40,12 @@ export function L8(_props: SceneContentProps) {
         ))}
       </div>
       <motion.div
-        className="absolute left-[1520px] top-[712px]"
+        className="absolute left-[1550px] top-[782px]"
         initial={{ opacity: 0, x: 30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
       >
-        <Mascot pose="wave" variant="3d" unit={36} />
+        <Mascot pose="wave" variant="3d" unit={28} />
       </motion.div>
     </Slide>
   );
