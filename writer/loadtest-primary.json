@@ -1,0 +1,132 @@
+{
+    "session":  "180040DC",
+    "requestedPhones":  200,
+    "submitted":  200,
+    "accepted":  200,
+    "written":  200,
+    "visible":  200,
+    "submissionWindowMs":  30000,
+    "observedSubmissionSpanMs":  29850,
+    "offeredEntitiesPerSecond":  6.666666666666667,
+    "entitiesPerSecond":  3.3850684630096644,
+    "throughputDefinition":  "Entities first visible in the stage-equivalent query, divided by elapsed time since the first scheduled submission.",
+    "dropped":  0,
+    "nonceErrors":  0,
+    "medianSubmitToConfirmationMs":  18032,
+    "p95SubmitToConfirmationMs":  27207,
+    "medianSubmitToVisibleMs":  26126,
+    "p95SubmitToVisibleMs":  37483,
+    "visibilityMeasurement":  "First keyed query response containing the entity; same per-block polling and 700 ms cadence as the stage. Browser paint is not measured.",
+    "batchSizes":  [
+                       14,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       6
+                   ],
+    "gasUsed":  "24076800",
+    "gasCostWei":  "24076800048153600",
+    "balanceBeforeWei":  "9979204335958408672",
+    "balanceAfterWei":  "9955127535910255072",
+    "minimumObservedBalanceWei":  "9955127535910255072",
+    "minimumAllowedBalanceWei":  "8000000000000000000",
+    "stopped":  null,
+    "requestsToday":  1085,
+    "queryErrors":  [
+
+                    ],
+    "errors":  [
+
+               ],
+    "startedAt":  1792835338031,
+    "finishedAt":  1792835400835,
+    "query":  "app = str(\u0027arkiv-mumbai-2026\u0027) AND kind = str(\u0027dot\u0027) AND session = str(\u0027180040DC\u0027) AND $creator = addr(0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690)",
+    "batches":  [
+                    {
+                        "txHash":  "0x3764d9a3ae771c841a18de57d6a830ae800c581630a5f78229ebff264e1c79ca",
+                        "block":  "992745",
+                        "size":  14,
+                        "gasUsed":  "1685376",
+                        "gasCostWei":  "1685376003370752"
+                    },
+                    {
+                        "txHash":  "0xe51d646187c69ee550f3ddb4dd9f57bf67741771e9baa8df6bb011f230a7704a",
+                        "block":  "992749",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x45d4e2187c4aad41c5fe14a401d8f88dcdb22d657b7624430837ddeaa6967207",
+                        "block":  "992751",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x56f50324955c94ffb2528f4c995462c4054b38ee73eed9d34d027a91d56c49a8",
+                        "block":  "992754",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x6cacb769ce2e26ff5c7c4487ad4ad71e3ddf8ebc037b90ef735e186c281c6bea",
+                        "block":  "992756",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x2b6ff72285a77d71f84eca8df1ddc24912a5522b6bfa9200c02864a1e13f340c",
+                        "block":  "992759",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x2b487dd836abba9b87e6f48c123114acf4652244efefebbaf54ff6c25000853a",
+                        "block":  "992761",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x5eedf1ef27fc4d4c90934496523a007ead36f87639b9bab1c4828858005757ae",
+                        "block":  "992764",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x689b7ca9be949d0f2255e438f513531668602ae0252ebab8f45ba8ee14838544",
+                        "block":  "992766",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0xebdb93536c69bcad067d6d66b7c418492a00950cec4cbf7e8e56e009fa19b535",
+                        "block":  "992769",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0xcf5281bf1353f5d2c20d6b270e594d724797819516ca35f6dba13a5f73caacfe",
+                        "block":  "992771",
+                        "size":  6,
+                        "gasUsed":  "722304",
+                        "gasCostWei":  "722304001444608"
+                    }
+                ],
+    "fullReportSha256":  "68852b684d023692f562bbd5e7b03437ae53fa34becf8f9230529b7007a2fd55",
+    "sourceCommit":  "7218bb7",
+    "outcome":  "failed: median confirmation exceeded the unchanged 6000 ms exclusive threshold"
+}

@@ -27,6 +27,10 @@ SDK 0.8.1 source and deployed behavior confirmed:
 - `getBlockTiming()` reports Unix seconds and block duration in seconds.
 - `ExpirationTime.fromSeconds()` uses the SDK's nominal two-second conversion;
   countdowns must use the actual expiry and live timing instead.
+- An explicit EIP-1193 rejection (`4001`) permits a later user action; uncertain
+  writes remain blocked until their known transaction outcome is reconciled.
+- Receipt polling is explicitly 500 ms. This is a polling cadence, not a claimed
+  block duration; the unconfigured viem client default was four seconds.
 
 ## Checks and deployment
 
@@ -56,13 +60,20 @@ The proxy accepts only `RPC_READ_ALLOWLIST`; neither the key nor upstream error
 details appear in responses. CORS permits only `ALLOWED_ORIGINS` and all responses
 use `Cache-Control: no-store`.
 
-The single SQLite-backed Durable Object serializes requests and batches. Accepted
+The single SQLite-backed Durable Object serializes state changes and batches. SDK
+sends and receipt waits run outside the request mutex, so phone submissions,
+tickets and stage queries can progress while a transaction is in flight. Accepted
 tickets and their alarm are checkpointed together. Each block admits at most one
 batch, with up to twenty creates and a fresh pending transaction nonce. Signed bytes
 and their hash are persisted before forwarding. An uncertain outcome stops new
 batches until that same hash is reconciled against its transaction and receipt.
 Canonical create events supply keys and exact expiry blocks; no local timer marks
 an entity written or expired.
+
+`MIN_WRITER_BALANCE_WEI` is checked before admitting a batch. The authorized load
+test sets it to eight test GLM: a lower balance closes the doors and holds queued
+writes before any new transaction is sent. An already-broadcast transaction is
+allowed to finish. The load script also monitors the balance independently.
 
 Holds finish an in-flight batch before returning idle. They expire after a minute;
 seed scripts renew a hold while signing. Replay mode pauses queued writes. Ending
@@ -77,6 +88,8 @@ npx wrangler deploy --dry-run --outdir dist
 npm test
 ```
 
+`npm test` first builds `dist/index.js` through its `pretest` hook, so runtime tests
+also work on a clean checkout without a previously generated bundle.
 The writer tests use workerd through Wrangler's existing Miniflare dependency.
 They cover actual routing, authorization, CORS, device admission, network failure
 and the read-only RPC boundary. Additional adapter tests cover immutable pagination,

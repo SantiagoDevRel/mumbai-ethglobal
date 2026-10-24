@@ -48,13 +48,14 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal)
       return body.result;
     },
   }, { retryCount: 0 });
-  const reader = createPublicClient({ chain, transport, cacheTime: 0 });
+  const reader = createPublicClient({ chain, transport, cacheTime: 0, pollingInterval: 500 });
   const wallet = options.wallet;
   const writer = wallet ? createWalletClient({
     chain,
     account: wallet.kind === "privateKey" ? privateKeyToAccount(wallet.privateKey) : wallet.account,
     transport: wallet.kind === "eip1193" ? custom(wallet.provider as EIP1193Provider, { retryCount: 0 }) : transport,
     cacheTime: 0,
+    pollingInterval: 500,
   }) : undefined;
   async function checkNetwork() {
     if (await reader.getChainId() !== profile.chainId) throw new NetworkNotConfiguredError("chain ID mismatch");

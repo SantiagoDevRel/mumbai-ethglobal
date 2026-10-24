@@ -8,6 +8,8 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ARKIV_PROFILE = "tiramisu"
+# Stop admitting new batches below the authorized test balance floor (wei).
+MIN_WRITER_BALANCE_WEI = "8000000000000000000"
 # Origins allowed by CORS (the Vercel app and local dev).
 ALLOWED_ORIGINS = "https://mumbai-ethglobal.vercel.app,http://localhost:3000"
 
