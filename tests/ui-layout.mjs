@@ -1,11 +1,13 @@
 // Isolated read-only layout checks. Session responses here are UI fixtures; no writes are sent.
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
+import { mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
 const root = path.resolve("out");
+const capture = process.argv[2];
+if (capture) await mkdir(capture, { recursive: true });
 const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
 const errors = [];
@@ -34,6 +36,10 @@ try {
   await commands(page, [{ type: "goto", index: 10 }, { type: "togglePanel", panel: "filters", open: true }]);
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
   await expect(page.locator(".filters-panel")).toBeVisible();
+  await commands(page, [{ type: "next" }]);
+  await expect(page.locator('pre[aria-label="Executed query text"]')).toContainText('"color"');
+  await expect(page.locator(".stage-toolbar")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Color ·/ })).toHaveAttribute("aria-pressed", "true");
   await page.evaluate(() => document.fonts.ready);
   await page.locator(".query-panel").evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720]]) {
@@ -41,7 +47,7 @@ try {
     await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().width))).toBe(Math.round(424 * width / 1920));
     const layout = await page.evaluate(() => {
       const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
-      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), query: rect(".query-panel"), code: rect(".query-panel pre"), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
+      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
     });
     const scale = width / 1920;
     assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1);
@@ -51,6 +57,8 @@ try {
     assert.equal(layout.code.fontSize, "21px");
     assert.equal(layout.counter.fontSize, "64px");
     assert.equal(layout.url.whiteSpace, "nowrap");
+    assert.equal(layout.url.fontSize, "20px");
+    assert.ok(layout.url.y + layout.url.height <= layout.qr.y + layout.qr.height);
     assert.equal(layout.overflow, false);
     evidence.push({ surface: "stage", viewport: `${width}x${height}`, layout });
   }
@@ -61,15 +69,54 @@ try {
   await expect(page.locator(".inspector-columns")).toBeVisible();
   const columns = await page.locator(".inspector-columns").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length);
   assert.equal(columns, 2);
+  for (const field of ["$key", "$creator", "$owner", "$expiresAt"]) {
+    await commands(page, [{ type: "next" }]);
+    await expect(page.locator(".badge-highlight")).toHaveAttribute("data-field", field);
+    const inside = await page.locator(".inspector-columns").evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const longitude = element.querySelector("div:first-child dl>div:last-child").getBoundingClientRect();
+      return longitude.bottom <= box.bottom + 1;
+    });
+    assert.equal(inside, true, "All five user columns must fit beside the current badge.");
+    if (capture && (field === "$key" || field === "$expiresAt")) {
+      for (const [width, height] of [[1280, 720], [1920, 1080]]) {
+        await page.setViewportSize({ width, height });
+        await expect.poll(() => page.locator(".inspector-panel").evaluate((element) => Math.round(element.getBoundingClientRect().width))).toBe(Math.round(856 * width / 1920));
+        await page.locator(".inspector-panel:has(.inspector-columns)").screenshot({ path: path.join(capture, `${width}-L4-${field.slice(1)}.png`), timeout: 60000 });
+      }
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
+  }
+  await commands(page, [{ type: "goto", index: 12 }, { type: "next" }]);
+  await expect(page.locator(".review-card")).toHaveCount(0);
+  await commands(page, [{ type: "next" }]);
+  await expect(page.locator(".review-card").first()).toBeVisible({ timeout: 15000 });
+  await expect(page.locator(".business-card")).toContainText("photo · bundled with the app");
   await commands(page, [{ type: "goto", index: 13 }]);
   await expect(page.locator(".owner-small-print")).toContainText("Demo view");
   await expect(page.locator(".stage-counter small")).toHaveText("owner");
+  await expect(page.locator(".owner-count,.owner-statement")).toHaveCount(0);
   await commands(page, [{ type: "goto", index: 7 }]);
   await expect(page.locator(".app-hud")).toHaveCount(0);
   await expect(page.locator(".doors-countdown")).toHaveCount(0);
   const centerQR = await page.locator(".join-qr-center").boundingBox();
   assert.ok(Math.abs(centerQR.x + centerQR.width / 2 - 660 * 1280 / 1920) < 1);
   evidence.push({ surface: "S7", centerX: centerQR.x + centerQR.width / 2, hudHidden: true, appCountdownHidden: true });
+  await expect(page.locator(".globe-dots")).toHaveCount(0);
+  await commands(page, [{ type: "goto", index: 15 }]);
+  await expect(page.locator(".join-qr-build .qr-image img")).toHaveAttribute("width", "320");
+  await commands(page, [{ type: "goto", index: 16 }]);
+  await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
+  const notes = await context.newPage();
+  notes.on("pageerror", (error) => errors.push(error.message));
+  await notes.goto(`${origin}/notes/`, { waitUntil: "domcontentloaded" });
+  await expect(notes.getByRole("combobox", { name: "Stage data source" })).toHaveValue("mock");
+  await expect(notes.locator("header")).toContainText(/#\d+/, { timeout: 10000 });
+  await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("live");
+  await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
+  await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("mock");
+  await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
+  evidence.push({ surface: "notes", blockSynchronized: true, sourceSynchronized: true });
   await context.close();
 
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
@@ -99,4 +146,4 @@ try {
   }
   assert.deepEqual(errors, []);
   process.stdout.write(JSON.stringify({ checks: evidence, pageErrors: errors.length }) + "\n");
-} finally { await browser.close(); }
+} finally { if (errors.length) process.stderr.write(JSON.stringify({ pageErrors: errors }) + "\n"); await browser.close(); }

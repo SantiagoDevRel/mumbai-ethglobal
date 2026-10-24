@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import Image from "next/image";
 import { useScene, useStage } from "../../lib/stage/store";
+import { qrLabel } from "../../shared/scenes";
 
 export function JoinQR() {
   const { scene } = useScene();
@@ -18,5 +19,7 @@ export function JoinQR() {
     return () => { stale = true; };
   }, [session]);
   const center = scene.qr.placement === "center" && doors === "closed";
-  return <aside className={`join-qr panel ${center ? "join-qr-center" : "join-qr-corner"}`}>{qr && <a className="qr-image" href={qr.url} target="_blank" rel="noreferrer"><Image unoptimized src={qr.image} width={center ? 360 : 140} height={center ? 360 : 140} alt="Scan to join the map" /></a>}<div className="qr-copy"><p>{scene.qr.label}</p><span>Join the map</span><small>{session ? `Session ${session}` : "Session not started"}</small></div>{qr && <a className="qr-url" href={qr.url} target="_blank" rel="noreferrer">{qr.label}</a>}</aside>;
+  const build = scene.id === "L8";
+  const target = qr ? new URL(qr.url) : null;
+  return <aside className={`join-qr panel ${center ? "join-qr-center" : build ? "join-qr-build" : "join-qr-corner"}`}>{qr && <a className="qr-image" href={qr.url} target="_blank" rel="noreferrer"><Image unoptimized src={qr.image} width={center ? 360 : build ? 320 : 140} height={center ? 360 : build ? 320 : 140} alt="Scan to join the map" /></a>}<div className="qr-copy"><p>{qrLabel(scene, doors)}</p>{center && <span>Join the map</span>}</div>{qr && target && <a className="qr-url" href={qr.url} title={qr.url} target="_blank" rel="noreferrer">{center ? qr.label : build ? <><span>{target.host}</span><span>{target.pathname + target.search}</span></> : target.pathname + target.search}</a>}</aside>;
 }

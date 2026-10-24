@@ -8,10 +8,11 @@ import { stage, type StageState } from "../../lib/stage/store";
 import { darkStyle } from "../../lib/map/style";
 import { mapViewport } from "../../lib/map/viewport";
 import { remainingSeconds } from "../../lib/data/entity-state";
-import { usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
+import { StageBox, usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
 import countries from "../../shared/geo/countries.json";
 import { pointInPolygon, type LngLat } from "../../shared/geo/place";
 import { businessPresentation } from "../../lib/data/view-model";
+import { SCENES } from "../../shared/scenes";
 
 const CATEGORY_PATHS = {
   cafe: "M4 8h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4ZM16 8h2a3 3 0 0 1 0 6h-2M7 3v2M11 3v2",
@@ -24,16 +25,16 @@ const CATEGORY_PATHS = {
   bar: "M5 3h14v4a7 7 0 0 1-14 0ZM12 14v8M7 22h10",
 };
 
-export function Globe({ entities, block, state }: { entities: LiveEntity[]; block: BlockInfo | null; state: StageState }) {
+export function Globe({ entities, block, state, source }: { entities: LiveEntity[]; block: BlockInfo | null; state: StageState; source: "mock" | "live" }) {
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<GLMap | null>(null);
-  const current = useRef({ entities, block, state });
+  const current = useRef({ entities, block, state, source });
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reduced = usePrefersReducedMotion();
   const stageScale = useStageScale();
-  useEffect(() => { current.current = { entities, block, state }; }, [entities, block, state]);
+  useEffect(() => { current.current = { entities, block, state, source }; }, [entities, block, state, source]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -46,10 +47,11 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
     const leaving = new Map<Hex, { entity: LiveEntity; at: number }>();
     let lastEntities = new Map<Hex, LiveEntity>();
     let hasLanded = false;
+    let lastSource: string | null = null;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     void Promise.all([import("maplibre-gl"), darkStyle()]).then(([gl, style]) => {
       if (stopped || !container.current) return;
-      const map = new gl.Map({ container: container.current, style, center: [72, 19], zoom: 2.38, attributionControl: { compact: true, customAttribution: '© <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>' }, canvasContextAttributes: { antialias: true } });
+      const map = new gl.Map({ container: container.current, style, center: [72, 19], zoom: 2.38, attributionControl: false, canvasContextAttributes: { antialias: true } });
       instance = map;
       mapRef.current = map;
       map.on("error", () => { if (!stopped) setError("Map tiles unavailable. Retrying as you move the map."); });
@@ -65,6 +67,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
           if (entity.attrs.kind === "review") return { entity, distance: Infinity };
           const point = map.project([entity.attrs.lng, entity.attrs.lat]);
           const scale = Math.min(map.getCanvas().clientWidth / 1920, map.getCanvas().clientHeight / 1080);
+          if (current.current.state.map === "business" && (point.y < 260 * scale || point.y > 780 * scale || point.x < 40 * scale || point.x > 1432 * scale)) return { entity, distance: Infinity };
           return { entity, distance: Math.hypot(point.x - event.point.x, point.y - (current.current.state.map === "business" ? 38 * scale : 0) - event.point.y) / scale };
         }).sort((a, b) => a.distance - b.distance)[0];
         if (hit && hit.distance < 26) {
@@ -96,7 +99,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         if (now - last < 32 || !canvas.current) return;
         const delta = now - (last || now);
         last = now;
-        const { entities, block, state } = current.current;
+        const { entities, block, state, source } = current.current;
         if (entities.length) hasLanded = true;
         if (!hasLanded && !reducedMotion && state.camera.cue === "globe-idle" && !map.isMoving()) map.jumpTo({ center: [map.getCenter().lng + delta * 0.0018, map.getCenter().lat] });
         const surface = canvas.current;
@@ -111,6 +114,8 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         const scale = Math.min(width / 1920, height / 1080);
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
+        if (surface.dataset.source !== source || SCENES[state.sceneIndex]?.kind === "slide") return;
+        if (lastSource !== source) { born.clear(); leaving.clear(); lastEntities.clear(); lastSource = source; }
         const active = new Map(entities.map((entity) => [entity.key, entity]));
         for (const key of active.keys()) leaving.delete(key);
         for (const [key, entity] of lastEntities) if (!active.has(key)) leaving.set(key, { entity, at: now });
@@ -122,6 +127,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
           if (entity.attrs.kind === "review") continue;
           const a = entity.attrs;
           const point = map.project([a.lng, a.lat]);
+          if (state.map === "business" && (point.y < 260 * scale || point.y > 780 * scale || point.x < 40 * scale || point.x > 1432 * scale)) continue;
           const center = map.getCenter(), radians = Math.PI / 180;
           const front = Math.sin(a.lat * radians) * Math.sin(center.lat * radians) + Math.cos(a.lat * radians) * Math.cos(center.lat * radians) * Math.cos((a.lng - center.lng) * radians);
           if ((map.getZoom() < 4 && front < 0.08) || point.x < -80 || point.x > width + 80 || point.y < -80 || point.y > height + 80) continue;
@@ -135,7 +141,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
           const seconds = remainingSeconds(entity, block, Date.now());
           const total = block ? Math.max(1, Number(entity.expiresAtBlock - entity.createdAtBlock) * block.blockTimeMs / 1000) : 1;
           if (state.map === "owner" && !state.transferred) {
-            ctx.strokeStyle = "rgba(246,244,239,0.42)"; ctx.lineWidth = 1.5 * scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo((width - 1920 * scale) / 2 + 732 * scale, (height - 1080 * scale) / 2 + 320 * scale); ctx.stroke();
+            ctx.strokeStyle = "rgba(246,244,239,0.42)"; ctx.lineWidth = 1.5 * scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo((width - 1920 * scale) / 2 + 180 * scale, (height - 1080 * scale) / 2 + 528 * scale); ctx.stroke();
           }
           if (state.panels.inspector && state.inspected === entity.key) {
             ctx.strokeStyle = "rgba(246,244,239,.42)"; ctx.lineWidth = scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo((width - 1920 * scale) / 2 + (state.map === "business" ? 1464 : 1032) * scale, (height - 1080 * scale) / 2 + 340 * scale); ctx.stroke();
@@ -167,7 +173,8 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
           ctx.restore();
           if (!exit) {
             const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.name;
-            const suffix = state.map === "business" ? business.rating.toFixed(1) : `${Math.ceil(seconds)} s`;
+            const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+            const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : `${Math.ceil(seconds)} s`;
             ctx.font = `600 16px ${fontFamily}`;
             const labelWidth = ctx.measureText(name).width + suffix.length * 8.5 + 36;
             const label = { x: point.x + (state.map === "business" ? 28 : 22) * scale, y: y - (state.map === "business" ? 52 : 15) * scale, width: labelWidth, name, suffix, hot: seconds < 5 || state.map === "business", appSide: state.map === "business" && business.appSide };
@@ -181,7 +188,6 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
           ctx.fillStyle = state.map === "owner" && state.transferred ? "#111111" : "#f6f4ef"; ctx.font = `600 16px ${fontFamily}`; ctx.textAlign = "left"; ctx.fillText(label.name, 10, 21);
           const nameWidth = ctx.measureText(label.name).width;
           ctx.fillStyle = label.hot ? "#fe7446" : state.map === "owner" && state.transferred ? "rgba(17,17,17,.64)" : "rgba(246,244,239,.64)"; ctx.font = `400 14px ${fontMono}`; ctx.fillText(label.suffix, nameWidth + 20, 20);
-          if (label.appSide) { ctx.fillStyle = "#f6f4ef"; ctx.font = `400 14px ${fontMono}`; ctx.fillText("app-side", 0, 47); }
           ctx.restore();
         }
         ctx.globalAlpha = 1;
@@ -198,7 +204,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
     const cue = state.camera.cue;
     const scale = stageScale;
     const view = cue === "india" ? { center: [82, 19.2] as [number, number], zoom: 4.5, pitch: 0 } : cue === "mumbai-street" ? { center: [72.8335, 18.9275] as [number, number], zoom: 15.9, pitch: 60 } : { center: [72, 19] as [number, number], zoom: 2.38, pitch: 0 };
-    map.flyTo({ ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 0, bottom: 272 * scale }, bearing: cue === "mumbai-street" ? -22 : 0, duration: reduced ? 0 : 2400, easing: (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
+    map.flyTo({ ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 200 * scale, bottom: (cue === "mumbai-street" ? 300 : 272) * scale }, bearing: cue === "mumbai-street" ? -22 : 0, duration: reduced ? 0 : 2400, easing: (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
   }, [ready, reduced, state.camera, stageScale]);
-  return <div className="globe-shell"><div ref={container} className="globe-map" aria-label="Interactive globe of Arkiv entities" /><canvas ref={canvas} className="globe-dots" aria-hidden="true" />{error && <p className="map-error" role="status">{error}</p>}</div>;
+  return <div className="globe-shell"><div ref={container} className="globe-map" aria-label="Interactive globe of Arkiv entities" />{SCENES[state.sceneIndex]?.kind === "live" && <canvas key={source} data-source={source} ref={canvas} className="globe-dots" aria-hidden="true" />}<StageBox><details className="map-attribution pointer-events-auto"><summary aria-label="Map attribution">i</summary><p><a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p></details></StageBox>{error && <p className="map-error" role="status">{error}</p>}</div>;
 }

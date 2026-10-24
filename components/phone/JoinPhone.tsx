@@ -139,7 +139,7 @@ export function JoinPhone() {
     <header className="phone-header"><picture><source media="(prefers-color-scheme: dark)" srcSet="/brand/arkiv-white.svg" /><img src="/brand/arkiv-black.svg" width={70} height={16} alt="Arkiv" /></picture><span>· Join the map</span>{(state.status === "form" || state.status === "submitting") && <small className={open ? "phone-doors is-open" : "phone-doors"}>{open ? "Open" : "Closed"}</small>}</header>
     <h1 className={sessionInfo?.phase === "build" ? undefined : "sr-only"}>{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : state.status === "written" ? "You’re on the map." : state.status === "expired" ? "Your moment, on-chain." : "Join the map"}</h1>
     {sessionInfo?.replay && <p className="phone-notice">We’re in replay mode.</p>}
-    {!WRITER_URL && <p className="phone-notice">The workshop writer is not connected yet.</p>}
+    {!WRITER_URL && <p className="phone-notice">Not ready yet. Hang tight.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
     {!session && <p className="phone-notice">Scan the workshop QR to join the current session.</p>}
     {error && <p className="phone-notice" role="alert">{error}</p>}
