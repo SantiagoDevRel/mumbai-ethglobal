@@ -1,0 +1,140 @@
+{
+    "session":  "B2DEF664",
+    "requestedPhones":  200,
+    "submitted":  200,
+    "accepted":  200,
+    "written":  200,
+    "visible":  200,
+    "submissionWindowMs":  30000,
+    "observedSubmissionSpanMs":  29851,
+    "offeredEntitiesPerSecond":  6.666666666666667,
+    "entitiesPerSecond":  5.249481613690649,
+    "throughputDefinition":  "Entities first visible in the stage-equivalent query, divided by elapsed time since the first scheduled submission.",
+    "dropped":  0,
+    "nonceErrors":  0,
+    "medianSubmitToConfirmationMs":  5543,
+    "p95SubmitToConfirmationMs":  7675,
+    "medianSubmitToVisibleMs":  6352,
+    "p95SubmitToVisibleMs":  8549,
+    "visibilityMeasurement":  "First keyed query response containing the entity; same per-block polling and 700 ms cadence as the stage. Browser paint is not measured.",
+    "batchSizes":  [
+                       14,
+                       13,
+                       16,
+                       14,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       20,
+                       3
+                   ],
+    "gasUsed":  "24076800",
+    "gasCostWei":  "24076800048153600",
+    "balanceBeforeWei":  "9955007151910014304",
+    "balanceAfterWei":  "9930930351861860704",
+    "minimumObservedBalanceWei":  "9930930351861860704",
+    "minimumAllowedBalanceWei":  "8000000000000000000",
+    "stopped":  null,
+    "requestsToday":  2984,
+    "queryErrors":  [
+
+                    ],
+    "errors":  [
+
+               ],
+    "startedAt":  1792835992359,
+    "finishedAt":  1792836034006,
+    "query":  "app = str(\u0027arkiv-mumbai-2026\u0027) AND kind = str(\u0027dot\u0027) AND session = str(\u0027B2DEF664\u0027) AND $creator = addr(0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690)",
+    "batches":  [
+                    {
+                        "txHash":  "0x75049a8a8da17133de00bc5f19f36e9c51bf59bc0ecabeab86a305262cea38b0",
+                        "block":  "993072",
+                        "size":  14,
+                        "gasUsed":  "1685376",
+                        "gasCostWei":  "1685376003370752"
+                    },
+                    {
+                        "txHash":  "0xd31399c333e3aae487091bc5720bb0e406675b4d6991d6f38ff8cf4f6e828e6b",
+                        "block":  "993073",
+                        "size":  13,
+                        "gasUsed":  "1564992",
+                        "gasCostWei":  "1564992003129984"
+                    },
+                    {
+                        "txHash":  "0x14befd764702aa5be220ac9c1c92ad64c1800eca85854d44e2f57f5353f5daf4",
+                        "block":  "993074",
+                        "size":  16,
+                        "gasUsed":  "1926144",
+                        "gasCostWei":  "1926144003852288"
+                    },
+                    {
+                        "txHash":  "0xbfc67c19683ae181a10dbb27ee9ed3161bb74fdf910dc1ac3b2577e28fe93e8a",
+                        "block":  "993076",
+                        "size":  14,
+                        "gasUsed":  "1685376",
+                        "gasCostWei":  "1685376003370752"
+                    },
+                    {
+                        "txHash":  "0xa15fd41bdf19b5f37f0cfc33a4e9eb444314adb60a2384ba527839c889c2b33a",
+                        "block":  "993078",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x3a010708b3b4361158a785eb873bcc7b4d283cc266b877e7c88e6a222498493e",
+                        "block":  "993079",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x37b342d1f0d6d5bd1a98c545627785f257a6b3d51f0a8abc28a574eea1ddee18",
+                        "block":  "993080",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0xc930a850c9907b52c2e281262ee7a68e2ee7b853528d5c8affb70ef5c92b67bb",
+                        "block":  "993082",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x366903d965f6beed72c2143e8cb68ad6c3855bc3c600b7584e93109b23b3b571",
+                        "block":  "993084",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0xf8446f90f0da4dfc86c273ff8e86d93e5d40d317e9b32d65642e3e06ae850505",
+                        "block":  "993085",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0x6001b70ae1a0c9279d848b690edcbcc098b8a618e83e2d73b1135acedd6e99ed",
+                        "block":  "993087",
+                        "size":  20,
+                        "gasUsed":  "2407680",
+                        "gasCostWei":  "2407680004815360"
+                    },
+                    {
+                        "txHash":  "0xf036de7a8cc625a227d2e729b328a8d0ad56cfcac75dc363884e6b41bc65beec",
+                        "block":  "993088",
+                        "size":  3,
+                        "gasUsed":  "361152",
+                        "gasCostWei":  "361152000722304"
+                    }
+                ],
+    "fullReportSha256":  "fb53241108665d9fc8cecc167c5e5cff8f19cb337fc69678a9923b450d57c0d2",
+    "sourceCommit":  "e1732fb",
+    "outcome":  "passed the unchanged load-test plan"
+}

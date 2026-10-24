@@ -29,6 +29,8 @@ SDK 0.8.1 source and deployed behavior confirmed:
   countdowns must use the actual expiry and live timing instead.
 - An explicit EIP-1193 rejection (`4001`) permits a later user action; uncertain
   writes remain blocked until their known transaction outcome is reconciled.
+- Receipt polling is explicitly 500 ms. This is a polling cadence, not a claimed
+  block duration; the unconfigured viem client default was four seconds.
 
 ## Checks and deployment
 
@@ -58,7 +60,9 @@ The proxy accepts only `RPC_READ_ALLOWLIST`; neither the key nor upstream error
 details appear in responses. CORS permits only `ALLOWED_ORIGINS` and all responses
 use `Cache-Control: no-store`.
 
-The single SQLite-backed Durable Object serializes requests and batches. Accepted
+The single SQLite-backed Durable Object serializes state changes and batches. SDK
+sends and receipt waits run outside the request mutex, so phone submissions,
+tickets and stage queries can progress while a transaction is in flight. Accepted
 tickets and their alarm are checkpointed together. Each block admits at most one
 batch, with up to twenty creates and a fresh pending transaction nonce. Signed bytes
 and their hash are persisted before forwarding. An uncertain outcome stops new
