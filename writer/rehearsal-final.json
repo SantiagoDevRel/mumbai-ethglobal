@@ -1,0 +1,3022 @@
+{
+  "schema": 1,
+  "network": "tiramisu",
+  "origin": "https://mumbai-ethglobal.vercel.app",
+  "writerUrl": "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev",
+  "sourceSnapshot": "3488879b2c24ef0de7da3ba3756673ebdf7dd7fe",
+  "scriptSha256": "193b626802ddfbd222510978c5f7e99548cbecbad43c844b67b2bd03a484a339",
+  "staticIndexSha256": "ea51004cc3790f33a1cfddbe794a095e7e5fa889a327654f982262b52fe7aaed",
+  "startedAt": "2026-10-24T11:09:57.112Z",
+  "plannedTalkMs": 1200000,
+  "timingPolicy": "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; lifetimes stay at 120 s. The two cohorts avoid querying an entity immediately before its expiration during L2 preparation. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
+  "deployedWorker": {
+    "version": "c221c14e-fd84-481d-b625-b62d6e42a231",
+    "sourceCommit": "e1732fb",
+    "bundleSha256": "e2c0893aacfb1896895cbf0adeccf88779e682c4efdd4f07b3f43390d0e05d1a",
+    "verification": "Cloudflare deployments list, 100% active, checked before this campaign"
+  },
+  "scenes": [
+    {
+      "id": "S0",
+      "plannedStartMs": 0,
+      "dispatchAtMs": 4,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 0,
+          "actualStartMs": 12
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 11,
+      "latenessMs": 11,
+      "actionsFinishedAtMs": 12
+    },
+    {
+      "id": "S1",
+      "plannedStartMs": 20000,
+      "dispatchAtMs": 20000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 20000,
+          "actualStartMs": 20014
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 20750,
+          "actualStartMs": 20770
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 20012,
+      "latenessMs": 12,
+      "actionsFinishedAtMs": 20770
+    },
+    {
+      "id": "S2",
+      "plannedStartMs": 70000,
+      "dispatchAtMs": 70000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 70000,
+          "actualStartMs": 70019
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 70750,
+          "actualStartMs": 70776
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 70017,
+      "latenessMs": 17,
+      "actionsFinishedAtMs": 70776
+    },
+    {
+      "id": "S3",
+      "plannedStartMs": 120000,
+      "dispatchAtMs": 120000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 120000,
+          "actualStartMs": 120011
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 120750,
+          "actualStartMs": 120771
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 120010,
+      "latenessMs": 10,
+      "actionsFinishedAtMs": 120771
+    },
+    {
+      "id": "S4",
+      "plannedStartMs": 170000,
+      "dispatchAtMs": 170000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 170000,
+          "actualStartMs": 170032
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 170750,
+          "actualStartMs": 170794
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 170028,
+      "latenessMs": 28,
+      "actionsFinishedAtMs": 170794
+    },
+    {
+      "id": "S5",
+      "plannedStartMs": 220000,
+      "dispatchAtMs": 220001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 220000,
+          "actualStartMs": 220014
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 220750,
+          "actualStartMs": 220770
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 220012,
+      "latenessMs": 12,
+      "actionsFinishedAtMs": 220770
+    },
+    {
+      "id": "S6",
+      "plannedStartMs": 260000,
+      "dispatchAtMs": 260001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 260000,
+          "actualStartMs": 260013
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 260750,
+          "actualStartMs": 260772
+        },
+        {
+          "step": 2,
+          "plannedEarliestStartMs": 261500,
+          "actualStartMs": 261532
+        },
+        {
+          "step": 3,
+          "plannedEarliestStartMs": 262250,
+          "actualStartMs": 262290
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 260012,
+      "latenessMs": 12,
+      "actionsFinishedAtMs": 262290
+    },
+    {
+      "id": "S7",
+      "plannedStartMs": 290000,
+      "dispatchAtMs": 290000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 290000,
+          "actualStartMs": 290012
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 290011,
+      "latenessMs": 11,
+      "actionsFinishedAtMs": 290012
+    },
+    {
+      "id": "L1",
+      "plannedStartMs": 330000,
+      "dispatchAtMs": 330000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 330000,
+          "actualStartMs": 330016
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 330013,
+      "latenessMs": 13,
+      "actionsFinishedAtMs": 335038
+    },
+    {
+      "id": "L2",
+      "plannedStartMs": 420000,
+      "dispatchAtMs": 420000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 420000,
+          "actualStartMs": 420008
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 420750,
+          "actualStartMs": 429138
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 420007,
+      "latenessMs": 7,
+      "actionsFinishedAtMs": 440575
+    },
+    {
+      "id": "L3",
+      "plannedStartMs": 510000,
+      "dispatchAtMs": 510000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 510000,
+          "actualStartMs": 510010
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 510750,
+          "actualStartMs": 510792
+        },
+        {
+          "step": 2,
+          "plannedEarliestStartMs": 511500,
+          "actualStartMs": 516230
+        },
+        {
+          "step": 3,
+          "plannedEarliestStartMs": 512250,
+          "actualStartMs": 520055
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 510009,
+      "latenessMs": 9,
+      "actionsFinishedAtMs": 521347
+    },
+    {
+      "id": "L4",
+      "plannedStartMs": 660000,
+      "dispatchAtMs": 660001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 660000,
+          "actualStartMs": 660010
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 660008,
+      "latenessMs": 8,
+      "actionsFinishedAtMs": 660059
+    },
+    {
+      "id": "L5",
+      "plannedStartMs": 780000,
+      "dispatchAtMs": 780000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 780000,
+          "actualStartMs": 780015
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 780750,
+          "actualStartMs": 786960
+        },
+        {
+          "step": 2,
+          "plannedEarliestStartMs": 781500,
+          "actualStartMs": 787727
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 780014,
+      "latenessMs": 14,
+      "actionsFinishedAtMs": 787736
+    },
+    {
+      "id": "L6",
+      "plannedStartMs": 960000,
+      "dispatchAtMs": 960000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 960000,
+          "actualStartMs": 960032
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 960750,
+          "actualStartMs": 960833
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 960010,
+      "latenessMs": 10,
+      "actionsFinishedAtMs": 964618
+    },
+    {
+      "id": "L7",
+      "plannedStartMs": 1080000,
+      "dispatchAtMs": 1080000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 1080000,
+          "actualStartMs": 1080009
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 1080008,
+      "latenessMs": 8,
+      "actionsFinishedAtMs": 1080009
+    },
+    {
+      "id": "L8",
+      "plannedStartMs": 1125000,
+      "dispatchAtMs": 1125001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 1125000,
+          "actualStartMs": 1125012
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 1125011,
+      "latenessMs": 11,
+      "actionsFinishedAtMs": 1126018
+    },
+    {
+      "id": "L9",
+      "plannedStartMs": 1170000,
+      "dispatchAtMs": 1170001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 1170000,
+          "actualStartMs": 1170013
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 1170012,
+      "latenessMs": 12,
+      "actionsFinishedAtMs": 1170023
+    }
+  ],
+  "operations": [
+    {
+      "scene": "S7",
+      "name": "open doors",
+      "startedAtMs": 290012,
+      "status": "passed",
+      "latencyMs": 480,
+      "finishedAtMs": 290493
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 1",
+      "startedAtMs": 290498,
+      "status": "passed",
+      "latencyMs": 6155,
+      "finishedAtMs": 296653
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 2",
+      "startedAtMs": 290498,
+      "status": "passed",
+      "latencyMs": 6155,
+      "finishedAtMs": 296653
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 3",
+      "startedAtMs": 290498,
+      "status": "passed",
+      "latencyMs": 6170,
+      "finishedAtMs": 296668
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 4",
+      "startedAtMs": 290499,
+      "status": "passed",
+      "latencyMs": 6114,
+      "finishedAtMs": 296613
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 5",
+      "startedAtMs": 290499,
+      "status": "passed",
+      "latencyMs": 6154,
+      "finishedAtMs": 296653
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 6",
+      "startedAtMs": 290556,
+      "status": "passed",
+      "latencyMs": 6130,
+      "finishedAtMs": 296687
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 7",
+      "startedAtMs": 290668,
+      "status": "passed",
+      "latencyMs": 6001,
+      "finishedAtMs": 296669
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 8",
+      "startedAtMs": 290778,
+      "status": "passed",
+      "latencyMs": 5888,
+      "finishedAtMs": 296666
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 9",
+      "startedAtMs": 290889,
+      "status": "passed",
+      "latencyMs": 6052,
+      "finishedAtMs": 296941
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 10",
+      "startedAtMs": 291001,
+      "status": "passed",
+      "latencyMs": 5834,
+      "finishedAtMs": 296836
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 11",
+      "startedAtMs": 321001,
+      "status": "passed",
+      "latencyMs": 5543,
+      "finishedAtMs": 326544
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 12",
+      "startedAtMs": 321112,
+      "status": "passed",
+      "latencyMs": 5369,
+      "finishedAtMs": 326481
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 13",
+      "startedAtMs": 321223,
+      "status": "passed",
+      "latencyMs": 5301,
+      "finishedAtMs": 326525
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 14",
+      "startedAtMs": 321334,
+      "status": "passed",
+      "latencyMs": 5159,
+      "finishedAtMs": 326493
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 15",
+      "startedAtMs": 321445,
+      "status": "passed",
+      "latencyMs": 5173,
+      "finishedAtMs": 326618
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 16",
+      "startedAtMs": 321556,
+      "status": "passed",
+      "latencyMs": 5064,
+      "finishedAtMs": 326620
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 17",
+      "startedAtMs": 321667,
+      "status": "passed",
+      "latencyMs": 5118,
+      "finishedAtMs": 326785
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 18",
+      "startedAtMs": 321778,
+      "status": "passed",
+      "latencyMs": 5031,
+      "finishedAtMs": 326810
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 19",
+      "startedAtMs": 321890,
+      "status": "passed",
+      "latencyMs": 4901,
+      "finishedAtMs": 326791
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 20",
+      "startedAtMs": 322000,
+      "status": "passed",
+      "latencyMs": 4923,
+      "finishedAtMs": 326922
+    },
+    {
+      "scene": "S7",
+      "name": "real /j submit to stage visibility",
+      "startedAtMs": 323001,
+      "status": "passed",
+      "latencyMs": 11641,
+      "finishedAtMs": 334643
+    },
+    {
+      "scene": "L1",
+      "name": "all phones confirmed and rendered",
+      "startedAtMs": 330016,
+      "status": "passed",
+      "latencyMs": 5008,
+      "finishedAtMs": 335024
+    },
+    {
+      "scene": "L2",
+      "name": "extend selected",
+      "startedAtMs": 420008,
+      "status": "passed",
+      "latencyMs": 8360,
+      "finishedAtMs": 428368
+    },
+    {
+      "scene": "L2",
+      "name": "extend all",
+      "startedAtMs": 429717,
+      "status": "passed",
+      "latencyMs": 10844,
+      "finishedAtMs": 440561
+    },
+    {
+      "scene": "L3",
+      "name": "show filters and exact query",
+      "startedAtMs": 510010,
+      "status": "passed",
+      "latencyMs": 20,
+      "finishedAtMs": 510030
+    },
+    {
+      "scene": "L3",
+      "name": "country filter India",
+      "startedAtMs": 510792,
+      "status": "passed",
+      "latencyMs": 4414,
+      "finishedAtMs": 515207
+    },
+    {
+      "scene": "L3",
+      "name": "colour filter green",
+      "startedAtMs": 516230,
+      "status": "passed",
+      "latencyMs": 3057,
+      "finishedAtMs": 519286
+    },
+    {
+      "scene": "L3",
+      "name": "close filters",
+      "startedAtMs": 520055,
+      "status": "passed",
+      "latencyMs": 1278,
+      "finishedAtMs": 521333
+    },
+    {
+      "scene": "L4",
+      "name": "inspect attributes and Arkiv fields",
+      "startedAtMs": 660010,
+      "status": "passed",
+      "latencyMs": 44,
+      "finishedAtMs": 660054
+    },
+    {
+      "scene": "L5",
+      "name": "makeBusiness",
+      "startedAtMs": 780015,
+      "status": "passed",
+      "latencyMs": 6185,
+      "finishedAtMs": 786200
+    },
+    {
+      "scene": "L5",
+      "name": "business query and card",
+      "startedAtMs": 786960,
+      "status": "passed",
+      "latencyMs": 5,
+      "finishedAtMs": 786964
+    },
+    {
+      "scene": "L5",
+      "name": "business review relationship",
+      "startedAtMs": 787727,
+      "status": "passed",
+      "latencyMs": 3,
+      "finishedAtMs": 787730
+    },
+    {
+      "scene": "L6",
+      "name": "ownership view",
+      "startedAtMs": 960032,
+      "status": "passed",
+      "latencyMs": 41,
+      "finishedAtMs": 960073
+    },
+    {
+      "scene": "L6",
+      "name": "ownership finale demo only",
+      "startedAtMs": 960833,
+      "status": "passed",
+      "latencyMs": 3780,
+      "finishedAtMs": 964613
+    },
+    {
+      "scene": "L8",
+      "name": "build phase and fresh QR resources",
+      "startedAtMs": 1125012,
+      "status": "passed",
+      "latencyMs": 1002,
+      "finishedAtMs": 1126014
+    },
+    {
+      "scene": "L9",
+      "name": "closing globe remains live",
+      "startedAtMs": 1170013,
+      "status": "passed",
+      "latencyMs": 4,
+      "finishedAtMs": 1170017
+    }
+  ],
+  "transactions": [
+    {
+      "scene": "L2",
+      "operationTags": [
+        3
+      ],
+      "operationCount": 1,
+      "startedAtMs": 423368,
+      "status": "success",
+      "hash": "0x21dfe199c2aeeec15f4a89d0f4f23029eb7da68ea06f4835c36c76cc2ce0b561",
+      "url": "https://tiramisu.explorer.arkiv.network/tx/0x21dfe199c2aeeec15f4a89d0f4f23029eb7da68ea06f4835c36c76cc2ce0b561",
+      "block": "995388",
+      "gasUsed": "25240",
+      "confirmedAtMs": 426596,
+      "latencyMs": 3228
+    },
+    {
+      "scene": "L2",
+      "operationTags": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "operationCount": 11,
+      "startedAtMs": 434897,
+      "status": "success",
+      "hash": "0x34d014c6c1c699591d58c81b3d0ba5732f9997db22c919b013c699b5c4697950",
+      "url": "https://tiramisu.explorer.arkiv.network/tx/0x34d014c6c1c699591d58c81b3d0ba5732f9997db22c919b013c699b5c4697950",
+      "block": "995394",
+      "gasUsed": "110000",
+      "confirmedAtMs": 438651,
+      "latencyMs": 3754
+    },
+    {
+      "scene": "L5",
+      "operationTags": [
+        2
+      ],
+      "operationCount": 1,
+      "startedAtMs": 781939,
+      "status": "success",
+      "hash": "0x62e00abc33bdb18edf8f53f46f7c207d85d3313236b2eb9b2e2529b317a1332c",
+      "url": "https://tiramisu.explorer.arkiv.network/tx/0x62e00abc33bdb18edf8f53f46f7c207d85d3313236b2eb9b2e2529b317a1332c",
+      "block": "995567",
+      "gasUsed": "75720",
+      "confirmedAtMs": 784451,
+      "latencyMs": 2512
+    }
+  ],
+  "phones": [
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 01",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 290498,
+      "acceptedAtMs": 290743,
+      "ticket": "5c483ffb-a641-4005-b249-620a055ec295",
+      "entityKey": "0x1b5e3c10ffce8f5e25b718309f09813c5fae73260ab7d28db6653cc97108c907",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296653,
+      "latencyMs": 6155
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 04",
+      "country": "CO",
+      "color": "#3ddc97",
+      "submittedAtMs": 290499,
+      "acceptedAtMs": 290858,
+      "ticket": "139dfee7-bdb7-4ccc-9026-966db3179e16",
+      "entityKey": "0xb74b364c856d25111903726b60927ae28259d3be235a230ba6303c54c096c743",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296613,
+      "latencyMs": 6114
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 02",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 290498,
+      "acceptedAtMs": 290867,
+      "ticket": "342ce44c-ac87-459a-95b6-1687ff338af5",
+      "entityKey": "0x60a81711d9484c1ac84b0c8d47ae2dd84698c093f974b99ae7c16a720c5cfc0f",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296653,
+      "latencyMs": 6155
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 03",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 290499,
+      "acceptedAtMs": 290898,
+      "ticket": "74a52bc1-2920-41f7-8509-2419efce86ac",
+      "entityKey": "0x5efcfbbcbe5325804b881019e670075994fa8e0f4d9e44d9d0e9920820f45206",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296668,
+      "latencyMs": 6169
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 05",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 290499,
+      "acceptedAtMs": 290917,
+      "ticket": "ce43d03c-6c36-4d9b-ab54-221d24c9b013",
+      "entityKey": "0x6a1925e542aa7a6d1b1799626ea3dd6963ee1d990d50155c9893a91aa0eb9b89",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296653,
+      "latencyMs": 6154
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 06",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 290556,
+      "acceptedAtMs": 290942,
+      "ticket": "c41d5024-8169-474e-9e6e-b65f63425380",
+      "entityKey": "0xb9c3f6af840fca85b34bb9ad1dda28ee16eda1699ac972660cc5cbf0b44a3083",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296686,
+      "latencyMs": 6130
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 07",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 290668,
+      "acceptedAtMs": 291023,
+      "ticket": "077f317c-3818-4566-8967-879f3b998839",
+      "entityKey": "0xee731fb8333debc20e565b3b2222d8a1477cb18f019d7b1cb088ca786abf8550",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296669,
+      "latencyMs": 6001
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 08",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 290778,
+      "acceptedAtMs": 291079,
+      "ticket": "cb26022c-d146-42be-8f93-1f5550c9bb53",
+      "entityKey": "0xa464bd7b34409341af983d86a314b1cde25e1da11fdc0156582fc73eea11a325",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296666,
+      "latencyMs": 5888
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 10",
+      "country": "CO",
+      "color": "#3ddc97",
+      "submittedAtMs": 291001,
+      "acceptedAtMs": 291230,
+      "ticket": "d9bf36cf-4ee1-43e8-adbb-0c0901c68dc2",
+      "entityKey": "0xd816d46b01cdaaec0837320b95136eda1a8b78d3322a17114d509a57c4b11c52",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296836,
+      "latencyMs": 5835
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 09",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 290889,
+      "acceptedAtMs": 291230,
+      "ticket": "62007cf7-d28d-4070-b826-da747a80cfc7",
+      "entityKey": "0x5fe2d452225721a3562880e118a9dd699a811393488d7679fe50794b45a3c4b1",
+      "txHash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "expiresAtBlock": "995383",
+      "confirmedAtMs": 296941,
+      "latencyMs": 6052
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 11",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 321001,
+      "acceptedAtMs": 321471,
+      "ticket": "91a2a7e8-393a-4f10-9751-9ae7f40914d7",
+      "entityKey": "0x58df69efdd0938dbfbf41f2362ef37521022eada5d350a8208f9a0d8a60bfffc",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326544,
+      "latencyMs": 5543
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 13",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 321223,
+      "acceptedAtMs": 321700,
+      "ticket": "e05b83fb-2b66-40f5-843f-458654d97c56",
+      "entityKey": "0x394c4216fcc4e10678751a7e5804fb584462145139f20d9c64eb59da164b5993",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326525,
+      "latencyMs": 5302
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 14",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 321334,
+      "acceptedAtMs": 321706,
+      "ticket": "b6679ae0-d15e-4bb5-b034-c1f5a9f2ae4f",
+      "entityKey": "0xe07c1f8fb46c4c82a1da68d4cdeb6b30ad8c28daaf015fb8fc2bfb4d66ee29ab",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326493,
+      "latencyMs": 5159
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 12",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 321112,
+      "acceptedAtMs": 321715,
+      "ticket": "094f33a9-9963-4703-9a85-fe769a250397",
+      "entityKey": "0x5f9609dda757882918814169fb7debe4ec9edeec89db8401a3acc800f74842fa",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326481,
+      "latencyMs": 5369
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 15",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 321445,
+      "acceptedAtMs": 321817,
+      "ticket": "1e15cfb7-b096-47d9-a33d-91617f478474",
+      "entityKey": "0xdbb8864f2adbff4555f6bc1365d1b0816b774fa57d5d7bbdae8c13c6134dcbaa",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326618,
+      "latencyMs": 5173
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 16",
+      "country": "CO",
+      "color": "#3ddc97",
+      "submittedAtMs": 321556,
+      "acceptedAtMs": 321970,
+      "ticket": "029c6666-06bc-4fc2-a2f5-9499d4d6adbb",
+      "entityKey": "0x1099a2a29fb37f847c2c33add1cb66f6dc91f45af0d9b06a6b604f811375aa2b",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326620,
+      "latencyMs": 5064
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 18",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 321778,
+      "acceptedAtMs": 322029,
+      "ticket": "34d183a5-0779-493b-a5f2-1a8838f122dd",
+      "entityKey": "0xc4e5ca6429101c33b2e914a34a5eedac604e92911b4ffd421a2f057de61cdc00",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326810,
+      "latencyMs": 5032
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 19",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 321890,
+      "acceptedAtMs": 322092,
+      "ticket": "87f1dc42-a6dd-4c26-96df-256aecdff725",
+      "entityKey": "0xffebe7bcd5f89252d1612896211e5d67694d1c5d5137e1b8b35f30d24c3fc77d",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326791,
+      "latencyMs": 4901
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 17",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 321667,
+      "acceptedAtMs": 322109,
+      "ticket": "eaabd669-4eed-4615-99eb-85c0caf7b263",
+      "entityKey": "0x19fb9094f9de7ec69bfb302b5e289b0887640675bbd871eca7c837f0592528e3",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326785,
+      "latencyMs": 5118
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 20",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 322000,
+      "acceptedAtMs": 322207,
+      "ticket": "57625c11-7f49-4784-9220-84dd2735e045",
+      "entityKey": "0x441d1936754d1c195e160267dc7b51e824bcfb2d9aa92e40736d83481ffc6ded",
+      "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "confirmedAtMs": 326922,
+      "latencyMs": 4922
+    },
+    {
+      "kind": "browser",
+      "name": "Rehearsal phone",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 323002,
+      "confirmedAtMs": 327399,
+      "entityKey": "0x60825c051119ea75b4247edaff22f3427b99aaa6dead734a69b433981b22c01f",
+      "block": "995338",
+      "expiresAtBlock": "995398",
+      "visibleAtMs": 330230,
+      "submitToVisibleMs": 7228,
+      "paintedAtMs": 334643
+    }
+  ],
+  "balances": [
+    {
+      "atMs": null,
+      "reason": "preflight",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 10373,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 20376,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 30323,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 40656,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 50385,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 60399,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 70392,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 80421,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 90429,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 100371,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 110328,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 120373,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 130396,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 140331,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 150332,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 160364,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 170360,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 180372,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 190383,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 200382,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 210418,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 220429,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 230372,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 240389,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 250421,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 260430,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 270334,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 280677,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 290667,
+      "reason": "10 s monitor",
+      "wei": "9925517639851035280"
+    },
+    {
+      "atMs": 300423,
+      "reason": "10 s monitor",
+      "wei": "9924313799848627600"
+    },
+    {
+      "atMs": 310409,
+      "reason": "10 s monitor",
+      "wei": "9924313799848627600"
+    },
+    {
+      "atMs": 320388,
+      "reason": "10 s monitor",
+      "wei": "9924313799848627600"
+    },
+    {
+      "atMs": 330233,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 340331,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 350423,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 360315,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 370357,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 380388,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 390386,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 400433,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 410320,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 420372,
+      "reason": "10 s monitor",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 422923,
+      "reason": "before presenter signature",
+      "wei": "9922989575845979152"
+    },
+    {
+      "atMs": 428368,
+      "reason": "after extend selected",
+      "wei": "9922964335845928672"
+    },
+    {
+      "atMs": 430223,
+      "reason": "10 s monitor",
+      "wei": "9922964335845928672"
+    },
+    {
+      "atMs": 434464,
+      "reason": "before presenter signature",
+      "wei": "9922964335845928672"
+    },
+    {
+      "atMs": 440249,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 440561,
+      "reason": "after extend all",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 450336,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 460390,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 470330,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 480365,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 490417,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 500380,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 510374,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 520231,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 530381,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 540347,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 550424,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 560367,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 570676,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 580433,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 590377,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 600329,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 610401,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 620400,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 630331,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 640326,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 650396,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 660367,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 670394,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 680421,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 690795,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 700429,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 710382,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 720836,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 730398,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 740373,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 750388,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 760379,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 770344,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 780446,
+      "reason": "10 s monitor",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 781448,
+      "reason": "before presenter signature",
+      "wei": "9922854335845708672"
+    },
+    {
+      "atMs": 786200,
+      "reason": "after makeBusiness",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 790276,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 800412,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 810388,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 820390,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 830442,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 840635,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 850386,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 860389,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 870396,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 880398,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 890349,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 900381,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 910386,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 920425,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 930439,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 940396,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 950451,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 960406,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 970345,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 980397,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 990406,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1000436,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1010344,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1020368,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1030388,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1040446,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1050413,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1060388,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1070356,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1080398,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1090450,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1100355,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1110404,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1120444,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1130751,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1140687,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1150448,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1160397,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1170401,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1180363,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1190708,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1200398,
+      "reason": "10 s monitor",
+      "wei": "9922778615845557232"
+    },
+    {
+      "atMs": 1202547,
+      "reason": "final",
+      "wei": "9922778615845557232"
+    }
+  ],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3031,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/1/0.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3031,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/0/1.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3031,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/1/1.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3031,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/0/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3031,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/1/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S3",
+      "atMs": 120373,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/2/0/3.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S4",
+      "atMs": 170278,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/2/0/3.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511072,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/1/0.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511072,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/2/0.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511072,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/3/0.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511072,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/1/1.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511073,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/2/1.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511073,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/3/1.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511073,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/2/2.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511073,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/3/2.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511074,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/2/0/0.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511086,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/3/7/1.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511573,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/3/5/1.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 511574,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/3/4/1.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512008,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/12/7.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512009,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/11/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512009,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/10/8.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512009,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/12/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512107,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/14/6.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512108,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/8/6.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512108,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/8/7.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512108,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/14/7.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512108,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/8/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512108,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/8/8.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512108,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/14/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L3",
+      "atMs": 512108,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/14/8.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780255,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/22/12.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780255,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/23/12.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780255,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/21/12.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780292,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/20/15.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780306,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/22/15.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780306,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/23/15.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780306,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/20/14.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780307,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/25/12.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780322,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/24/14.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780322,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/24/15.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780338,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/24/13.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780354,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/22/14.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 780354,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/5/21/15.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782531,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782531,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782531,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782532,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782533,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782535,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11506/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11506/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11506/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782536,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782538,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782538,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11505/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782538,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11505/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782538,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7303.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782538,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7303.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L5",
+      "atMs": 782538,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11504/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960147,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960148,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960280,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960282,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960283,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11506/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11506/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11506/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960286,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11508/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960287,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11505/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960287,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960287,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960287,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960288,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960288,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11505/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960288,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11507/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960289,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7303.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960289,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11509/7303.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960289,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11504/7305.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960289,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11510/7308.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960290,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11505/7307.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960290,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11506/7304.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960290,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/14/11504/7306.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960364,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5754/3653.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960365,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5754/3654.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960365,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5753/3653.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960366,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5755/3653.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960366,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5754/3652.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960366,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5753/3654.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960366,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5755/3654.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960366,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5753/3652.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960367,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5755/3652.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960367,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5752/3653.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960367,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5754/3651.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960368,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5752/3652.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960368,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5755/3651.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960369,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5753/3651.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960369,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5751/3652.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960369,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5753/3655.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960369,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5752/3654.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960370,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5752/3651.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960370,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5751/3653.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960370,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5755/3650.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960370,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5756/3652.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960371,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5756/3651.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960371,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5754/3650.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960371,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5756/3650.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960372,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/13/5750/3652.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960547,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2877/1826.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960547,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2877/1827.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960548,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2876/1826.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960548,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2876/1827.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960548,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2878/1826.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960550,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2877/1825.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960552,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2878/1827.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960552,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2876/1825.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960552,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2875/1826.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960554,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2878/1825.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960554,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2875/1825.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960554,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2875/1827.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960554,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2878/1824.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960554,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2877/1824.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960554,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2874/1826.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 960557,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/planet/20261018_080001_pt/12/2874/1825.pbf",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 962232,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/5/21/17.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 962232,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/5/20/17.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 962232,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/14/8.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 962232,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/13/9.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 962232,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/14/7.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "L6",
+      "atMs": 962233,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/4/13/8.png",
+      "reason": "net::ERR_ABORTED"
+    }
+  ],
+  "dataErrors": [],
+  "ownership": {
+    "mode": "demo view",
+    "allowedWalletOperationTags": [
+      2,
+      3
+    ],
+    "onChainTransfers": 0,
+    "key": "0x60825c051119ea75b4247edaff22f3427b99aaa6dead734a69b433981b22c01f",
+    "ownerBefore": "0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690",
+    "ownerAfter": "0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690",
+    "creatorBefore": "0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690",
+    "creatorAfter": "0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690",
+    "walletSendsDuringDemo": 0,
+    "allRemainingEntitiesStillWriterOwned": true
+  },
+  "sessionEnded": true,
+  "status": "passed",
+  "session": "6ACBC81C",
+  "clockStartedAt": "2026-10-24T11:10:02.266Z",
+  "realPhoneTicket": {
+    "ticket": "b1701aa1-7c9b-432d-b0fb-38f43ef88257",
+    "status": "written",
+    "lng": 79.70219,
+    "lat": 12.85031,
+    "entityKey": "0x60825c051119ea75b4247edaff22f3427b99aaa6dead734a69b433981b22c01f",
+    "expiresAtBlock": "995398",
+    "txHash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+    "block": "995338"
+  },
+  "selectedExpiryBefore": "995398",
+  "selectedExpiryAfter": "995998",
+  "extendAllBefore": [
+    {
+      "key": "0xffebe7bcd5f89252d1612896211e5d67694d1c5d5137e1b8b35f30d24c3fc77d",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0xe07c1f8fb46c4c82a1da68d4cdeb6b30ad8c28daaf015fb8fc2bfb4d66ee29ab",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0xdbb8864f2adbff4555f6bc1365d1b0816b774fa57d5d7bbdae8c13c6134dcbaa",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0xc4e5ca6429101c33b2e914a34a5eedac604e92911b4ffd421a2f057de61cdc00",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0x60825c051119ea75b4247edaff22f3427b99aaa6dead734a69b433981b22c01f",
+      "expiresAtBlock": "995998"
+    },
+    {
+      "key": "0x5f9609dda757882918814169fb7debe4ec9edeec89db8401a3acc800f74842fa",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0x58df69efdd0938dbfbf41f2362ef37521022eada5d350a8208f9a0d8a60bfffc",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0x441d1936754d1c195e160267dc7b51e824bcfb2d9aa92e40736d83481ffc6ded",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0x394c4216fcc4e10678751a7e5804fb584462145139f20d9c64eb59da164b5993",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0x19fb9094f9de7ec69bfb302b5e289b0887640675bbd871eca7c837f0592528e3",
+      "expiresAtBlock": "995398"
+    },
+    {
+      "key": "0x1099a2a29fb37f847c2c33add1cb66f6dc91f45af0d9b06a6b604f811375aa2b",
+      "expiresAtBlock": "995398"
+    }
+  ],
+  "extendedEntities": 11,
+  "filterEvidence": {
+    "query": "app = str('arkiv-mumbai-2026') AND kind = str('dot') AND session = str('6ACBC81C') AND color = str('#3ddc97') AND country = str('IN') AND $creator = addr(0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690)",
+    "block": "995434",
+    "keys": [
+      "0xe07c1f8fb46c4c82a1da68d4cdeb6b30ad8c28daaf015fb8fc2bfb4d66ee29ab",
+      "0xc4e5ca6429101c33b2e914a34a5eedac604e92911b4ffd421a2f057de61cdc00",
+      "0x60825c051119ea75b4247edaff22f3427b99aaa6dead734a69b433981b22c01f",
+      "0x5f9609dda757882918814169fb7debe4ec9edeec89db8401a3acc800f74842fa",
+      "0x441d1936754d1c195e160267dc7b51e824bcfb2d9aa92e40736d83481ffc6ded"
+    ]
+  },
+  "patchedEntity": {
+    "key": "0x60825c051119ea75b4247edaff22f3427b99aaa6dead734a69b433981b22c01f",
+    "kind": "business",
+    "owner": "0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690",
+    "reviewCount": 0
+  },
+  "l8WrittenPhoneHeading": "You’re on the map.",
+  "l8FreshScanResourcesVisible": true,
+  "talkElapsedMs": 1200001,
+  "talkOverrunMs": 1,
+  "remainingEntities": 11,
+  "createTransactions": [
+    {
+      "hash": "0x53606731b0035c3383210fd29b8502b318ec6dac802dcd6b56071cf237eb90d8",
+      "block": "995323",
+      "gasUsed": "1203840",
+      "status": "success"
+    },
+    {
+      "hash": "0xe177209247c9cbfc692409c0988bb86dc821ab385303062a8a5b61dc033a24d7",
+      "block": "995338",
+      "gasUsed": "1324224",
+      "status": "success"
+    }
+  ],
+  "proxyReads": 3402,
+  "finishedAt": "2026-10-24T11:30:05.595Z",
+  "elapsedAtCleanupMs": 1203329,
+  "totalWallMs": 1208483,
+  "overruns": [],
+  "maxSceneLatenessMs": 28,
+  "minimumBalanceWei": "9922778615845557232",
+  "gasUsed": "2739024"
+}
