@@ -3,11 +3,12 @@ import { decodeEventLog, keccak256, parseTransaction, recoverTransactionAddress,
 import { ENTITY_EVENTS_ABI } from "@arkiv-network/sdk/entity";
 import { eq } from "@arkiv-network/sdk/query";
 import { key as keyValue } from "@arkiv-network/sdk/attr";
-import { createSdkClients } from "../../shared/arkiv/clients-0.8.ts";
+import { createSdkClients, type RpcObserver } from "../../shared/arkiv/clients-0.8.ts";
+import { countdownTicket, TicketCache } from "./ticket-cache.ts";
 import { dotToCreate } from "../../shared/arkiv/sdk-0.8.ts";
 import { getProfile, WRITER_ADDRESS, NetworkNotConfiguredError } from "../../shared/arkiv/profiles.ts";
 import type { DotCreate } from "../../shared/arkiv/adapter.ts";
-import { APP_ID, type Hex } from "../../shared/types.ts";
+import { APP_ID, MAX_ENTITIES_PER_SESSION, type Hex } from "../../shared/types.ts";
 import { DEVICE_HEADER, DoorsRequest, PhaseRequest, ReplayRequest, RPC_READ_ALLOWLIST, SubmitRequest, type ErrorCode, type PresenterStatus, type TicketResponse } from "../../shared/writer-api.ts";
 import { admissionError, deviceToken, nameBlocked, placeDot } from "./policy.ts";
 import { REJECTION_MESSAGE } from "../../shared/data/blocklist.ts";
@@ -33,6 +34,7 @@ interface Meta {
   heldUntil: number; queue: string[]; inFlight: InFlight | null; accepted: number;
   written: number; failed: number; lastBatch: PresenterStatus["lastBatch"]; lastFlushBlock: string;
   requestDay: string; requestsToday: number;
+  rpcMetrics?: { calls: number; byMethod: Record<string, number>; http429: number; rpc429: number; errors: number; ticketQueries: number };
 }
 function initialMeta(): Meta {
   return { session: null, doors: "closed", phase: "talk", replay: false, heldUntil: 0, queue: [], inFlight: null,
@@ -71,12 +73,36 @@ export class WriterObject implements DurableObject {
   private balanceWei = "0";
   private blockTimeMs = 2_000;
   private batchTask: Promise<void> | null = null;
+  private networkTask?: Promise<void>;
+  private ticketCache: TicketCache;
 
   constructor(
     private readonly state: DurableObjectState,
     private readonly env: Env,
   ) {
-    this.ready = state.blockConcurrencyWhile(async () => { this.meta = await state.storage.get<Meta>("meta") ?? initialMeta(); });
+    this.ready = state.blockConcurrencyWhile(async () => {
+      this.meta = await state.storage.get<Meta>("meta") ?? initialMeta();
+      this.meta.rpcMetrics ??= { calls: 0, byMethod: {}, http429: 0, rpc429: 0, errors: 0, ticketQueries: 0 };
+    });
+    this.ticketCache = new TicketCache(state.storage, async session => {
+      const { reader } = await this.network();
+      this.meta.rpcMetrics!.ticketQueries++;
+      // The query supplies its canonical block: no per-phone block-number RPC.
+      // SDK/node page size is 200; a larger room shares at most two pages.
+      let page = await reader.select({ key: true, expiresAt: true }).createdBy(WRITER_ADDRESS)
+        .where(eq("app", APP_ID), eq("session", session)).limit(200).fetch();
+      const block = page.blockNumber;
+      const entities: { key: string; expiresAt: bigint }[] = [];
+      for (;;) {
+        if (page.blockNumber !== block) throw new Error("Session snapshot changed between pages.");
+        entities.push(...page.entities);
+        if (!page.hasNextPage()) break;
+        if (entities.length >= MAX_ENTITIES_PER_SESSION) throw new Error("Session exceeds its admission limit.");
+        this.meta.rpcMetrics!.ticketQueries++;
+        page = await page.next();
+      }
+      return { block, entities };
+    });
   }
 
   private exclusive<T>(work: () => Promise<T>): Promise<T> {
@@ -85,6 +111,13 @@ export class WriterObject implements DurableObject {
     return next;
   }
   private save() { return this.state.storage.put("meta", this.meta); }
+  private observeRpc: RpcObserver = event => {
+    const metrics = this.meta.rpcMetrics!;
+    if (event.phase === "request") { metrics.calls++; metrics.byMethod[event.method] = (metrics.byMethod[event.method] ?? 0) + 1; }
+    if (event.phase === "response" && event.httpStatus === 429) metrics.http429++;
+    if (event.phase === "response" && event.rpcCode === 429) metrics.rpc429++;
+    if (event.phase === "error") metrics.errors++;
+  };
   private async countRequest() {
     const day = new Date().toISOString().slice(0, 10);
     if (this.meta.requestDay !== day) { this.meta.requestDay = day; this.meta.requestsToday = 0; }
@@ -107,15 +140,18 @@ export class WriterObject implements DurableObject {
         flight.raw = raw; flight.txHash = hash;
         // This checkpoint completes before the custom transport forwards signed bytes.
         await this.save();
-      }) });
+      }) }, this.observeRpc);
     }
     if (this.clients.writer!.account!.address.toLowerCase() !== WRITER_ADDRESS.toLowerCase()) throw new NetworkNotConfiguredError("writer account mismatch");
     if (force || Date.now() - this.networkCheckedAt > 30_000) {
-      await this.clients.checkNetwork();
-      const timing = await this.clients.reader.getBlockTiming();
-      if (!Number.isFinite(timing.blockDuration) || timing.blockDuration <= 0) throw new NetworkNotConfiguredError("block timing is unavailable");
-      this.blockTimeMs = timing.blockDuration * 1000;
-      this.networkCheckedAt = Date.now();
+      this.networkTask ??= (async () => {
+        await this.clients!.checkNetwork();
+        const timing = await this.clients!.reader.getBlockTiming();
+        if (!Number.isFinite(timing.blockDuration) || timing.blockDuration <= 0) throw new NetworkNotConfiguredError("block timing is unavailable");
+        this.blockTimeMs = timing.blockDuration * 1000;
+        this.networkCheckedAt = Date.now();
+      })().finally(() => { this.networkTask = undefined; });
+      await this.networkTask;
     }
     return this.clients;
   }
@@ -174,6 +210,22 @@ export class WriterObject implements DurableObject {
       }
       return new Response(response.body, { status: response.status, headers });
     });
+    if (request.method === "GET" && new URL(request.url).pathname.startsWith("/api/ticket/") && response.ok) {
+      const ticket = await response.json() as TicketResponse;
+      if (ticket.status !== "written" || !ticket.entityKey || !ticket.block) return Response.json(ticket, { headers: response.headers });
+      // Cache refreshes run outside the request mutex, as do batch receipt waits.
+      // Every concurrent phone joins the same session refresh promise.
+      try {
+        const stored = await this.state.storage.get<Ticket>(`ticket:${ticket.ticket}`);
+        if (!stored) throw new Error("Ticket disappeared.");
+        const snapshot = await this.ticketCache.read(stored.dot.session);
+        return Response.json(countdownTicket(ticket, snapshot), { headers: response.headers });
+      } catch (error) {
+        return Response.json({ error: error instanceof NetworkNotConfiguredError ? "network_not_configured" : "internal",
+          message: "The countdown is temporarily unavailable. Please retry." },
+        { status: 503, headers: { ...Object.fromEntries(response.headers), "retry-after": "2" } });
+      }
+    }
     // Hold marks the lease under the mutex, then waits outside it: the active
     // batch still needs that mutex to checkpoint signed bytes and its receipt.
     if (request.method === "POST" && new URL(request.url).pathname === "/api/presenter/hold" && response.ok) {
@@ -206,6 +258,9 @@ export class WriterObject implements DurableObject {
       return Response.json(publicTicket);
     }
     if (path === "/api/rpc" && request.method === "POST") return this.proxy(request);
+    if (path === "/api/presenter/read-metrics" && request.method === "GET") {
+      return Response.json({ ...this.meta.rpcMetrics, requestsToday: this.meta.requestsToday });
+    }
     if (path === "/api/presenter/status" && request.method === "GET") {
       let network: string | null = null;
       try {
@@ -318,12 +373,14 @@ export class WriterObject implements DurableObject {
         continue;
       }
       try {
+        this.observeRpc({ method: call.method, phase: "request" });
         const response = await fetch(this.env.RPC, { method: "POST", headers: { "content-type": "application/json", "X-API-KEY": this.env.ACCESS_KEY },
           body: JSON.stringify({ jsonrpc: "2.0", id: call.id ?? null, method: call.method, params: call.params ?? [] }), signal: AbortSignal.timeout(15_000) });
-        if (!response.ok) throw new Error("RPC rejected.");
+        if (!response.ok) { this.observeRpc({ method: call.method, phase: "response", httpStatus: response.status }); throw new Error("RPC rejected."); }
         const body = await response.json() as { result?: unknown; error?: { code: number } };
+        this.observeRpc({ method: call.method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code });
         responses.push(body.error ? { jsonrpc: "2.0", id: call.id ?? null, error: { code: body.error.code, message: "RPC read failed." } } : { jsonrpc: "2.0", id: call.id ?? null, result: body.result });
-      } catch { responses.push({ jsonrpc: "2.0", id: call.id ?? null, error: { code: -32000, message: "RPC read unavailable." } }); }
+      } catch { this.observeRpc({ method: call.method, phase: "error" }); responses.push({ jsonrpc: "2.0", id: call.id ?? null, error: { code: -32000, message: "RPC read unavailable." } }); }
     }
     return Response.json(Array.isArray(input) ? responses : responses[0]);
   }

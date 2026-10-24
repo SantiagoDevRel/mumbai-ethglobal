@@ -10,6 +10,7 @@ private keys. Keep the RPC access key and writer key outside frontend environmen
 | `node --experimental-strip-types scripts/check-writer.ts` | One live phone submission, public query readback, and an Entity Expiration check within one block. |
 | `npm run seed -- --state-dir /secure/workshop-state` | Seed businesses and linked reviews once per UTC day, with twelve-hour lifetimes. |
 | `npm run loadtest -- --approved --report /secure/loadtest-report.json` | Run the explicitly authorized on-chain load test against a dedicated session and retain its evidence. |
+| `node scripts/loadtest-ticket-reads.mjs --tickets /secure/existing-campaign.json --report /secure/ticket-reads.json` | Read-only load: 200 existing written tickets poll every five seconds for three minutes. No session changes or gas. |
 | `node --experimental-strip-types scripts/rehearse.mjs --preflight` | Check the production-origin static build, keyed reads and browser runtime without starting a session or sending transactions. |
 | `node --experimental-strip-types scripts/rehearse.mjs --report writer/rehearsal.json --journal /secure/rehearsal.jsonl` | Run the full twenty-minute Tiramisu rehearsal with an explicitly authorized test-gas budget. Both files must be new. |
 
@@ -18,6 +19,16 @@ private keys. Keep the RPC access key and writer key outside frontend environmen
 Presenter operations read `WORKSHOP_PRESENTER_TOKEN`. Signing the seed also requires
 `WORKSHOP_WRITER_PRIVATE_KEY`, `RPC`, and `ACCESS_KEY`. `ARKIV_PROFILE` selects the
 network profile. Every generated explorer link uses `explorerUrl()`.
+
+The ticket-read load script needs only the presenter credential for before/after
+upstream metrics. Its input is an existing full 200-phone campaign with ticket
+IDs from one session. It staggers the phones across each five-second interval,
+makes 7,200 Worker requests, and reports upstream calls by method, ticket-query
+count, latency percentiles, errors, 429s and daily Worker request usage. Historical
+expired tickets exercise the same shared query path without creating new entities
+or replacing an active workshop session. Extension and expiration behavior are
+also covered by the Worker regression tests. The script reserves 5,000 requests
+below the daily free-plan limit and refuses an existing output report.
 
 The seed requires closed doors and an empty, idle writer, acquires a hold, renews it
 while working, and resumes afterward. It creates businesses before their reviews,
@@ -46,7 +57,7 @@ The rehearsal needs the same four environment variables as the seed and a built
 pass credential values as arguments. Install the Chromium revision belonging to
 the pinned Playwright dependency on the execution machine. Chromium serves the
 exact local export through route interception under the production origin; Worker
-requests, public phone reads, signatures and receipts are real. No web server is
+requests, phone ticket reads, signatures and receipts are real. No web server is
 started. The private key and RPC access key stay in Node; only the stage receives
 the presenter token. Its injected EIP-1193 provider delegates to a Node function.
 The preflight also exercises India and green filters and checks their exact query
@@ -72,6 +83,5 @@ and real-page visibility, receipt gas, errors, balance observations and cleanup.
 Scene lateness above one second is reported as an overrun. Setup and cleanup are
 separate from the twenty-minute talk clock. L6 verifies the demo changes neither
 owner nor creator and sends no transaction. L8 preserves the written phone's
-actual heading and verifies resources on a fresh QR scan: written phones stop
-polling the writer after inclusion. The rehearsal refuses to replace an existing
+actual heading and verifies resources on a fresh QR scan. The rehearsal refuses to replace an existing
 session and ends only its own session, including on failure.

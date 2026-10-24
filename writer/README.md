@@ -63,6 +63,22 @@ SameSite=None cookie. Send requests with credentials enabled when cookies are av
 The header continues to work when a browser blocks third-party cookies. A conflicting
 header and cookie is rejected. Limits never use the venue's shared IP address.
 
+Written phones continue polling their ticket every five seconds and never call
+an RPC. The ticket supplies the current canonical block, whether its entity is
+live and its latest observed expiration block. A Durable Object cache shares one
+keyed session query across every phone for two seconds; its response provides the
+block number, so no separate block RPC is needed. Only keys and expiration blocks
+are selected. SDK 0.8.1 caps a query page at 200 entities: a room of up to 200 uses
+one query, and 201–400 entities share two cursor pages at the same block.
+Last observed extensions survive Durable Object eviction and later expiration.
+Failed reads return a retryable 503 and share a two-second backoff; they never
+report an upstream failure as Entity Expiration. Refreshes run outside the request
+mutex. A create receipt newer than the cache prevents a false absence result.
+
+The presenter-only `GET /api/presenter/read-metrics` reports upstream request
+attempts by RPC method, ticket query counts, HTTP/RPC 429s, errors and daily Worker
+request usage. It exposes no credentials, request bodies or signed bytes.
+
 Presenter routes and `POST /api/rpc` require `Authorization: Bearer <token>`.
 The proxy accepts only `RPC_READ_ALLOWLIST`; neither the key nor upstream error
 details appear in responses. CORS permits only `ALLOWED_ORIGINS` and all responses
