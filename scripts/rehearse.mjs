@@ -310,8 +310,8 @@ async function sceneWork(id, step) {
   });
   if (id === "L8") await op("build phase and fresh QR resources", async () => {
     await expect.poll(async () => (await presenter("status")).phase, { timeout: 15000 }).toBe("build");
-    // Written phones intentionally stop polling the writer. Preserve that page and
-    // report its actual state; a fresh scan is the route to the L8 resources.
+    // Preserve the written phone's actual state without reloading it; also verify
+    // the fresh-scan route to the L8 resources.
     report.l8WrittenPhoneHeading = await phone.locator("h1").textContent();
     const resources = await phone.context().newPage(); observe(resources, "resources");
     await resources.goto(`${ORIGIN}/j?s=${session}`, { waitUntil: "domcontentloaded" });

@@ -2,7 +2,7 @@
     "network":  "Tiramisu",
     "sdkVersion":  "0.8.1",
     "workerUrl":  "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev",
-    "deployedVersion":  "c221c14e-fd84-481d-b625-b62d6e42a231",
+    "deployedVersion":  "df67fc27-80da-4ca9-b5ca-871a388e3ee6",
     "buildJob":  "j-baaef08748ac445183e90ee0191d5c19",
     "writerLintJob":  "j-1151ce6c2cf84209a4644d7f3d91d0f9",
     "checks":  {
@@ -39,5 +39,20 @@
                      "visibilityScope":  "Stage-equivalent keyed query visibility; browser paint not measured"
                  },
     "cleanLanePretestJob":  "j-22e71afe631f4921831493768918bfe0",
-    "deployedBundleSha256":  "e2c0893aacfb1896895cbf0adeccf88779e682c4efdd4f07b3f43390d0e05d1a"
+    "deployedBundleSha256":  "b0459490d4a58d273a817f18dc5f5eac763fd17d32da443e75d6e4fc2d2c92e0",
+    "ticketReadRelease":  {
+                              "sourceCommit":  "4a6b620",
+                              "contractBase":  "891e251",
+                              "validationJob":  "j-950eaaa6c73a4a04a4f67489e90de553",
+                              "testsPassed":  39,
+                              "report":  "writer/ticket-read-load.json",
+                              "requests":  7200,
+                              "upstreamCalls":  93,
+                              "sessionQueries":  81,
+                              "p95Ms":  483,
+                              "client429":  0,
+                              "upstream429":  0,
+                              "workerRequestsAfter":  19050,
+                              "scope":  "Backend ticket reads; historical written tickets, zero writes or gas. Extension/expiration covered by workerd regression tests."
+                          }
 }

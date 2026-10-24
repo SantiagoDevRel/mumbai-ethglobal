@@ -11,11 +11,21 @@ const source = (await readFile(new URL("../dist/index.js", import.meta.url), "ut
 const presenter = "test-presenter-credential";
 const auth = { authorization: `Bearer ${presenter}`, "content-type": "application/json" };
 
-async function fixture(profile = "tiramisu", balance = "0x8ac7230489e80000", onRpc) {
+async function fixture(profile = "tiramisu", balance = "0x8ac7230489e80000", onRpc, seedable = false) {
   const calls = [];
   const mf = new Miniflare(convertV4MiniflareOptions({
-    modules: true, script: source, compatibilityDate: "2026-10-01", compatibilityFlags: ["nodejs_compat"],
-    durableObjects: { WRITER: { className: "WriterObject", useSQLite: true } },
+    modules: true, script: source + (seedable ? `
+      export class TicketTestObject extends WriterObject {
+        async fetch(request) {
+          if (new URL(request.url).pathname === '/_test/seed') {
+            await this.ready;
+            await this.state.storage.put(await request.json());
+            return Response.json({ seeded: true });
+          }
+          return super.fetch(request);
+        }
+      }` : ""), compatibilityDate: "2026-10-01", compatibilityFlags: ["nodejs_compat"],
+    durableObjects: { WRITER: { className: seedable ? "TicketTestObject" : "WriterObject", useSQLite: true } },
     bindings: { ARKIV_PROFILE: profile, MIN_WRITER_BALANCE_WEI: "8000000000000000000", ALLOWED_ORIGINS: "https://app.example", RPC: "https://rpc.example", ACCESS_KEY: "test-rpc-credential", WORKSHOP_PRESENTER_TOKEN: presenter, WORKSHOP_WRITER_PRIVATE_KEY: testKey },
     outboundService: async request => {
       const call = await request.json();
@@ -70,6 +80,45 @@ test("workerd enforces presenter auth, CORS, session state and per-device queuin
     await call("/api/presenter/session/end", {});
     assert.equal((await call(`/api/ticket/${accepted.data.ticket}`, undefined, {})).data.status, "failed");
     assert.equal(calls.some(call => call.method.startsWith("eth_send")), false);
+  } finally { await mf.dispose(); }
+});
+
+test("200 written ticket HTTP reads share one keyed query and observe extension then expiration", async () => {
+  const ids = Array.from({ length: 200 }, () => crypto.randomUUID());
+  const keys = ids.map((_, index) => `0x${(index + 1).toString(16).padStart(64, "0")}`);
+  let block = 100, expiresAt = 150, live = true;
+  const { mf, call, calls } = await fixture("tiramisu", "0x8ac7230489e80000", async rpc => {
+    if (rpc.method === "arkiv_query") {
+      assert.match(rpc.params[0], /session = str\('ROOM'\)/);
+      assert.match(rpc.params[0], /\$creator = addr\(/);
+      return { blockNumber: `0x${block.toString(16)}`, data: live ? keys.map(key => ({ key, expiresAt: `0x${expiresAt.toString(16)}` })) : [] };
+    }
+  }, true);
+  try {
+    const rows = Object.fromEntries(ids.map((id, index) => [`ticket:${id}`, {
+      ticket: id, status: "written", entityKey: keys[index], block: "99", expiresAtBlock: "150", lat: 0, lng: 0,
+      dot: { session: "ROOM" }, device: "private-device", acceptedAt: 0,
+    }]));
+    assert.equal((await call("/_test/seed", rows)).status, 200);
+    const wave = () => Promise.all(ids.map(id => call(`/api/ticket/${id}`, undefined, {})));
+    const first = await wave();
+    assert.ok(first.every(response => response.status === 200 && response.data.live && response.data.currentBlock === "100"), JSON.stringify({ first: first[0], rpc: calls }));
+    assert.ok(first.every(response => !("dot" in response.data) && !("device" in response.data)));
+    assert.equal(calls.filter(call => call.method === "arkiv_query").length, 1);
+    assert.equal(calls.filter(call => call.method === "eth_blockNumber").length, 0);
+    block = 101; expiresAt = 750;
+    await new Promise(resolve => setTimeout(resolve, 2050));
+    const extended = await wave();
+    assert.ok(extended.every(response => response.data.expiresAtBlock === "750" && response.data.live));
+    assert.equal(calls.filter(call => call.method === "arkiv_query").length, 2);
+    block = 750; live = false;
+    await new Promise(resolve => setTimeout(resolve, 2050));
+    const expired = await wave();
+    assert.ok(expired.every(response => response.data.expiresAtBlock === "750" && response.data.currentBlock === "750" && response.data.live === false));
+    assert.equal(calls.filter(call => call.method === "arkiv_query").length, 3);
+    assert.equal((await call("/api/presenter/read-metrics", undefined, {})).status, 401);
+    const metrics = (await call("/api/presenter/read-metrics")).data;
+    assert.equal(metrics.ticketQueries, 3); assert.equal(metrics.http429, 0);
   } finally { await mf.dispose(); }
 });
 

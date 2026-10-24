@@ -9,7 +9,9 @@ export interface SendJournal {
   beforeSend(raw: Hex, hash: Hex): Promise<void>;
 }
 
-export function createSdkClients(options: AdapterOptions, journal?: SendJournal) {
+export type RpcObserver = (event: { method: string; phase: "request" | "response" | "error"; httpStatus?: number; rpcCode?: number }) => void;
+
+export function createSdkClients(options: AdapterOptions, journal?: SendJournal, observe?: RpcObserver) {
   const { profile, read } = options;
   if (!profile.ready || !profile.chainId) throw new NetworkNotConfiguredError("profile is not ready");
   if ("window" in globalThis && (read.kind === "keyed" || options.wallet?.kind === "privateKey")) {
@@ -32,13 +34,19 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal)
       const headers: Record<string, string> = { "content-type": "application/json" };
       if (read.kind === "keyed") headers["X-API-KEY"] = read.accessKey;
       if (read.kind === "proxy") headers.authorization = `Bearer ${read.presenterToken}`;
+      observe?.({ method, phase: "request" });
+      try {
       const response = await fetch(url, {
         method: "POST", headers,
         body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params: params ?? [] }),
         signal: AbortSignal.timeout(20_000),
       });
-      if (!response.ok) throw new Error(`RPC request rejected (${response.status}).`);
+      if (!response.ok) {
+        observe?.({ method, phase: "response", httpStatus: response.status });
+        throw new Error(`RPC request rejected (${response.status}).`);
+      }
       const body = await response.json() as { result?: unknown; error?: { code: number; message: string; data?: unknown } };
+      observe?.({ method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code });
       if (body.error) {
         const error = new Error(body.error.message) as Error & { code: number; data?: unknown };
         error.code = body.error.code;
@@ -46,6 +54,7 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal)
         throw error;
       }
       return body.result;
+      } catch (error) { observe?.({ method, phase: "error" }); throw error; }
     },
   }, { retryCount: 0 });
   const reader = createPublicClient({ chain, transport, cacheTime: 0, pollingInterval: 500 });

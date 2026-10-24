@@ -63,6 +63,39 @@ SameSite=None cookie. Send requests with credentials enabled when cookies are av
 The header continues to work when a browser blocks third-party cookies. A conflicting
 header and cookie is rejected. Limits never use the venue's shared IP address.
 
+Written phones continue polling their ticket every five seconds and never call
+an RPC. The ticket supplies the current canonical block, whether its entity is
+live and its latest observed expiration block. A Durable Object cache shares one
+keyed session query across every phone for two seconds; its response provides the
+block number, so no separate block RPC is needed. Only keys and expiration blocks
+are selected. SDK 0.8.1 caps a query page at 200 entities: a room of up to 200 uses
+one query, and 201–400 entities share two cursor pages at the same block.
+Last observed extensions survive Durable Object eviction and later expiration.
+Failed reads return a retryable 503 and share a two-second backoff; they never
+report an upstream failure as Entity Expiration. Refreshes run outside the request
+mutex. A create receipt newer than the cache prevents a false absence result.
+
+The presenter-only `GET /api/presenter/read-metrics` reports upstream request
+attempts by RPC method, ticket query counts, HTTP/RPC 429s, errors and daily Worker
+request usage. It exposes no credentials, request bodies or signed bytes.
+
+`ticket-read-load.json` preserves the production read-path campaign: 200 distinct
+historical written tickets polling every five seconds for three minutes, 7,200
+successful reads, p50 225 ms, p95 483 ms and maximum 1,042 ms. There were no client
+or upstream 429s and no errors. The Worker made 93 upstream calls: 81 session
+queries and six chain-ID/timing check pairs, with no block-number calls. Each
+observed query block was shared across the room. Daily request usage moved from
+11,849 to 19,050; the 7,201-request delta includes the final metrics read. No
+session changes, creates or signatures were used. Historical tickets exercise the
+same keyed cache path after expiration; live extensions and expiration were
+verified separately in the 200-ticket workerd regression test. All 39 tests passed.
+The report includes per-round latency, upstream counters and the full raw sample
+report's SHA-256; those raw samples are retained in operator evidence storage.
+The deployed version is `df67fc27-80da-4ca9-b5ca-871a388e3ee6` from `4a6b620`.
+The cache reduces upstream RPC traffic; Worker requests still scale with phones.
+At this polling cadence, 200 phones use 40 requests per second, or 48,000 across
+twenty minutes, before presenter, session and browser preflight traffic.
+
 Presenter routes and `POST /api/rpc` require `Authorization: Bearer <token>`.
 The proxy accepts only `RPC_READ_ALLOWLIST`; neither the key nor upstream error
 details appear in responses. CORS permits only `ALLOWED_ORIGINS` and all responses
