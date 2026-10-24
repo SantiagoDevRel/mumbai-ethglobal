@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+/* Arkiv brand tokens (approved palette only, WORKSHOP.md 9.4). Dot colors are participant data
+   and are not tokens. The design canvas may refine the neutral steps below. */
+:root {
+  --arkiv-blue: #181ea9;
+  --arkiv-orange: #fe7446;
+  --arkiv-ink: #111111;
+  --arkiv-sand: #f6f4ef;
+  --arkiv-stone: #e9e6de;
+
+  /* Stage (projector) is always dark. */
+  --stage-bg: #07081f;
+  --stage-fg: var(--arkiv-sand);
+  --stage-muted: #a9a7b8;
+  --panel-bg: rgba(17, 17, 17, 0.82);
+  --panel-fg: var(--arkiv-sand);
+  --panel-border: rgba(246, 244, 239, 0.14);
+  --app-side: #ffd23f;
+
+  /* Phone follows the system theme. */
+  --phone-bg: var(--arkiv-sand);
+  --phone-fg: var(--arkiv-ink);
+  --phone-card: #ffffff;
+  --phone-muted: #5b5a63;
+  --phone-border: var(--arkiv-stone);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --phone-bg: #0c0d24;
+    --phone-fg: var(--arkiv-sand);
+    --phone-card: #15163a;
+    --phone-muted: #a9a7b8;
+    --phone-border: rgba(246, 244, 239, 0.16);
+  }
+}
+
+@theme inline {
+  --color-arkiv-blue: var(--arkiv-blue);
+  --color-arkiv-orange: var(--arkiv-orange);
+  --color-arkiv-ink: var(--arkiv-ink);
+  --color-arkiv-sand: var(--arkiv-sand);
+  --color-arkiv-stone: var(--arkiv-stone);
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
+body {
+  background: var(--stage-bg);
+  color: var(--stage-fg);
+  -webkit-font-smoothing: antialiased;
+}

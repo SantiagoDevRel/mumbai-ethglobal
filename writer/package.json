@@ -1,0 +1,23 @@
+{
+  "name": "mumbai-workshop-writer",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types \"test/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@arkiv-network/sdk": "0.8.1",
+    "viem": "2.57.11",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261024.1",
+    "typescript": "5.9.3",
+    "wrangler": "4.152.0"
+  }
+}

@@ -1,0 +1,200 @@
+// In-memory adapter so the UI can be built before the chain is wired. It simulates blocks,
+// Entity Expiration and Lifetime Extension. Never shown as live: the stage labels mock data.
+
+import type { ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter";
+import { getProfile, WRITER_ADDRESS } from "./profiles";
+import type {
+  BlockInfo,
+  ChainFilters,
+  EntityAttrs,
+  Hex,
+  LiveEntity,
+  QueryDescription,
+  QueryRun,
+  RawAttribute,
+  WriteResult,
+} from "../types";
+import { APP_ID } from "../types";
+import { DOT_PALETTE, encodeCoord, encodeRating } from "../encoding";
+
+export interface MockOptions {
+  blockTimeMs?: number;
+  /** Spawn a random dot every N ms (0 = off). */
+  autoSpawnMs?: number;
+}
+
+function randomHex(bytes: number): Hex {
+  let s = "0x";
+  for (let i = 0; i < bytes; i++) s += Math.floor(Math.random() * 256).toString(16).padStart(2, "0");
+  return s as Hex;
+}
+
+function rawOf(attrs: EntityAttrs): RawAttribute[] {
+  const out: RawAttribute[] = [{ name: "app", type: "str", stored: APP_ID }];
+  for (const [name, value] of Object.entries(attrs)) {
+    if (value === undefined) continue;
+    if (name === "lat" || name === "lng") out.push({ name, type: "i32", stored: String(encodeCoord(value as number)) });
+    else if (name === "rating") out.push({ name, type: "i32", stored: String(encodeRating(value as number)) });
+    else if (typeof value === "number") out.push({ name, type: "i32", stored: String(value) });
+    else if (name === "business") out.push({ name, type: "key", stored: String(value) });
+    else out.push({ name, type: "str", stored: String(value) });
+  }
+  return out;
+}
+
+/** Same text shape the SDK adapter produces, so the panel looks right on mock data. */
+export function describeFilters(filters: ChainFilters, creator: Hex): QueryDescription {
+  const where: string[] = [`eq("app", "${APP_ID}")`];
+  const q: string[] = [`app = "${APP_ID}"`];
+  if (filters.kinds.length === 1) {
+    where.push(`eq("kind", "${filters.kinds[0]}")`);
+    q.push(`kind = "${filters.kinds[0]}"`);
+  }
+  if (filters.session) { where.push(`eq("session", "${filters.session}")`); q.push(`session = "${filters.session}"`); }
+  if (filters.color) { where.push(`eq("color", "${filters.color}")`); q.push(`color = "${filters.color}"`); }
+  if (filters.country) { where.push(`eq("country", "${filters.country}")`); q.push(`country = "${filters.country}"`); }
+  if (filters.viewport) {
+    const v = filters.viewport;
+    where.push(
+      `gte("lat", ${encodeCoord(v.minLat)})`, `lte("lat", ${encodeCoord(v.maxLat)})`,
+      `gte("lng", ${encodeCoord(v.minLng)})`, `lte("lng", ${encodeCoord(v.maxLng)})`,
+    );
+    q.push(`lat >= ${encodeCoord(v.minLat)} && lat <= ${encodeCoord(v.maxLat)} && lng >= ${encodeCoord(v.minLng)} && lng <= ${encodeCoord(v.maxLng)}`);
+  }
+  if (filters.category) { where.push(`eq("category", "${filters.category}")`); q.push(`category = "${filters.category}"`); }
+  if (filters.minRating !== undefined) { where.push(`gte("rating", ${encodeRating(filters.minRating)})`); q.push(`rating >= ${encodeRating(filters.minRating)}`); }
+  if (filters.business) { where.push(`eq("business", key("${filters.business}"))`); q.push(`business = ${filters.business}`); }
+  const owner = filters.owner ? `\n  .ownedBy("${filters.owner}")` : "";
+  if (filters.owner) q.push(`$owner = ${filters.owner}`);
+  q.push(`$creator = ${creator}`);
+  const code = `const result = await client\n  .select()\n  .where(\n    ${where.join(",\n    ")},\n  )${owner}\n  .createdBy("${creator}")\n  .fetch()`;
+  return { code, query: q.join(" && "), appSide: [] };
+}
+
+export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
+  spawnRandom(): void;
+  stop(): void;
+} {
+  const profile = getProfile("tiramisu");
+  const blockTimeMs = opts.blockTimeMs ?? 2000;
+  const genesis = Date.now();
+  const store = new Map<Hex, LiveEntity>();
+  const currentBlock = () => BigInt(1_000_000 + Math.floor((Date.now() - genesis) / blockTimeMs));
+  const blocksFor = (sec: number) => BigInt(Math.ceil((sec * 1000) / blockTimeMs));
+
+  const write = (items: { attrs: EntityAttrs; lifetimeSec: number }[]): WriteResult => {
+    const block = currentBlock();
+    const keys = items.map(({ attrs, lifetimeSec }) => {
+      const key = randomHex(32);
+      store.set(key, {
+        key,
+        owner: WRITER_ADDRESS,
+        creator: WRITER_ADDRESS,
+        createdAtBlock: block,
+        expiresAtBlock: block + blocksFor(lifetimeSec),
+        attrs,
+        raw: rawOf(attrs),
+      });
+      return key;
+    });
+    return { txHash: randomHex(32), block, keys };
+  };
+
+  const matches = (e: LiveEntity, f: ChainFilters): boolean => {
+    const a = e.attrs as unknown as Record<string, unknown>;
+    if (!f.kinds.includes(e.attrs.kind)) return false;
+    if (f.session && a.session !== f.session) return false;
+    if (f.color && a.color !== f.color) return false;
+    if (f.country && a.country !== f.country) return false;
+    if (f.owner && e.owner.toLowerCase() !== f.owner.toLowerCase()) return false;
+    if (f.category && a.category !== f.category) return false;
+    if (f.minRating !== undefined && (a.rating as number) < f.minRating) return false;
+    if (f.business && a.business !== f.business) return false;
+    if (f.viewport) {
+      const lat = a.lat as number, lng = a.lng as number;
+      if (lat < f.viewport.minLat || lat > f.viewport.maxLat || lng < f.viewport.minLng || lng > f.viewport.maxLng) return false;
+    }
+    if (f.expiringWithinSec !== undefined && e.expiresAtBlock - currentBlock() > blocksFor(f.expiringWithinSec)) return false;
+    return true;
+  };
+
+  const names = ["Priya", "Arjun", "Ananya", "Rohan", "Meera", "Kabir", "Sara", "Diego", "Lena", "Yuki", "Omar", "Ada"];
+  const spots: [string, number, number][] = [
+    ["IN", 19.07, 72.88], ["IN", 28.61, 77.21], ["IN", 12.97, 77.59], ["IN", 22.57, 88.36], ["IN", 26.91, 75.79],
+    ["CO", 6.24, -75.58], ["DE", 52.52, 13.4], ["US", 37.77, -122.42], ["BR", -23.55, -46.63], ["JP", 35.68, 139.69],
+  ];
+  const spawnRandom = () => {
+    const [country, lat, lng] = spots[Math.floor(Math.random() * spots.length)]!;
+    write([{
+      attrs: {
+        kind: "dot",
+        session: "MOCK",
+        name: names[Math.floor(Math.random() * names.length)]!,
+        color: DOT_PALETTE[Math.floor(Math.random() * DOT_PALETTE.length)]!,
+        country,
+        lat: lat + (Math.random() - 0.5) * 3,
+        lng: lng + (Math.random() - 0.5) * 3,
+      },
+      lifetimeSec: 20 + 10 * Math.floor(Math.random() * 11),
+    }]);
+  };
+  const timer = opts.autoSpawnMs ? setInterval(spawnRandom, opts.autoSpawnMs) : null;
+
+  return {
+    profile,
+    creator: WRITER_ADDRESS,
+    async getBlock(): Promise<BlockInfo> {
+      return { number: currentBlock(), timestampMs: Date.now(), blockTimeMs };
+    },
+    async query<T extends EntityAttrs>(filters: ChainFilters): Promise<QueryRun<T>> {
+      const started = performance.now();
+      const block = currentBlock();
+      for (const [k, e] of store) if (e.expiresAtBlock <= block) store.delete(k);
+      const entities = [...store.values()].filter((e) => matches(e, filters)) as LiveEntity<T>[];
+      return {
+        entities,
+        description: describeFilters(filters, WRITER_ADDRESS),
+        block,
+        rows: entities.length,
+        pages: 1,
+        latencyMs: Math.round(performance.now() - started + 40),
+        ranAt: Date.now(),
+      };
+    },
+    describe: (filters) => describeFilters(filters, WRITER_ADDRESS),
+    async createDots(dots: DotCreate[]) {
+      return write(dots.map(({ lifetimeSec, ...d }) => ({ attrs: { kind: "dot", ...d }, lifetimeSec })));
+    },
+    async createBusinesses(items: BusinessCreate[]) {
+      return write(items.map(({ lifetimeSec, ...b }) => ({ attrs: { kind: "business", ...b }, lifetimeSec })));
+    },
+    async createReviews(items: ReviewCreate[]) {
+      return write(items.map(({ lifetimeSec, ...r }) => ({ attrs: { kind: "review", ...r }, lifetimeSec })));
+    },
+    async extend(keys: Hex[], addSeconds: number) {
+      for (const k of keys) {
+        const e = store.get(k);
+        if (e) e.expiresAtBlock += blocksFor(addSeconds);
+      }
+      return { txHash: randomHex(32), block: currentBlock(), keys };
+    },
+    async patch(key: Hex, fields: PatchFields, current: EntityAttrs) {
+      const e = store.get(key);
+      if (e) {
+        e.attrs = { ...current, ...fields } as EntityAttrs;
+        e.raw = rawOf(e.attrs);
+        e.updatedAtBlock = currentBlock();
+      }
+      return { txHash: randomHex(32), block: currentBlock(), keys: [key] };
+    },
+    async changeOwner(key: Hex, newOwner: Hex) {
+      const e = store.get(key);
+      if (e) e.owner = newOwner;
+      return { txHash: randomHex(32), block: currentBlock(), keys: [key] };
+    },
+    spawnRandom,
+    stop() {
+      if (timer) clearInterval(timer);
+    },
+  };
+}

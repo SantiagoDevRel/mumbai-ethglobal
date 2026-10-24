@@ -1,0 +1,20 @@
+name = "mumbai-workshop-writer"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Secrets (set with `wrangler secret put`, never committed):
+#   WORKSHOP_WRITER_PRIVATE_KEY, RPC, ACCESS_KEY, WORKSHOP_PRESENTER_TOKEN
+
+[vars]
+ARKIV_PROFILE = "tiramisu"
+# Origins allowed by CORS (the Vercel app and local dev).
+ALLOWED_ORIGINS = "http://localhost:3000"
+
+[[durable_objects.bindings]]
+name = "WRITER"
+class_name = "WriterObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["WriterObject"]

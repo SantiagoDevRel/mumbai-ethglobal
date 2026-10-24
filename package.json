@@ -1,0 +1,43 @@
+{
+  "name": "mumbai-ethglobal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "From zero to hero with Arkiv, the Web3 database: the ETHGlobal Mumbai workshop app.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "npx serve out",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
+    "check:network": "node --experimental-strip-types scripts/check-network.ts",
+    "seed": "node --experimental-strip-types scripts/seed.ts",
+    "loadtest": "node --experimental-strip-types scripts/loadtest.ts"
+  },
+  "dependencies": {
+    "@arkiv-network/sdk": "0.8.1",
+    "lucide-react": "1.61.0",
+    "maplibre-gl": "5.24.0",
+    "motion": "14.6.0",
+    "next": "16.4.3",
+    "qrcode": "1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "viem": "2.57.11",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "^22",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  }
+}
