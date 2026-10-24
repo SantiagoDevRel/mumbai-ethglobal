@@ -5,7 +5,7 @@
 // Layers, bottom to top:
 //   map      full viewport, always mounted (app chat)            z-0
 //   scene    1920x1080 box scaled to fit: deck Slide / Overlay     z-10
-//   hud      query panel, event log, filters, inspector (app chat) z-20
+//   hud      query panel, event log, filters, inspector (app chat) z-20, live scenes only
 //   qr       the corner QR (app chat)                              z-30
 //   controls the "?" keyboard overlay                              z-40
 
@@ -85,7 +85,8 @@ export function StageFrame({
         </AnimatePresence>
       </div>
 
-      {hud ? <div className="pointer-events-none absolute inset-0 z-20">{hud}</div> : null}
+      {/* Slides own the whole screen: the HUD shows only on live scenes. */}
+      {hud && scene.kind === "live" ? <div className="pointer-events-none absolute inset-0 z-20">{hud}</div> : null}
       {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
 
       {controls ? (
