@@ -1,5 +1,11 @@
 import type { BlockInfo, LiveEntity, QueryRun, StageEvent } from "../../shared/types.ts";
 
+export interface VisualStageEvent extends StageEvent {
+  color?: string;
+  country?: string;
+  lifetimeBlocks: bigint;
+}
+
 /** Interpolation is visual only. The query remains the authority for disappearance. */
 export function remainingSeconds(entity: LiveEntity, block: BlockInfo | null, now: number): number {
   if (!block || block.blockTimeMs <= 0) return 0;
@@ -7,13 +13,16 @@ export function remainingSeconds(entity: LiveEntity, block: BlockInfo | null, no
   return Math.max(0, (Number(entity.expiresAtBlock - block.number) * block.blockTimeMs - elapsed) / 1000);
 }
 
-export function diffEntities(previous: LiveEntity[], run: QueryRun, sameQuery: boolean): StageEvent[] {
+export function diffEntities(previous: LiveEntity[], run: QueryRun, sameQuery: boolean): VisualStageEvent[] {
   const before = new Map(previous.map((entity) => [entity.key, entity]));
   const after = new Set(run.entities.map((entity) => entity.key));
-  const events: StageEvent[] = [];
+  const events: VisualStageEvent[] = [];
   function add(entity: LiveEntity, type: StageEvent["type"], detail: string) {
     events.push({ id: `${run.block}:${entity.key}:${type}`, type, key: entity.key,
-      name: "name" in entity.attrs ? entity.attrs.name : "Review", detail, block: run.block, at: run.ranAt });
+      name: "name" in entity.attrs ? entity.attrs.name : "Review", detail, block: run.block, at: run.ranAt,
+      color: "color" in entity.attrs ? entity.attrs.color : undefined,
+      country: "country" in entity.attrs ? entity.attrs.country : undefined,
+      lifetimeBlocks: entity.expiresAtBlock - entity.createdAtBlock });
   }
   for (const entity of run.entities) {
     const old = before.get(entity.key);

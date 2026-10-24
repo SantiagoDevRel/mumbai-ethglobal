@@ -8,7 +8,7 @@ import { stage, type StageState } from "../../lib/stage/store";
 import { darkStyle } from "../../lib/map/style";
 import { mapViewport } from "../../lib/map/viewport";
 import { remainingSeconds } from "../../lib/data/entity-state";
-import { usePrefersReducedMotion } from "../stage/StageFrame";
+import { usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
 import countries from "../../shared/geo/countries.json";
 import { pointInPolygon, type LngLat } from "../../shared/geo/place";
 import { businessPresentation } from "../../lib/data/view-model";
@@ -32,6 +32,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reduced = usePrefersReducedMotion();
+  const stageScale = useStageScale();
   useEffect(() => { current.current = { entities, block, state }; }, [entities, block, state]);
 
   useEffect(() => {
@@ -46,18 +47,15 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
     let lastEntities = new Map<Hex, LiveEntity>();
     let hasLanded = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    void Promise.all([import("maplibre-gl"), darkStyle(controller.signal)]).then(([gl, style]) => {
+    void Promise.all([import("maplibre-gl"), darkStyle()]).then(([gl, style]) => {
       if (stopped || !container.current) return;
-      const map = new gl.Map({ container: container.current, style, center: [60, 18], zoom: 1.5, attributionControl: { compact: true }, canvasContextAttributes: { antialias: true } });
+      const map = new gl.Map({ container: container.current, style, center: [72, 19], zoom: 2.38, attributionControl: { compact: true, customAttribution: '© <a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>' }, canvasContextAttributes: { antialias: true } });
       instance = map;
       mapRef.current = map;
       map.on("error", () => { if (!stopped) setError("Map tiles unavailable. Retrying as you move the map."); });
       map.on("load", () => {
         if (stopped) return;
         map.setProjection({ type: "globe" });
-        map.setSky({ "sky-color": "#111111", "horizon-color": "#181ea9", "fog-color": "#181ea9", "sky-horizon-blend": 0.4, "horizon-fog-blend": 0.6, "fog-ground-blend": 0.1, "atmosphere-blend": 0.8 });
-        const building = style.layers.find((layer) => layer.type === "fill" && layer["source-layer"] === "building");
-        if (building && "source" in building) map.addLayer({ id: "workshop-buildings", type: "fill-extrusion", source: building.source, "source-layer": "building", minzoom: 14, paint: { "fill-extrusion-color": "#181ea9", "fill-extrusion-height": ["coalesce", ["get", "render_height"], 10], "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0], "fill-extrusion-opacity": 0.8 } });
         setReady(true);
         setError(null);
       });
@@ -66,7 +64,8 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         const hit = current.current.entities.map((entity) => {
           if (entity.attrs.kind === "review") return { entity, distance: Infinity };
           const point = map.project([entity.attrs.lng, entity.attrs.lat]);
-          return { entity, distance: Math.hypot(point.x - event.point.x, point.y - event.point.y) };
+          const scale = Math.min(map.getCanvas().clientWidth / 1920, map.getCanvas().clientHeight / 1080);
+          return { entity, distance: Math.hypot(point.x - event.point.x, point.y - (current.current.state.map === "business" ? 38 * scale : 0) - event.point.y) / scale };
         }).sort((a, b) => a.distance - b.distance)[0];
         if (hit && hit.distance < 26) {
           stage.dispatch({ type: "select", keys: [hit.entity.key], mode: event.originalEvent.shiftKey ? "toggle" : "set" });
@@ -74,7 +73,10 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         } else {
           const point: LngLat = [event.lngLat.wrap().lng, event.lngLat.lat];
           const country = countries.find((item) => point[0] >= item.bbox[0]! && point[0] <= item.bbox[2]! && point[1] >= item.bbox[1]! && point[1] <= item.bbox[3]! && pointInPolygon(point, item.polygon as LngLat[]));
-          if (country) map.fitBounds([[country.bbox[0]!, country.bbox[1]!], [country.bbox[2]!, country.bbox[3]!]], { padding: { top: 120, bottom: 210, left: 100, right: 310 }, duration: reducedMotion ? 0 : 1700, maxZoom: 10 });
+          if (country) {
+            const scale = Math.min(map.getCanvas().clientWidth / 1920, map.getCanvas().clientHeight / 1080);
+            map.fitBounds([[country.bbox[0]!, country.bbox[1]!], [country.bbox[2]!, country.bbox[3]!]], { padding: { top: 120 * scale, bottom: 272 * scale, left: 100 * scale, right: 456 * scale }, duration: reducedMotion ? 0 : 2400, maxZoom: 10 });
+          }
         }
       });
       resize = new ResizeObserver(() => map.resize());
@@ -103,7 +105,10 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         if (surface.width !== width * ratio || surface.height !== height * ratio) { surface.width = width * ratio; surface.height = height * ratio; }
         const ctx = surface.getContext("2d");
         if (!ctx) return;
-        const fontFamily = getComputedStyle(surface).fontFamily;
+        const css = getComputedStyle(surface);
+        const fontFamily = css.fontFamily;
+        const fontMono = css.getPropertyValue("--font-plex-mono") || "monospace";
+        const scale = Math.min(width / 1920, height / 1080);
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
         const active = new Map(entities.map((entity) => [entity.key, entity]));
@@ -111,7 +116,9 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         for (const [key, entity] of lastEntities) if (!active.has(key)) leaving.set(key, { entity, at: now });
         for (const [key, item] of leaving) if (now - item.at > 600) { leaving.delete(key); born.delete(key); }
         lastEntities = active;
-        for (const entity of [...entities, ...[...leaving.values()].map((item) => item.entity)]) {
+        const labels: { x: number; y: number; width: number; name: string; suffix: string; hot: boolean; appSide: boolean }[] = [];
+        const sorted = [...entities, ...[...leaving.values()].map((item) => item.entity)].sort((a, b) => Number(state.selected.includes(b.key)) - Number(state.selected.includes(a.key)) || Number(b.createdAtBlock - a.createdAtBlock));
+        for (const entity of sorted) {
           if (entity.attrs.kind === "review") continue;
           const a = entity.attrs;
           const point = map.project([a.lng, a.lat]);
@@ -123,31 +130,59 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
           const exit = leaving.get(entity.key);
           if (exit && now - exit.at > 600) { leaving.delete(entity.key); born.delete(entity.key); continue; }
           ctx.globalAlpha = exit ? Math.max(0, 1 - (now - exit.at) / 600) : 1;
-          const y = point.y - (reducedMotion ? 0 : Math.max(0, 1 - age / 600) ** 2 * 48);
+          const y = point.y - (reducedMotion ? 0 : Math.max(0, 1 - age / 360) ** 2 * 24 * scale);
           const color = a.color ?? "#fe7446";
           const seconds = remainingSeconds(entity, block, Date.now());
           const total = block ? Math.max(1, Number(entity.expiresAtBlock - entity.createdAtBlock) * block.blockTimeMs / 1000) : 1;
-          const radius = state.map === "business" ? 10 : 7;
           if (state.map === "owner" && !state.transferred) {
-            ctx.strokeStyle = "rgba(246,244,239,0.2)"; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo(width / 2, height * 0.24); ctx.stroke();
+            ctx.strokeStyle = "rgba(246,244,239,0.42)"; ctx.lineWidth = 1.5 * scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo((width - 1920 * scale) / 2 + 732 * scale, (height - 1080 * scale) / 2 + 320 * scale); ctx.stroke();
           }
-          ctx.fillStyle = color; ctx.strokeStyle = "#f6f4ef"; ctx.lineWidth = 1.3;
-          ctx.beginPath(); ctx.arc(point.x, y, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          ctx.strokeStyle = color; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.arc(point.x, y, radius + 5, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, seconds / total)); ctx.stroke();
-          if ((!reducedMotion && age < 1000) || (!reducedMotion && seconds <= 0)) {
-            const phase = age < 1000 ? age / 1000 : (now % 1300) / 1300;
-            ctx.globalAlpha *= 1 - phase; ctx.beginPath(); ctx.arc(point.x, y, radius + phase * 26, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = exit ? Math.max(0, 1 - (now - exit.at) / 600) : 1;
+          if (state.panels.inspector && state.inspected === entity.key) {
+            ctx.strokeStyle = "rgba(246,244,239,.42)"; ctx.lineWidth = scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo((width - 1920 * scale) / 2 + (state.map === "business" ? 1464 : 1032) * scale, (height - 1080 * scale) / 2 + 340 * scale); ctx.stroke();
           }
+          const selected = state.selected.includes(entity.key);
+          const business = businessPresentation(entity);
+          ctx.save(); ctx.translate(point.x, y); ctx.scale(scale, scale);
+          if (selected) { ctx.strokeStyle = "#f6f4ef"; ctx.lineWidth = 2; ctx.shadowColor = "rgba(246,244,239,.12)"; ctx.shadowBlur = 6; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0; }
           if (state.map === "business") {
-            const business = businessPresentation(entity);
-            const rgb = color.slice(1).match(/.{2}/g)?.map((value) => parseInt(value, 16)) ?? [0, 0, 0];
-            ctx.save(); ctx.translate(point.x - 7, y - 7); ctx.scale(14 / 24, 14 / 24); ctx.lineWidth = 2;
-            ctx.strokeStyle = (rgb[0]! * 0.299 + rgb[1]! * 0.587 + rgb[2]! * 0.114) > 150 ? "#111111" : "#f6f4ef";
-            ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke(categoryIcons[business.category]!); ctx.restore();
+            ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.beginPath(); ctx.ellipse(0, 0, 6, 3, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = selected ? "#fe7446" : business.appSide ? "rgba(246,244,239,.75)" : "#f6f4ef";
+            ctx.fillRect(-2, -16, 4, 16); ctx.beginPath(); ctx.roundRect(-22, -60, 44, 44, 12); ctx.fill();
+            ctx.strokeStyle = selected ? "#f6f4ef" : "#111111"; ctx.lineWidth = selected ? 4 : 2;
+            if (business.appSide) ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
+            ctx.save(); ctx.translate(-12, -50); ctx.strokeStyle = "#111111"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke(categoryIcons[business.category]!); ctx.restore();
+          } else {
+            if (!reducedMotion && seconds < 5) { const pulse = 1.125 + Math.sin(now / 800 * Math.PI * 2) * .125; ctx.scale(pulse, pulse); }
+            ctx.strokeStyle = "rgba(246,244,239,.2)"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
+            ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, seconds / total)); ctx.stroke();
+            if (seconds <= 0) { ctx.save(); ctx.globalAlpha *= .35; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+            ctx.fillStyle = color; ctx.strokeStyle = "#f6f4ef"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            if (!reducedMotion && age < 900) {
+              const phase = age / 900;
+              ctx.save(); ctx.globalAlpha *= 1 - phase; ctx.strokeStyle = color; ctx.lineWidth = 2;
+              for (const radius of [28, 44]) { ctx.beginPath(); ctx.arc(0, 0, 13 + (radius - 13) * phase, 0, Math.PI * 2); ctx.stroke(); }
+              ctx.restore();
+            }
           }
-          ctx.fillStyle = "#f6f4ef"; ctx.font = `500 13px ${fontFamily}`; ctx.textAlign = "center"; ctx.shadowColor = "#111111"; ctx.shadowBlur = 5;
-          ctx.fillText(state.map === "owner" && state.transferred ? `${a.name} · owner` : a.name, point.x, y + radius + 23); ctx.shadowBlur = 0;
+          ctx.restore();
+          if (!exit) {
+            const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.name;
+            const suffix = state.map === "business" ? business.rating.toFixed(1) : `${Math.ceil(seconds)} s`;
+            ctx.font = `600 16px ${fontFamily}`;
+            const labelWidth = ctx.measureText(name).width + suffix.length * 8.5 + 36;
+            const label = { x: point.x + (state.map === "business" ? 28 : 22) * scale, y: y - (state.map === "business" ? 52 : 15) * scale, width: labelWidth, name, suffix, hot: seconds < 5 || state.map === "business", appSide: state.map === "business" && business.appSide };
+            if (!labels.some((other) => label.x < other.x + other.width * scale + 8 && label.x + label.width * scale + 8 > other.x && label.y < other.y + 36 * scale && label.y + 36 * scale > other.y)) labels.push(label);
+          }
+        }
+        ctx.globalAlpha = 1;
+        for (const label of labels.reverse()) {
+          ctx.save(); ctx.translate(label.x, label.y); ctx.scale(scale, scale);
+          ctx.fillStyle = state.map === "owner" && state.transferred ? "#f6f4ef" : "rgba(17,17,17,.84)"; ctx.strokeStyle = "rgba(246,244,239,.14)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.roundRect(0, 0, label.width, 30, 8); ctx.fill(); ctx.stroke();
+          ctx.fillStyle = state.map === "owner" && state.transferred ? "#111111" : "#f6f4ef"; ctx.font = `600 16px ${fontFamily}`; ctx.textAlign = "left"; ctx.fillText(label.name, 10, 21);
+          const nameWidth = ctx.measureText(label.name).width;
+          ctx.fillStyle = label.hot ? "#fe7446" : state.map === "owner" && state.transferred ? "rgba(17,17,17,.64)" : "rgba(246,244,239,.64)"; ctx.font = `400 14px ${fontMono}`; ctx.fillText(label.suffix, nameWidth + 20, 20);
+          if (label.appSide) { ctx.fillStyle = "#f6f4ef"; ctx.font = `400 14px ${fontMono}`; ctx.fillText("app-side", 0, 47); }
+          ctx.restore();
         }
         ctx.globalAlpha = 1;
         for (const key of born.keys()) if (!active.has(key) && !leaving.has(key)) born.delete(key);
@@ -161,8 +196,9 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
     const map = mapRef.current;
     if (!map || !ready || state.camera.cue === "keep") return;
     const cue = state.camera.cue;
-    const view = cue === "india" ? { center: [79, 23] as [number, number], zoom: 4, pitch: 0 } : cue === "mumbai-street" ? { center: [72.8777, 19.076] as [number, number], zoom: 15.5, pitch: 58 } : { center: [60, 18] as [number, number], zoom: 1.5, pitch: 0 };
-    map.flyTo({ ...view, bearing: cue === "mumbai-street" ? -24 : 0, duration: reduced ? 0 : 2400 });
-  }, [ready, reduced, state.camera]);
+    const scale = stageScale;
+    const view = cue === "india" ? { center: [82, 19.2] as [number, number], zoom: 4.5, pitch: 0 } : cue === "mumbai-street" ? { center: [72.8335, 18.9275] as [number, number], zoom: 15.9, pitch: 60 } : { center: [72, 19] as [number, number], zoom: 2.38, pitch: 0 };
+    map.flyTo({ ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 0, bottom: 272 * scale }, bearing: cue === "mumbai-street" ? -22 : 0, duration: reduced ? 0 : 2400, easing: (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
+  }, [ready, reduced, state.camera, stageScale]);
   return <div className="globe-shell"><div ref={container} className="globe-map" aria-label="Interactive globe of Arkiv entities" /><canvas ref={canvas} className="globe-dots" aria-hidden="true" />{error && <p className="map-error" role="status">{error}</p>}</div>;
 }
