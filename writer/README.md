@@ -51,12 +51,15 @@ npx wrangler deploy --dry-run --outdir dist
 ```
 
 Deploy the resulting `dist/index.js` with `wrangler deploy dist/index.js --no-bundle`.
+
+Current deployment (October 24): version `430f0a2d-b5a3-4736-ad36-535bfd72f2b0`, with the code-less
+`GET /api/session` and the 5-15 minute lifetime range. Version notes further down are history.
 Configure `RPC`, `ACCESS_KEY`, `WORKSHOP_WRITER_PRIVATE_KEY`, and
 `WORKSHOP_PRESENTER_TOKEN` as Worker secrets, never as committed files.
 
 ## Public and presenter API
 
-`GET /api/session?s=<code>`, `POST /api/submit`, and `GET /api/ticket/<ticket>`
+`GET /api/session` (returns the running session code; phones type no code; `?s=<code>` still checks one), `POST /api/submit`, and `GET /api/ticket/<ticket>`
 implement the phone contract. Submit sends `x-device-token` (a random identifier
 persisted by the phone); the writer also sets `workshop_device`, a Secure, HttpOnly,
 SameSite=None cookie. Send requests with credentials enabled when cookies are available.

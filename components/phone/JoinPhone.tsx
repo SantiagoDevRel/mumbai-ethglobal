@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
 import { DOT_PALETTE, normalizeColor, shortKey } from "../../shared/encoding";
 import { explorerUrl, getProfile } from "../../shared/arkiv/profiles";
 import { SessionPublic, SubmitRequest, SubmitResponse } from "../../shared/writer-api";
 import type { DotDraft, Hex } from "../../shared/types";
-import { LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, NAME_MAX_CHARS, MAX_ENTITIES_PER_DEVICE } from "../../shared/types";
+import { LIFETIME_DEFAULT_SEC, LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, NAME_MAX_CHARS, MAX_ENTITIES_PER_DEVICE } from "../../shared/types";
 import { deviceToken, writerRequest, WriterRequestError, WRITER_ROUTES, WRITER_URL } from "../../lib/data/writer-client";
-import { phoneWriteMessage, ticketSeconds } from "../../lib/data/phone-ticket";
+import { phoneWriteMessage, ticketSeconds, writeBlockMs } from "../../lib/data/phone-ticket";
 import { usePhoneTicket } from "../../lib/data/usePhoneTicket";
 import { CountryPicker } from "./CountryPicker";
 import { LifetimeRing } from "./LifetimeRing";
-import { SessionCodeForm } from "./SessionCodeForm";
 import { Plus, ArrowUpRight, BookOpen, Plug, Terminal, Gift } from "lucide-react";
 import "./phone.css";
 
@@ -24,7 +24,7 @@ export function JoinPhone() {
   const [device, setDevice] = useState("");
   const [sessionInfo, setSessionInfo] = useState<SessionPublic | null>(null);
   const [state, setState] = useState<PhoneState>({ status: "form" });
-  const [draft, setDraft] = useState<DotDraft>({ name: "", color: DOT_PALETTE[0], country: "IN", lifetimeSec: 60 });
+  const [draft, setDraft] = useState<DotDraft>({ name: "", color: DOT_PALETTE[0], country: "IN", lifetimeSec: LIFETIME_DEFAULT_SEC });
   const [custom, setCustom] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionReconnecting, setSessionReconnecting] = useState(false);
@@ -39,33 +39,41 @@ export function JoinPhone() {
     let stopped = false;
     void Promise.resolve().then(() => {
       if (stopped) return;
-      const code = (new URLSearchParams(location.search).get("s") ?? "").trim().toUpperCase();
-      setSession(code);
-      try {
-        const identity = deviceToken();
-        setDevice(identity);
-        const used = Number(localStorage.getItem(`arkiv-workshop-count:${code}:${identity}`) ?? 0);
-        setWrites(Number.isSafeInteger(used) && used >= 0 ? Math.min(used, MAX_ENTITIES_PER_DEVICE) : 0);
-      } catch { setError("Allow browser storage so we can keep your place on the map."); }
+      try { setDevice(deviceToken()); } catch { setError("Allow browser storage so we can keep your place on the map."); }
     });
     return () => { stopped = true; };
   }, []);
 
+  // The per-device count is kept per session, so a new session starts at zero.
+  useEffect(() => {
+    if (!session || !device) return;
+    let stopped = false;
+    void Promise.resolve().then(() => {
+      if (stopped) return;
+      try {
+        const used = Number(localStorage.getItem(`arkiv-workshop-count:${session}:${device}`) ?? 0);
+        setWrites(Number.isSafeInteger(used) && used >= 0 ? Math.min(used, MAX_ENTITIES_PER_DEVICE) : 0);
+      } catch { setError("Allow browser storage so we can keep your place on the map."); }
+    });
+    return () => { stopped = true; };
+  }, [session, device]);
+
+  // No code to type: the phone joins whatever session the presenter is running.
   // After inclusion, the only background read is the ticket; phones never call an RPC.
   useEffect(() => {
-    if (!session || !WRITER_URL || state.status === "written") return;
+    if (!WRITER_URL || state.status === "written") return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
-        const result = SessionPublic.parse(await writerRequest(WRITER_ROUTES.session(session), { signal: controller.signal }));
-        if (!controller.signal.aborted) { setSessionInfo(result); setSessionReconnecting(false); }
+        const result = SessionPublic.parse(await writerRequest(WRITER_ROUTES.session(), { signal: controller.signal }));
+        if (!controller.signal.aborted) { setSessionInfo(result); setSession(result.code ?? ""); setSessionReconnecting(false); }
       } catch { if (!controller.signal.aborted) setSessionReconnecting(true); }
       if (!controller.signal.aborted) timer = setTimeout(poll, 3000);
     };
     void poll();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [session, state.status]);
+  }, [state.status]);
 
   useEffect(() => {
     const ticket = reading.ticket;
@@ -96,21 +104,6 @@ export function JoinPhone() {
 
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer); }, []);
 
-  function joinSession(code: string, info: SessionPublic) {
-    const url = new URL(location.href);
-    url.searchParams.set("s", code);
-    history.replaceState(history.state, "", url);
-    setSessionInfo(info);
-    setSession(code);
-    setState({ status: "form" });
-    setSessionReconnecting(false);
-    setError(null);
-    try {
-      const used = Number(localStorage.getItem(`arkiv-workshop-count:${code}:${device}`) ?? 0);
-      setWrites(Number.isSafeInteger(used) && used >= 0 ? Math.min(used, MAX_ENTITIES_PER_DEVICE) : 0);
-    } catch { setError("Allow browser storage so we can keep your place on the map."); }
-  }
-
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitLock.current || !device || !open) return;
@@ -127,23 +120,22 @@ export function JoinPhone() {
     finally { submitLock.current = false; }
   }
   const open = sessionInfo?.valid && sessionInfo.doors === "open" && !sessionInfo.replay && sessionInfo.network && profile;
-  const needsCode = !session || sessionInfo?.valid === false;
   const entityLink = profile && state.status === "written" ? explorerUrl(profile, "entity", state.key) : null;
-  const seconds = ticketSeconds(reading.clock, now);
+  const seconds = ticketSeconds(reading.clock, now, state.status === "written" ? writeBlockMs(state.draft.lifetimeSec, state.includedAt, state.expiresAt) : null);
   const blocksLeft = reading.clock ? reading.clock.expiresAt > reading.clock.block ? reading.clock.expiresAt - reading.clock.block : 0n : null;
   const totalBlocks = state.status === "written" ? (reading.clock?.expiresAt ?? state.expiresAt) - state.includedAt : 0n;
   const progress = blocksLeft === null || totalBlocks <= 0n ? 1 : Number(blocksLeft) / Number(totalBlocks);
   const reconnecting = sessionReconnecting || reading.reconnecting;
   return <div className="phone-surface"><main className="phone-main">
-    <header className="phone-header"><picture><source media="(prefers-color-scheme: dark)" srcSet="/brand/arkiv-white.svg" /><img src="/brand/arkiv-black.svg" width={70} height={16} alt="Arkiv" /></picture><span>· Join the map</span>{!needsCode && (state.status === "form" || state.status === "submitting") && <small className={open ? "phone-doors is-open" : "phone-doors"}>{open ? "Open" : "Closed"}</small>}</header>
-    <h1 className={needsCode || sessionInfo?.phase === "build" ? undefined : "sr-only"}>{needsCode ? "Enter the code on the screen" : sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : state.status === "written" ? "You’re on the map." : state.status === "expired" ? "Your moment, on-chain." : "Join the map"}</h1>
+    <header className="phone-header"><Image unoptimized src="/brand/arkiv-white.svg" width={70} height={16} alt="Arkiv" /><span>· Join the map</span>{(state.status === "form" || state.status === "submitting") && <small className={open ? "phone-doors is-open" : "phone-doors"}>{open ? "Open" : "Closed"}</small>}</header>
+    <h1 className={sessionInfo?.phase === "build" ? undefined : "sr-only"}>{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : state.status === "written" ? "You’re on the map." : state.status === "expired" ? "Your moment, on-chain." : "Join the map"}</h1>
     {sessionInfo?.replay && <p className="phone-notice">We’re in replay mode.</p>}
     {!WRITER_URL && <p className="phone-notice">Not ready yet. Hang tight.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
     {(reconnecting || error) && <p className="phone-notice" role="alert">{reconnecting ? "Reconnecting…" : error}</p>}
-    {needsCode ? <SessionCodeForm onJoin={joinSession} inactive={!!session} /> : sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
+    {sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
       <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={state.draft.color} progress={progress} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country)}</p>
-      <p className={seconds !== null && seconds > 0 ? "phone-countdown" : "phone-lifetime-status"}>{seconds === null ? blocksLeft === null ? "Reading your lifetime…" : `${blocksLeft} blocks left` : seconds > 0 ? `${Math.ceil(seconds)} s` : "Checking Entity Expiration…"}</p>
+      <p className={seconds !== null && seconds > 0 ? "phone-countdown" : "phone-lifetime-status"}>{seconds === null ? blocksLeft === null ? "Reading your lifetime…" : `${blocksLeft} blocks left` : seconds > 0 ? formatClock(seconds) : "Checking Entity Expiration…"}</p>
       {reading.extended && <p className="phone-notice">Santiago extended you! +20 min.</p>}
       <code>{shortKey(state.key)}</code>
       {entityLink && <a className="entity-explorer" href={entityLink} target="_blank" rel="noreferrer">View in explorer <ArrowUpRight size={18} /></a>}
@@ -151,11 +143,17 @@ export function JoinPhone() {
       <label>Your name<input name="name" placeholder="Name or nickname" autoComplete="nickname" maxLength={NAME_MAX_CHARS} required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
       <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={`Color ${color}`} aria-pressed={!custom && draft.color === color} onClick={() => { setCustom(false); setDraft({ ...draft, color }); }} />)}<button type="button" className="custom-toggle" aria-label="Custom hex color" aria-expanded={custom} onClick={() => setCustom(!custom)}><Plus size={20} /><span>Custom hex</span></button></div>{custom && <div className="custom-color"><input type="color" aria-label="Choose any color" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} /><input aria-label="Custom hex color value" pattern="#[0-9a-fA-F]{6}" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} onBlur={() => { const color = normalizeColor(draft.color); if (color) setDraft({ ...draft, color }); }} /></div>}</fieldset>
       <div className="phone-field"><span>Where are you from?</span><CountryPicker value={draft.country} onChange={(country) => setDraft({ ...draft, country })} /></div>
-      <label>How long should you live?<output className="lifetime-value">{draft.lifetimeSec < 60 ? `${draft.lifetimeSec} s` : `${Math.floor(draft.lifetimeSec / 60)} min${draft.lifetimeSec % 60 ? ` ${draft.lifetimeSec % 60} s` : ""}`}</output><input type="range" style={{ background: `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>20 s</span><span>2 min</span></span></label>
+      <label>How long should you live?<output className="lifetime-value">{draft.lifetimeSec / 60} min</output><input type="range" style={{ background: `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span></label>
       {!open && <p className="doors-note">Hang tight. Santiago opens the doors in a moment.</p>}{writes >= MAX_ENTITIES_PER_DEVICE && <p className="doors-note">You’ve reached the limit for this session.</p>}<button className="phone-submit" disabled={!open || !device || writes >= MAX_ENTITIES_PER_DEVICE || state.status === "submitting"}>{state.status === "submitting" ? "Sending…" : writes >= MAX_ENTITIES_PER_DEVICE ? "Session limit reached" : open ? "Write my entity" : "Doors closed"}</button>
     </form>}
     <footer>Arkiv testnet · everything you write is public.<span>Arkiv, the Web3 database</span></footer>
   </main></div>;
+}
+
+/** 14:59, then 0:09: minutes and seconds left. */
+function formatClock(seconds: number): string {
+  const total = Math.ceil(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
 function BuildResources() {

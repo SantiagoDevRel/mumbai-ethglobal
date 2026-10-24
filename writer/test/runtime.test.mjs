@@ -54,13 +54,18 @@ test("workerd enforces presenter auth, CORS, session state and per-device queuin
     assert.equal(started.status, 200);
     const code = started.data.code;
     assert.equal((await call(`/api/session?s=${code}`, undefined, {})).data.valid, true);
-    const draft = { session: code, name: "Asha", color: "#FE7446", country: "IN", lifetimeSec: 120 };
+    // Phones type no code: the bare route hands them the running session.
+    const bare = (await call("/api/session", undefined, {})).data;
+    assert.equal(bare.valid, true);
+    assert.equal(bare.code, code);
+    assert.equal((await call("/api/session?s=WRONG123", undefined, {})).data.valid, false);
+    const draft = { session: code, name: "Asha", color: "#FE7446", country: "IN", lifetimeSec: 900 };
     const device = { "x-device-token": "test-device-token-1234", "content-type": "application/json", origin: "https://app.example" };
     assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed");
     await call("/api/presenter/hold", {});
     await call("/api/presenter/doors", { open: true });
     assert.equal((await call("/api/submit", { ...draft, session: "WRONG" }, device)).data.error, "bad_session");
-    assert.equal((await call("/api/submit", { ...draft, lifetimeSec: 21 }, device)).data.error, "invalid");
+    assert.equal((await call("/api/submit", { ...draft, lifetimeSec: 330 }, device)).data.error, "invalid");
     assert.equal((await call("/api/submit", { ...draft, name: "chutiya" }, device)).data.error, "name_blocked");
     const accepted = await call("/api/submit", draft, device);
     assert.equal(accepted.status, 200);
@@ -78,6 +83,9 @@ test("workerd enforces presenter auth, CORS, session state and per-device queuin
     await call("/api/presenter/replay", { on: true });
     assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed");
     await call("/api/presenter/session/end", {});
+    const ended = (await call("/api/session", undefined, {})).data;
+    assert.equal(ended.valid, false);
+    assert.equal(ended.code, null);
     assert.equal((await call(`/api/ticket/${accepted.data.ticket}`, undefined, {})).data.status, "failed");
     assert.equal(calls.some(call => call.method.startsWith("eth_send")), false);
   } finally { await mf.dispose(); }
@@ -149,7 +157,7 @@ test("the balance floor closes doors and holds queued writes before any send", a
   try {
     const { data: { code } } = await call("/api/presenter/session/start", {});
     await call("/api/presenter/doors", { open: true });
-    const accepted = await call("/api/submit", { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 120 }, { "x-device-token": "balance-floor-test-device" });
+    const accepted = await call("/api/submit", { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 900 }, { "x-device-token": "balance-floor-test-device" });
     assert.equal(accepted.status, 200);
     let status;
     const deadline = Date.now() + 7_000;
@@ -180,7 +188,7 @@ test("a slow wallet call leaves phone reads responsive while hold waits for the 
   try {
     const { data: { code } } = await call("/api/presenter/session/start", {});
     await call("/api/presenter/doors", { open: true });
-    await call("/api/submit", { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 120 }, { "x-device-token": "responsive-phone-device" });
+    await call("/api/submit", { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 900 }, { "x-device-token": "responsive-phone-device" });
     await Promise.race([reached, new Promise((_, reject) => setTimeout(() => reject(new Error("The batch did not enter the slow SDK call.")), 7_000))]);
     const response = await Promise.race([call(`/api/session?s=${code}`, undefined, {}), new Promise((_, reject) => setTimeout(() => reject(new Error("Phone reads were blocked behind the SDK.")), 1_000))]);
     assert.equal(response.data.valid, true);

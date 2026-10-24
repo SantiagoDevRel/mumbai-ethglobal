@@ -35,7 +35,7 @@ export const NOTES: Record<SceneId, string[]> = {
     "Let's do all four. Live. With you.",
   ],
   S7: [
-    "Name. Color. Country. Lifetime: 20 seconds to 2 minutes. Give them a few seconds to fill the form.",
+    "Name. Color. Country. Lifetime: 5 to 15 minutes, 15 by default. Give them a few seconds to fill the form.",
     "Press D: 3 · 2 · 1 · write! Every phone unlocks at once. Then → to the map.",
   ],
   L1: [

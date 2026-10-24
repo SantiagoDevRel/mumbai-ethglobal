@@ -69,7 +69,7 @@ try {
   const phoneWriterRequests = [];
   phone.on("request", (request) => { if (request.url().startsWith(WRITER)) phoneWriterRequests.push({ at: Date.now(), path: new URL(request.url()).pathname }); });
   phone.on("pageerror", (error) => errors.push(error.message));
-  await phone.goto(`${ORIGIN}/j?s=${session}`, { waitUntil: "domcontentloaded" });
+  await phone.goto(`${ORIGIN}/j`, { waitUntil: "domcontentloaded" });
   await phone.getByPlaceholder("Name or nickname").fill("App smoke");
   await phone.getByRole("button", { name: "Color #3ddc97", exact: true }).click();
   await phone.getByRole("combobox", { name: "Your country" }).click();

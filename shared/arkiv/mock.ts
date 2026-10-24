@@ -14,7 +14,7 @@ import type {
   RawAttribute,
   WriteResult,
 } from "../types";
-import { APP_ID } from "../types";
+import { APP_ID, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC } from "../types";
 import { DOT_PALETTE, encodeCoord, encodeRating } from "../encoding";
 
 export interface MockOptions {
@@ -135,7 +135,7 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
         lat: lat + (Math.random() - 0.5) * 3,
         lng: lng + (Math.random() - 0.5) * 3,
       },
-      lifetimeSec: 20 + 10 * Math.floor(Math.random() * 11),
+      lifetimeSec: LIFETIME_MIN_SEC + LIFETIME_STEP_SEC * Math.floor(Math.random() * ((LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) / LIFETIME_STEP_SEC + 1)),
     }]);
   };
   const timer = opts.autoSpawnMs ? setInterval(spawnRandom, opts.autoSpawnMs) : null;

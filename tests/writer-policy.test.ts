@@ -11,10 +11,10 @@ test("one live entity, three per device, and four hundred per session", () => {
   assert.equal(admissionError(false, 2, 399), null);
 });
 test("lifetime, name and data validation reject boundary violations", () => {
-  const draft = { name: "Asha", color: "#FE7446", country: "IN", lifetimeSec: 20 };
+  const draft = { name: "Asha", color: "#FE7446", country: "IN", lifetimeSec: 300 };
   assert.equal(validDraft(draft), true);
-  for (const lifetimeSec of [0, 19, 21, 125, NaN, 30.5]) assert.equal(validDraft({ ...draft, lifetimeSec }), false);
-  assert.equal(validDraft({ ...draft, lifetimeSec: 120 }), true);
+  for (const lifetimeSec of [0, 20, 120, 299, 330, 901, 960, NaN, 300.5]) assert.equal(validDraft({ ...draft, lifetimeSec }), false);
+  assert.equal(validDraft({ ...draft, lifetimeSec: 900 }), true);
   assert.equal(validDraft({ ...draft, color: "red" }), false);
   assert.equal(validDraft({ ...draft, name: "x".repeat(25) }), false);
   assert.equal(validDraft({ ...draft, country: "in" }), false);

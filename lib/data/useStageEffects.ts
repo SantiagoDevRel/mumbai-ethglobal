@@ -8,7 +8,7 @@ import { HoldResponse } from "../../shared/writer-api";
 import { WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { stage } from "../stage/store";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
-import { presenterRequest, usePresenterToken } from "./presenter-auth";
+import { presenterRequest, stageReadTransport, usePresenterToken } from "./presenter-auth";
 import { createLiveAdapter } from "./adapter-loader";
 
 interface Provider { request(args: { method: string; params?: unknown[] }): Promise<unknown>; isRabby?: boolean; providers?: Provider[] }
@@ -34,7 +34,7 @@ async function connectWallet(adapter: ArkivAdapter, token: string): Promise<Arki
       await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
     }
   }
-  return createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: token ? { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } : { kind: "public" }, wallet: { kind: "eip1193", provider, account: accounts[0] as Hex } });
+  return createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: stageReadTransport(token, WRITER_URL + WRITER_ROUTES.rpc), wallet: { kind: "eip1193", provider, account: accounts[0] as Hex } });
 }
 
 export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "live", entities: LiveEntity[]) {

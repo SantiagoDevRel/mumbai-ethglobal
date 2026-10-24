@@ -1,4 +1,4 @@
-import { MAX_ENTITIES_PER_DEVICE, MAX_ENTITIES_PER_SESSION, type DotDraft } from "../../shared/types.ts";
+import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC, MAX_ENTITIES_PER_DEVICE, MAX_ENTITIES_PER_SESSION, type DotDraft } from "../../shared/types.ts";
 import { isNameAllowed } from "../../shared/data/blocklist.ts";
 import countries from "../../shared/geo/countries.json" with { type: "json" };
 import { countryByIso2, placeInCountry, type CountryShape } from "../../shared/geo/place.ts";
@@ -20,8 +20,8 @@ export function nameBlocked(input: string): boolean {
 export function validDraft(value: DotDraft): boolean {
   return value.name.trim().length >= 1 && value.name.trim().length <= 24
     && /^#[0-9a-f]{6}$/i.test(value.color) && /^[A-Z]{2}$/.test(value.country)
-    && Number.isInteger(value.lifetimeSec) && value.lifetimeSec >= 20
-    && value.lifetimeSec <= 120 && value.lifetimeSec % 10 === 0;
+    && Number.isInteger(value.lifetimeSec) && value.lifetimeSec >= LIFETIME_MIN_SEC
+    && value.lifetimeSec <= LIFETIME_MAX_SEC && value.lifetimeSec % LIFETIME_STEP_SEC === 0;
 }
 
 export function placeDot(iso2: string, seed: string): { lat: number; lng: number } | null {

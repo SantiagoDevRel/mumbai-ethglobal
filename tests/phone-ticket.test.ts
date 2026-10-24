@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { TicketResponse } from "../shared/writer-api.ts";
-import { advanceTicketClock, phoneWriteMessage, ticketPollDelay, ticketSeconds } from "../lib/data/phone-ticket.ts";
+import { advanceTicketClock, phoneWriteMessage, ticketPollDelay, ticketSeconds, writeBlockMs } from "../lib/data/phone-ticket.ts";
 
 const ticket = (currentBlock?: string, expiresAtBlock = "130"): TicketResponse => ({ ticket: "fixture", status: "written", block: "100", expiresAtBlock, currentBlock, live: true, lat: 19, lng: 72 });
 test("ticket clocks start with authoritative blocks and measure seconds without an assumed rate", () => {
@@ -20,6 +20,18 @@ test("ticket clocks start with authoritative blocks and measure seconds without 
   assert.equal(ticketSeconds(extension, 13000), 1228);
   assert.equal(ticketSeconds(advanceTicketClock(ticket("730", "730"), extension, 14000), 14000), 0);
   assert.throws(() => advanceTicketClock(ticket("bad"), second, 14000));
+});
+test("a 15-minute write never reads above 15:00 while the measured rate is still short", () => {
+  // 900 s over 450 blocks: the write implies 2 s a block. One poll gap judged 2.07 s.
+  const writeMs = writeBlockMs(900, 100n, 550n)!;
+  assert.equal(writeMs, 2000);
+  const first = advanceTicketClock(ticket("100", "550"), null, 0)!;
+  const second = advanceTicketClock(ticket("103", "550"), first, 6210)!;
+  assert.ok(ticketSeconds(second, 6210)! > 900, "The raw short measurement overshoots.");
+  assert.equal(ticketSeconds(second, 6210, writeMs), 894);
+  const settled = advanceTicketClock(ticket("140", "550"), second, 84000)!;
+  assert.equal(ticketSeconds(settled, 84000, writeMs), Number(410n) * settled.blockTimeMs! / 1000, "Once settled, the measured rate takes over.");
+  assert.equal(writeBlockMs(900, 100n, 100n), null);
 });
 test("written polling is jittered around5s, backs off on errors, and resets on success", () => {
   assert.equal(ticketPollDelay(false, 0, 0.5), 1200);

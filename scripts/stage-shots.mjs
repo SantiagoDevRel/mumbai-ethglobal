@@ -27,7 +27,7 @@ async function open(url, viewport) {
       await route.fulfill({ status: 200, contentType: mime[path.extname(file)] ?? "application/octet-stream", body: await readFile(file) });
     } catch { await route.fulfill({ status: 404, body: "Not found" }); }
   });
-  await context.route(`${writer}/**`, (route) => route.fulfill({ json: { valid: true, doors: "open", phase: "talk", replay: false, network: "tiramisu" } }));
+  await context.route(`${writer}/**`, (route) => route.fulfill({ json: { valid: true, code: "MOCK", doors: "open", phase: "talk", replay: false, network: "tiramisu" } }));
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(`${url}: ${error.message}`));
   await page.goto(`${origin}${url}`, { waitUntil: "domcontentloaded" });
@@ -58,7 +58,7 @@ for (const [width, height] of [[1920, 1080], [1280, 720]]) {
   await context.close();
 }
 
-for (const [name, url, viewport] of [["notes-1440", "/notes/", { width: 1440, height: 900 }], ["phone-390", "/j/?s=MOCK", { width: 390, height: 844 }], ["phone-360", "/j/?s=MOCK", { width: 360, height: 780 }]]) {
+for (const [name, url, viewport] of [["notes-1440", "/notes/", { width: 1440, height: 900 }], ["phone-390", "/j/", { width: 390, height: 844 }], ["phone-360", "/j/", { width: 360, height: 780 }]]) {
   const { context, page } = await open(url, viewport);
   await settle(page);
   await page.screenshot({ path: path.join(dir, `${name}.png`), fullPage: true, timeout: 60_000 });

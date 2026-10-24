@@ -9,9 +9,11 @@ export const APP_ID = "arkiv-mumbai-2026";
 export type EntityKind = "dot" | "business" | "review";
 
 /** Lifetime range a participant may pick, enforced by the writer (WORKSHOP.md 4.2, 4.10). */
-export const LIFETIME_MIN_SEC = 20;
-export const LIFETIME_MAX_SEC = 120;
-export const LIFETIME_STEP_SEC = 10;
+export const LIFETIME_MIN_SEC = 5 * 60;
+export const LIFETIME_MAX_SEC = 15 * 60;
+export const LIFETIME_STEP_SEC = 60;
+/** The phone slider starts here. */
+export const LIFETIME_DEFAULT_SEC = LIFETIME_MAX_SEC;
 
 export const NAME_MAX_CHARS = 24;
 export const MAX_ENTITIES_PER_SESSION = 400;

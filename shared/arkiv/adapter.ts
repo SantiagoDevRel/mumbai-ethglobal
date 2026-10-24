@@ -63,12 +63,14 @@ export interface ArkivAdapter {
 /** Read-only subset the phone and the stage use when no wallet is connected. */
 export type ArkivReader = Pick<ArkivAdapter, "profile" | "creator" | "getBlock" | "query" | "describe">;
 
-/** How an adapter is built. The access key never reaches a browser: browsers use `public`
- * (phones) or `proxy` (presenter screen, through the Worker's read proxy with the presenter token). */
+/** How an adapter is built. The access key never reaches a browser. Browsers read through the
+ * Worker's keyed read proxy: `proxy` in the tab that holds the presenter token (/notes), `relay` in
+ * the projected stage tab, which hands each call to that tab. `public` is for scripts only. */
 export type ReadTransport =
   | { kind: "public" }
   | { kind: "keyed"; url: string; accessKey: string } // Worker only
-  | { kind: "proxy"; url: string; presenterToken: string }; // presenter screen
+  | { kind: "proxy"; url: string; presenterToken: string } // tab with the presenter token
+  | { kind: "relay"; send: (method: string, params: unknown) => Promise<unknown> }; // stage tab, via /notes
 
 export type WalletTransport =
   | { kind: "privateKey"; privateKey: Hex } // Worker and scripts only
