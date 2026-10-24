@@ -3,6 +3,7 @@
 // Presenter keys (WORKSHOP.md 4.9). Contract owned by the orchestrator.
 
 import { useEffect } from "react";
+import { SCENES } from "../../shared/scenes";
 import { stage, type Command } from "./store";
 
 export const KEY_HELP: { keys: string; action: string }[] = [
@@ -68,6 +69,18 @@ export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Comma
   }
 }
 
+/** → past S0 waits for the workshop session (/notes "Start session"); mock rehearsals skip the lock. */
+function lockedBeforeSession(cmd: Command): boolean {
+  if (cmd.type !== "next") return false;
+  const state = stage.getState();
+  if (state.sceneIndex !== 0 || state.session || state.step < SCENES[0]!.steps - 1) return false;
+  try {
+    return sessionStorage.getItem("arkiv-stage-source") !== "mock";
+  } catch {
+    return true;
+  }
+}
+
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
@@ -82,6 +95,7 @@ export function usePresenterKeys(enabled = true): void {
       const cmd = commandForKey(e);
       if (!cmd) return;
       e.preventDefault();
+      if (lockedBeforeSession(cmd)) return;
       stage.dispatch(cmd);
     };
     window.addEventListener("keydown", onKey);
