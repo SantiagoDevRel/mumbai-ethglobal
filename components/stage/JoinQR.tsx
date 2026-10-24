@@ -12,7 +12,7 @@ export function JoinQR() {
   const [qr, setQr] = useState<{ image: string; label: string; url: string } | null>(null);
   useEffect(() => {
     let stale = false;
-    const url = new URL("/j", window.location.origin);
+    const url = new URL("/j", "https://mumbai-ethglobal.vercel.app");
     if (session) url.searchParams.set("s", session);
     void QRCode.toDataURL(url.href, { width: 480, margin: 2, errorCorrectionLevel: "M", color: { dark: "#111111", light: "#f6f4ef" } }).then((image) => { if (!stale) setQr({ image, label: url.host + url.pathname + url.search, url: url.href }); });
     return () => { stale = true; };

@@ -1,17 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ArkivAdapter } from "../../shared/arkiv/adapter";
 import { createMockAdapter } from "../../shared/arkiv/mock";
 import type { ChainFilters, LiveEntity, QueryRun, StageEvent } from "../../shared/types";
 import { blockFeed } from "./block-feed";
 import { diffEntities, snapshotEntities } from "./entity-state";
-import { usePresenterToken } from "./presenter-auth";
+import { usePresenterReady, usePresenterToken } from "./presenter-auth";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { createLiveAdapter } from "./adapter-loader";
 import { queryStage } from "./query-stage";
 import { SEED_BUSINESSES } from "../../shared/data/seed-businesses";
+import { useSourceMode } from "./source-mode";
 
 export interface LiveData {
   adapter: ArkivAdapter | null;
@@ -23,6 +24,9 @@ export interface LiveData {
 
 export function useLiveData(filters: ChainFilters, session: string | null): LiveData {
   const token = usePresenterToken();
+  const ready = usePresenterReady();
+  const mode = useSourceMode();
+  const previous = useRef<{ adapter: ArkivAdapter; queryKey: string; entities: LiveEntity[] } | null>(null);
   const [data, setData] = useState<LiveData>({ adapter: null, source: "mock", run: null, events: [], error: null });
   useEffect(() => {
     let stopped = false;
@@ -31,9 +35,9 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       if (stopped) return;
       try {
         const profile = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
-        const live = !!WRITER_URL && !!token;
+        const live = mode === "live" || (mode === "auto" && !!WRITER_URL && ready);
         const mock = live ? null : createMockAdapter({ autoSpawnMs: 1500 });
-        const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } });
+        const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: token ? { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } : { kind: "public" } });
         stopMock = mock?.stop;
         if (mock) {
           const result = await mock.createBusinesses(SEED_BUSINESSES.map((item) => ({ ...item.business, lifetimeSec: 12 * 60 * 60 })));
@@ -44,8 +48,8 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       } catch (error) { if (!stopped) setData({ adapter: null, source: "live", run: null, events: [], error: error instanceof Error ? error.message : "Network not configured" }); }
     });
     return () => { stopped = true; stopMock?.(); blockFeed.publish(null); };
-  }, [token]);
-  const effective = { ...filters, ...(session ? { session: data.source === "mock" ? "MOCK" : session } : {}) };
+  }, [token, ready, mode]);
+  const effective = { ...filters, session: data.source === "mock" ? "MOCK" : session ?? "__no_session__" };
   const queryKey = JSON.stringify(effective);
   useEffect(() => {
     const adapter = data.adapter;
@@ -53,7 +57,6 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     let lastBlock: bigint | null = null;
-    let previous: LiveEntity[] = [];
     const parsed = JSON.parse(queryKey) as ChainFilters;
     const tick = async () => {
       try {
@@ -63,9 +66,10 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
         if (block.number !== lastBlock) {
           const run = await queryStage(adapter, parsed);
           if (stopped) return;
-          const events = diffEntities(previous, run, lastBlock !== null);
-          previous = snapshotEntities(run.entities);
-          lastBlock = block.number;
+          const before = previous.current;
+          const events = diffEntities(before?.adapter === adapter ? before.entities : [], run, before?.adapter === adapter && before.queryKey === queryKey);
+          previous.current = { adapter, queryKey, entities: snapshotEntities(run.entities) };
+          lastBlock = run.block;
           setData((old) => ({ ...old, run, events: [...events.reverse(), ...old.events].slice(0, 120), error: null }));
         }
       } catch (error) {
