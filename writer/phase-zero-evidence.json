@@ -1,0 +1,28 @@
+{
+  "sdk": "0.8.1",
+  "runtime": "Cloudflare Workers / workerd",
+  "workerUrl": "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev",
+  "chainId": 7738577,
+  "explorer": {
+    "base": "https://tiramisu.explorer.arkiv.network",
+    "transactionPattern": "/tx/<transactionHash>",
+    "addressPattern": "/address/<address>",
+    "activityPattern": "/activity?address=<address>"
+  },
+  "writer": "0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690",
+  "txHash": "0x7bfc8154e8029b0642233dfcba94c706137ec2dca1cd10c41ac029748d0d3e03",
+  "entityKey": "0xe56fb3724fe102bd28b1a6adbeeeaea5ee27c90a79bc7b5cf7431548741b9dc4",
+  "block": "991293",
+  "expiresAtBlock": "991353",
+  "gasUsed": "120384",
+  "balanceWeiAfter": "9999879615999759232",
+  "query": "app = str('arkiv-mumbai-2026') AND session = str('phase-zero') AND lat >= i32(-90000000) AND lat <= i32(90000000) AND lng >= i32(-180000000) AND lng <= i32(180000000) AND $creator = addr(0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690)",
+  "assertions": {
+    "emptyPayloadReadBack": true,
+    "permissionlessExtensionReadBack": true,
+    "negativeI32RangeAccepted": true,
+    "lifetimeSeconds": 120,
+    "measuredBlockDurationSeconds": 2,
+    "allRpcCallsUseAccessKeyHeader": true
+  }
+}
