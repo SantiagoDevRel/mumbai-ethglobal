@@ -77,6 +77,8 @@ npx wrangler deploy --dry-run --outdir dist
 npm test
 ```
 
+`npm test` first builds `dist/index.js` through its `pretest` hook, so runtime tests
+also work on a clean checkout without a previously generated bundle.
 The writer tests use workerd through Wrangler's existing Miniflare dependency.
 They cover actual routing, authorization, CORS, device admission, network failure
 and the read-only RPC boundary. Additional adapter tests cover immutable pagination,
