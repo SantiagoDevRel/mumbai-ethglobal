@@ -111,15 +111,16 @@ export function L9(_props: SceneContentProps) {
   return (
     <OverlayShell>
       <SwapCaption id="l9">Write it. Query it. Own it. Expire it.</SwapCaption>
-      <div className="absolute left-[432px] top-[124px] flex items-end gap-6">
+      {/* Left column under the counter (the L3 filters spot), clear of the map toolbar. */}
+      <div className="absolute left-[32px] top-[236px] flex flex-col items-start gap-5">
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.7, ease: EASE }}>
+          <Mascot pose="wave" unit={20} />
+        </motion.div>
         <Rise delay={0.4}>
           <p className="text-[48px] font-bold leading-[1.1] text-[var(--arkiv-orange)] [text-shadow:0_4px_24px_rgba(0,0,0,0.8)]">
             Thank you.
           </p>
         </Rise>
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.7, ease: EASE }}>
-          <Mascot pose="wave" unit={14} />
-        </motion.div>
       </div>
     </OverlayShell>
   );
