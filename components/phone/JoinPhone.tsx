@@ -11,6 +11,7 @@ import { createLiveAdapter } from "../../lib/data/adapter-loader";
 import { remainingSeconds } from "../../lib/data/entity-state";
 import { CountryPicker } from "./CountryPicker";
 import { LifetimeRing } from "./LifetimeRing";
+import { SessionCodeForm } from "./SessionCodeForm";
 import { Plus, ArrowUpRight, BookOpen, Plug, Terminal, Gift } from "lucide-react";
 import "./phone.css";
 
@@ -38,7 +39,7 @@ export function JoinPhone() {
     let stopped = false;
     void Promise.resolve().then(() => {
       if (stopped) return;
-    const code = new URLSearchParams(location.search).get("s") ?? "";
+      const code = (new URLSearchParams(location.search).get("s") ?? "").trim().toUpperCase();
       setSession(code);
       try {
         const identity = deviceToken();
@@ -116,9 +117,26 @@ export function JoinPhone() {
 
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer); }, []);
 
+  function joinSession(code: string, info: SessionPublic) {
+    const url = new URL(location.href);
+    url.searchParams.set("s", code);
+    history.replaceState(history.state, "", url);
+    setSessionInfo(info);
+    setSession(code);
+    setState({ status: "form" });
+    setEntity(null);
+    setBlock(null);
+    setExtended(false);
+    setError(null);
+    try {
+      const used = Number(localStorage.getItem(`arkiv-workshop-count:${code}:${device}`) ?? 0);
+      setWrites(Number.isSafeInteger(used) && used >= 0 ? Math.min(used, MAX_ENTITIES_PER_DEVICE) : 0);
+    } catch { setError("Allow browser storage so we can keep your place on the map."); }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitLock.current || !device) return;
+    if (submitLock.current || !device || !open) return;
     submitLock.current = true;
     setError(null);
     try {
@@ -132,18 +150,18 @@ export function JoinPhone() {
     finally { submitLock.current = false; }
   }
   const open = sessionInfo?.valid && sessionInfo.doors === "open" && !sessionInfo.replay && sessionInfo.network && profile;
+  const needsCode = !session || sessionInfo?.valid === false;
   const entityLink = profile && state.status === "written" ? explorerUrl(profile, "entity", state.key) : null;
   const seconds = entity ? remainingSeconds(entity, block, now) : null;
   const totalSeconds = entity && block ? Number(entity.expiresAtBlock - entity.createdAtBlock) * block.blockTimeMs / 1000 : draft.lifetimeSec;
   return <div className="phone-surface"><main className="phone-main">
-    <header className="phone-header"><picture><source media="(prefers-color-scheme: dark)" srcSet="/brand/arkiv-white.svg" /><img src="/brand/arkiv-black.svg" width={70} height={16} alt="Arkiv" /></picture><span>· Join the map</span>{(state.status === "form" || state.status === "submitting") && <small className={open ? "phone-doors is-open" : "phone-doors"}>{open ? "Open" : "Closed"}</small>}</header>
-    <h1 className={sessionInfo?.phase === "build" ? undefined : "sr-only"}>{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : state.status === "written" ? "You’re on the map." : state.status === "expired" ? "Your moment, on-chain." : "Join the map"}</h1>
+    <header className="phone-header"><picture><source media="(prefers-color-scheme: dark)" srcSet="/brand/arkiv-white.svg" /><img src="/brand/arkiv-black.svg" width={70} height={16} alt="Arkiv" /></picture><span>· Join the map</span>{!needsCode && (state.status === "form" || state.status === "submitting") && <small className={open ? "phone-doors is-open" : "phone-doors"}>{open ? "Open" : "Closed"}</small>}</header>
+    <h1 className={needsCode || sessionInfo?.phase === "build" ? undefined : "sr-only"}>{needsCode ? "Enter the code on the screen" : sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : state.status === "written" ? "You’re on the map." : state.status === "expired" ? "Your moment, on-chain." : "Join the map"}</h1>
     {sessionInfo?.replay && <p className="phone-notice">We’re in replay mode.</p>}
     {!WRITER_URL && <p className="phone-notice">Not ready yet. Hang tight.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
-    {!session && <p className="phone-notice">Scan the workshop QR to join the current session.</p>}
     {error && <p className="phone-notice" role="alert">{error}</p>}
-    {sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
+    {needsCode ? <SessionCodeForm onJoin={joinSession} inactive={!!session} /> : sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
       <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={state.draft.color} progress={seconds === null ? 1 : seconds / Math.max(1, totalSeconds)} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country)}</p>
       <p className="phone-countdown">{seconds === null ? "Reading your lifetime…" : seconds > 0 ? `${Math.ceil(seconds)} s` : "Checking Entity Expiration…"}</p>
       {extended && <p className="phone-notice">Santiago extended you! +20 min.</p>}

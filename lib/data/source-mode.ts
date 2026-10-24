@@ -3,6 +3,11 @@
 import { useEffect, useSyncExternalStore } from "react";
 
 export type SourceMode = "auto" | "mock" | "live";
+/** Resolve Auto exactly as the stage does, including an absent writer configuration. */
+export function isMockSource(mode: SourceMode, writerUrl = process.env.NEXT_PUBLIC_WRITER_URL): boolean {
+  return mode === "mock" || (mode === "auto" && !writerUrl?.replace(/\/$/, ""));
+}
+export function useIsMock(): boolean { return isMockSource(useSourceMode()); }
 let mode: SourceMode = "auto";
 const listeners = new Set<() => void>();
 function notify() { for (const listener of listeners) listener(); }

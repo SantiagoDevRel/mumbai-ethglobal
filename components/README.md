@@ -1,6 +1,10 @@
 # App surfaces
 
-The projector's map uses viewport pixels. Its HUD and QR use `StageBox` and a single 1920x1080 coordinate system. The corner QR is top-right; S7 uses the left column and L8 uses a larger build QR. The QR and link encode the production join URL and the current session. Every card displays the full host and join path on one line for manual entry. The corner card is 424x192 to fit its 140 px QR and a full-width 20 px URL row above the event panel.
+The projector's map uses viewport pixels. Its HUD and QR use `StageBox` and a single 1920x1080 coordinate system. The corner QR is top-right; S7 uses the left column and L8 uses a larger build QR. The QR and link encode the production join URL and the current session. Every card displays the full host and join path on one line, with the room code underneath. Mock mode displays MOCK. The corner card is 424x216; right-side panels start at y252 and remain above the query panel.
+
+Typing `/j` opens an eight-character room-code form. It normalizes case and whitespace, validates only the supplied code through `GET /api/session?s=`, and replaces the URL with its session-bearing equivalent before opening the regular phone form. Invalid or ended sessions cannot submit. There is no public session discovery. Refreshing a valid URL follows the scanned-QR path, including the existing device identity and per-session allowance.
+
+`lib/data/source-mode.ts` exports `isMockSource(mode, writerUrl?)` and `useIsMock()` for the stage and deck. Auto uses the mock only when the writer URL is absent; explicit Mock/Live selections override Auto. `useLiveData` and JoinQR consume this same rule.
 
 `lib/stage/choreography.ts` owns scene and reveal state. The app reflects those filters as chips, highlights the current L4 badge, and opens a seeded business with its linked reviews at L5 step 2. Choosing an inspection example performs no chain write.
 
