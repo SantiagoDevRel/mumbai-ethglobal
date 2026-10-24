@@ -5,6 +5,7 @@ import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
+const writer = "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
 const root = path.resolve("out");
 const capture = process.argv[2];
 if (capture) await mkdir(capture, { recursive: true });
@@ -42,6 +43,8 @@ try {
   await expect(page.getByRole("button", { name: "Color · Orange", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".query-scope summary code")).not.toContainText(/,\s*(?:·|$)/);
   await expect(page.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
+  await expect(page.locator(".qr-code")).toHaveText("code MOCK");
+  await expect(page.locator(".qr-url")).toHaveAttribute("href", /[?&]s=MOCK$/);
   await page.evaluate(() => document.fonts.ready);
   await page.locator(".query-panel").evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720]]) {
@@ -50,7 +53,7 @@ try {
     const layout = await page.evaluate(() => {
       const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
       const url = document.querySelector(".qr-url");
-      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
+      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), roomCode: rect(".qr-code"), event: rect(".event-log"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
     });
     const scale = width / 1920;
     assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1);
@@ -63,6 +66,9 @@ try {
     assert.equal(layout.url.fontSize, "20px");
     assert.equal(layout.urlFits, true);
     assert.ok(layout.url.y + layout.url.height <= layout.qr.y + layout.qr.height);
+    assert.ok(layout.roomCode.y >= layout.url.y + layout.url.height - 1);
+    assert.ok(layout.roomCode.y + layout.roomCode.height <= layout.qr.y + layout.qr.height);
+    assert.ok(layout.event.y >= layout.qr.y + layout.qr.height);
     assert.equal(layout.overflow, false);
     evidence.push({ surface: "stage", viewport: `${width}x${height}`, layout });
   }
@@ -122,9 +128,12 @@ try {
   assert.ok(Math.abs(centerQR.x + centerQR.width / 2 - 660 * 1280 / 1920) < 1);
   evidence.push({ surface: "S7", centerX: centerQR.x + centerQR.width / 2, hudHidden: true, appCountdownHidden: true });
   await expect(page.locator(".globe-dots")).toHaveCount(0);
+  await expect(page.locator(".join-qr-center .qr-code")).toHaveText("code MOCK");
   await commands(page, [{ type: "goto", index: 15 }]);
   await expect(page.locator(".join-qr-build .qr-image img")).toHaveAttribute("width", "320");
   await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
+  await expect(page.locator(".join-qr-build .qr-code")).toHaveText("code MOCK");
+  assert.ok((await page.locator(".join-qr-build").boundingBox()).y + (await page.locator(".join-qr-build").boundingBox()).height <= 782 * 1280 / 1920, "The L8 card must stay above the mascot.");
   assert.equal(await page.locator(".join-qr-build .qr-url").evaluate((element) => getComputedStyle(element).whiteSpace === "nowrap" && element.scrollWidth <= element.clientWidth), true);
   await commands(page, [{ type: "goto", index: 16 }]);
   await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
@@ -135,8 +144,14 @@ try {
   await expect(notes.locator("header")).toContainText(/#\d+/, { timeout: 10000 });
   await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("live");
   await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(page.locator(".qr-code")).toHaveCount(0);
+  await commands(page, [{ type: "session", code: "ABCD1234" }]);
+  await expect(page.locator(".qr-code")).toHaveText("code ABCD1234");
+  await expect(page.locator(".qr-url")).toHaveAttribute("href", /[?&]s=ABCD1234$/);
   await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("mock");
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
+  await expect(page.locator(".qr-code")).toHaveText("code MOCK");
+  await commands(page, [{ type: "session", code: null }]);
   await commands(page, [{ type: "goto", index: 13 }, { type: "next" }]);
   await expect(page.locator(".owner-panel")).toHaveCount(0);
   await notes.getByRole("button", { name: "· Undo transfer", exact: true }).click();
@@ -167,6 +182,71 @@ try {
     await page.getByRole("button", { name: "Custom hex color", exact: true }).click();
     await expect(page.getByRole("textbox", { name: "Custom hex color value" })).toBeVisible();
     evidence.push({ surface: "phone", viewport: `${width}x844`, colorScheme, layout, countryKeyboard: true, customColor: true });
+    await context.close();
+  }
+  for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
+    const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme });
+    let ended = false;
+    const sessionReads = [];
+    const submissions = [];
+    await context.route(`${writer}/**`, (route) => route.abort());
+    await context.route(`${writer}/api/session?*`, (route) => {
+      const code = new URL(route.request().url()).searchParams.get("s");
+      sessionReads.push({ code, method: route.request().method() });
+      return route.fulfill({ json: { valid: code === "ZXCV5678" || (code === "ABCD1234" && !ended), doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
+    });
+    await context.route(`${writer}/api/submit`, (route) => {
+      submissions.push({ body: route.request().postDataJSON(), device: route.request().headers()["x-device-token"] });
+      ended = true;
+      return route.fulfill({ status: 403, json: { error: "bad_session", message: "This session has ended." } });
+    });
+    const snapshot = async (state) => {
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-${state}.png`), fullPage: true });
+    };
+    await page.goto(`${origin}/j/`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: "Enter the code on the screen", exact: true })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Your name" })).toHaveCount(0);
+    const historyBeforeJoin = await page.evaluate(() => history.length);
+    assert.equal(sessionReads.length, 0, "No session discovery request is allowed.");
+    await snapshot("entry");
+    const code = page.getByRole("textbox", { name: "Workshop code", exact: true });
+    await code.fill("abc");
+    await page.getByRole("button", { name: "Join the map", exact: true }).click();
+    await expect(page.locator("#code-error")).toHaveText("Enter the 8-character code on the screen.");
+    assert.equal(sessionReads.length, 0);
+    await code.fill("wrong123");
+    await page.getByRole("button", { name: "Join the map", exact: true }).click();
+    await expect(page.locator("#code-error")).toContainText("That code is not active.");
+    assert.equal(new URL(page.url()).searchParams.has("s"), false);
+    assert.equal(submissions.length, 0);
+    await snapshot("wrong");
+    await page.evaluate(() => localStorage.setItem(`arkiv-workshop-count:ABCD1234:${localStorage.getItem("arkiv-workshop-device")}`, "2"));
+    await code.fill(" abcd1234 ");
+    await expect(code).toHaveValue("ABCD1234");
+    await page.getByRole("button", { name: "Join the map", exact: true }).click();
+    await expect(page).toHaveURL(`${origin}/j/?s=ABCD1234`);
+    await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
+    assert.equal(await page.evaluate(() => history.length), historyBeforeJoin, "Entering a code replaces the URL instead of adding a navigation.");
+    await snapshot("joined");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
+    await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Typed join");
+    await page.getByRole("button", { name: "Write my entity", exact: true }).click();
+    await expect.poll(() => submissions.length).toBe(1);
+    assert.equal(submissions[0].body.session, "ABCD1234");
+    assert.equal(submissions[0].body.name, "Typed join");
+    assert.match(submissions[0].device, /^[a-f0-9-]{36}$/i);
+    await expect(page.getByRole("heading", { name: "Enter the code on the screen", exact: true })).toBeVisible();
+    await expect(page.getByRole("status")).toContainText("This session is no longer active.");
+    await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toHaveCount(0);
+    await snapshot("ended");
+    await code.fill("zxcv5678");
+    await page.getByRole("button", { name: "Join the map", exact: true }).click();
+    await expect(page).toHaveURL(`${origin}/j/?s=ZXCV5678`);
+    await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
+    assert.ok(sessionReads.every((request) => request.code && request.method === "GET"));
+    evidence.push({ surface: "typed-phone", width, colorScheme, wrongCodeRejected: true, urlReplaced: true, reloadResumes: true, endedSessionRejected: true, nextSessionAccepted: true, interceptedSubmissions: submissions.length });
     await context.close();
   }
   assert.deepEqual(errors, []);
