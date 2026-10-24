@@ -33,6 +33,22 @@ export function encodedFields(fields: Record<string, unknown>): AttributeInputs 
   return result;
 }
 
+/** On-screen text (L7) of `extend` below, for `addSeconds`. Change the two together. */
+export function describeExtend(addSeconds: number): { code: string } {
+  return { code: [
+    `const extraBlocks = BigInt(Math.ceil(${addSeconds * 1000} / blockTimeMs))`,
+    `const entities = await Promise.all(`,
+    `  keys.map((key) => reader.getEntity(key)))`,
+    `await writer.executeBatch({`,
+    `  extensions: entities.map((entity) => ({`,
+    `    entityKey: entity.key,`,
+    `    expires: ExpirationTime.atBlock(`,
+    `      entity.expiresAt + extraBlocks),`,
+    `  })),`,
+    `})`,
+  ].join("\n") };
+}
+
 export function dotToCreate(dot: DotCreate) {
   return {
     attributes: { app: APP_ID, kind: "dot", ...encodedFields(dot as unknown as Record<string, unknown>) },
