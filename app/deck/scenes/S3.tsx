@@ -1,12 +1,13 @@
 "use client";
 
 // S3 · One pin = one entity (handoff board "S3 · Slide template: one pin = one entity"). A table
-// row: your columns on Sand, Arkiv's fields underneath on Arkiv Blue (→ reveals them), and the
-// milk carton for Entity Expiration. Values are illustrative; the key is left elided on purpose.
+// row: your columns on Sand, Arkiv's fields underneath on Arkiv Blue (→ reveals them, each strip
+// labeled above at x 160), and the milk carton for Entity Expiration. Values are illustrative;
+// the key is left elided on purpose.
 
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { EASE, Reveal, Rise, Slide, T } from "../ui";
+import { Reveal, Rise, Slide, T } from "../ui";
 
 const COLUMNS: [name: string, value: string, mono?: boolean][] = [
   ["name", "Chai Corner"],
@@ -36,7 +37,6 @@ function MilkCarton() {
 }
 
 export function S3({ step }: SceneContentProps) {
-  const fields = step >= 1;
   return (
     <Slide headline="One pin = one entity" under="Your columns on top. Arkiv's fields underneath." wash={0.8}>
       <Rise delay={0.15} className="absolute left-[160px] top-[380px] text-[18px] font-semibold" style={{ color: T.t64 }}>
@@ -44,7 +44,7 @@ export function S3({ step }: SceneContentProps) {
       </Rise>
       <Rise delay={0.2} className="absolute left-[160px] top-[412px] w-[1600px]">
         <div className="overflow-hidden rounded-[20px] shadow-[0_28px_72px_rgba(0,0,0,0.55)]">
-          <div className="grid grid-cols-[1.25fr_1fr_0.8fr_1.35fr] bg-[var(--arkiv-sand)]">
+          <div className="grid h-[160px] grid-cols-[1.25fr_1fr_0.8fr_1.35fr] bg-[var(--arkiv-sand)]">
             {COLUMNS.map(([name]) => (
               <div key={name} className="px-7 py-4 font-mono text-[20px] text-[rgba(17,17,17,0.56)]">
                 {name}
@@ -59,25 +59,20 @@ export function S3({ step }: SceneContentProps) {
               </div>
             ))}
           </div>
-          <motion.div
-            initial={false}
-            animate={{ height: fields ? "auto" : 0 }}
-            transition={{ duration: 0.6, ease: EASE }}
-            className="overflow-hidden"
-          >
-            <div className="grid grid-cols-4 border-t-4 border-[var(--arkiv-ink)] bg-[var(--arkiv-blue)]">
-              {FIELDS.map(([name, value]) => (
-                <div key={name} className="flex flex-col gap-1.5 px-7 py-5">
-                  <span className="font-mono text-[22px] font-semibold text-[var(--arkiv-sand)]">{name}</span>
-                  <span className="font-mono text-[20px] text-[rgba(246,244,239,0.72)]">{value}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
         </div>
       </Rise>
-      <Reveal step={step} at={1} className="absolute left-[1776px] top-[640px] w-[120px] text-[18px] font-semibold leading-[1.3]" style={{ color: T.t64 }}>
+      <Reveal step={step} at={1} y={-16} className="absolute left-[160px] top-[596px] text-[18px] font-semibold" style={{ color: T.t64 }}>
         Arkiv fields
+      </Reveal>
+      <Reveal step={step} at={1} y={-24} className="absolute left-[160px] top-[628px] w-[1600px]">
+        <div className="grid grid-cols-4 overflow-hidden rounded-[20px] bg-[var(--arkiv-blue)] shadow-[0_28px_72px_rgba(0,0,0,0.55)]">
+          {FIELDS.map(([name, value]) => (
+            <div key={name} className="flex flex-col gap-1.5 px-7 py-5">
+              <span className="font-mono text-[22px] font-semibold text-[var(--arkiv-sand)]">{name}</span>
+              <span className="font-mono text-[20px] text-[rgba(246,244,239,0.72)]">{value}</span>
+            </div>
+          ))}
+        </div>
       </Reveal>
       <Reveal step={step} at={1} className="absolute left-[160px] top-[800px] flex items-center gap-8">
         <motion.div animate={{ rotate: [-3, 3, -3] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}>
