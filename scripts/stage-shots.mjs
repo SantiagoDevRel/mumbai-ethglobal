@@ -40,7 +40,8 @@ const send = (page, cmds) => page.evaluate((items) => {
   for (const cmd of items) channel.postMessage({ kind: "command", cmd });
   channel.close();
 }, cmds);
-const settle = (page) => page.waitForTimeout(1600);
+// Camera flights take 2.4 s (Globe.tsx); settle past them so the globe is where the talk leaves it.
+const settle = (page) => page.waitForTimeout(3500);
 const shot = (page, name) => page.screenshot({ path: path.join(dir, `${name}.png`), timeout: 60_000 });
 
 for (const [width, height] of [[1920, 1080], [1280, 720]]) {
