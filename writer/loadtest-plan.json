@@ -1,0 +1,16 @@
+{
+  "network": "Tiramisu",
+  "chainId": 7738577,
+  "requestedPhones": 200,
+  "submissionWindowMs": 30000,
+  "maximumBatchSize": 20,
+  "minimumBalanceWei": "8000000000000000000",
+  "acceptance": {
+    "dropped": 0,
+    "nonceErrors": 0,
+    "maximumMedianSubmitToConfirmationMsExclusive": 6000,
+    "queryVisibleEntities": 200
+  },
+  "visibilityMeasurement": "First keyed query response containing the entity, with the stage's per-block polling and 700 ms cadence. Browser paint is outside this measurement.",
+  "recovery": "Preserve a failing report and all known hashes. Never resend an uncertain batch or repeat an unchanged campaign just to obtain a pass."
+}

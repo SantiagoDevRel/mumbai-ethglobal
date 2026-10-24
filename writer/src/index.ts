@@ -20,6 +20,7 @@ export interface Env {
   RPC: string;
   ACCESS_KEY: string;
   WORKSHOP_PRESENTER_TOKEN: string;
+  MIN_WRITER_BALANCE_WEI?: string;
 }
 
 const REGISTRY = "0x4400000000000000000000000000000000000044";
@@ -326,6 +327,16 @@ export class WriterObject implements DurableObject {
         const { reader, writer } = await this.network(true);
         const block = await reader.getBlockNumber();
         if (block <= BigInt(this.meta.lastFlushBlock)) { await this.schedule(); return; }
+        const balance = await reader.getBalance({ address: WRITER_ADDRESS });
+        this.balanceWei = String(balance);
+        const minimum = BigInt(this.env.MIN_WRITER_BALANCE_WEI ?? "0");
+        if (balance < minimum) {
+          this.meta.doors = "closed";
+          this.meta.heldUntil = Date.now() + 60_000;
+          await this.save();
+          await this.schedule(60_000);
+          return;
+        }
         const ids = this.meta.queue.slice(0, 20);
         const tickets = await Promise.all(ids.map(id => this.state.storage.get<Ticket>(`ticket:${id}`)));
         if (tickets.some(ticket => !ticket)) throw new Error("Queue checkpoint missing.");

@@ -11,17 +11,17 @@ const source = (await readFile(new URL("../dist/index.js", import.meta.url), "ut
 const presenter = "test-presenter-credential";
 const auth = { authorization: `Bearer ${presenter}`, "content-type": "application/json" };
 
-async function fixture(profile = "tiramisu") {
+async function fixture(profile = "tiramisu", balance = "0x8ac7230489e80000") {
   const calls = [];
   const mf = new Miniflare(convertV4MiniflareOptions({
     modules: true, script: source, compatibilityDate: "2026-10-01", compatibilityFlags: ["nodejs_compat"],
     durableObjects: { WRITER: { className: "WriterObject", useSQLite: true } },
-    bindings: { ARKIV_PROFILE: profile, ALLOWED_ORIGINS: "https://app.example", RPC: "https://rpc.example", ACCESS_KEY: "test-rpc-credential", WORKSHOP_PRESENTER_TOKEN: presenter, WORKSHOP_WRITER_PRIVATE_KEY: testKey },
+    bindings: { ARKIV_PROFILE: profile, MIN_WRITER_BALANCE_WEI: "8000000000000000000", ALLOWED_ORIGINS: "https://app.example", RPC: "https://rpc.example", ACCESS_KEY: "test-rpc-credential", WORKSHOP_PRESENTER_TOKEN: presenter, WORKSHOP_WRITER_PRIVATE_KEY: testKey },
     outboundService: async request => {
       const call = await request.json();
       calls.push(call);
       assert.equal(request.headers.get("X-API-KEY"), "test-rpc-credential");
-      const values = { eth_chainId: "0x7614d1", arkiv_getBlockTiming: { current_block: 100, current_block_time: Date.now() / 1000, duration: 2 }, eth_getBalance: "0x8ac7230489e80000", eth_blockNumber: "0x64" };
+      const values = { eth_chainId: "0x7614d1", arkiv_getBlockTiming: { current_block: 100, current_block_time: Date.now() / 1000, duration: 2 }, eth_getBalance: balance, eth_blockNumber: "0x64" };
       if (!(call.method in values)) throw new Error(`Unexpected RPC method ${call.method}`);
       return Response.json({ jsonrpc: "2.0", id: call.id, result: values[call.method] });
     },
@@ -90,5 +90,26 @@ test("workerd fails closed for a placeholder network", async () => {
     const session = (await call(`/api/session?s=${started.data.code}`, undefined, {})).data;
     assert.equal(session.network, null);
     assert.equal(session.doors, "closed");
+  } finally { await mf.dispose(); }
+});
+
+test("the balance floor closes doors and holds queued writes before any send", async () => {
+  const { mf, call, calls } = await fixture("tiramisu", "0x6124fee993bc0000"); // Seven test GLM.
+  try {
+    const { data: { code } } = await call("/api/presenter/session/start", {});
+    await call("/api/presenter/doors", { open: true });
+    const accepted = await call("/api/submit", { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 120 }, { "x-device-token": "balance-floor-test-device" });
+    assert.equal(accepted.status, 200);
+    let status;
+    const deadline = Date.now() + 7_000;
+    do {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      status = (await call("/api/presenter/status")).data;
+    } while (!status.held && Date.now() < deadline);
+    assert.equal(status.held, true);
+    assert.equal(status.doors, "closed");
+    assert.equal(status.queued, 1);
+    assert.equal(status.written, 0);
+    assert.equal(calls.some(call => call.method.startsWith("eth_send")), false);
   } finally { await mf.dispose(); }
 });
