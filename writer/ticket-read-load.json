@@ -1,0 +1,322 @@
+{
+  "schema": 1,
+  "writerUrl": "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev",
+  "inputSha256": "fb53241108665d9fc8cecc167c5e5cff8f19cb337fc69678a9923b450d57c0d2",
+  "session": "B2DEF664",
+  "phones": 200,
+  "durationMs": 180000,
+  "intervalMs": 5000,
+  "expectedRequests": 7200,
+  "workload": "200 distinct historical written tickets from one session; each polls the Worker every five seconds with evenly staggered phases. No RPC calls from the clients, creates, signatures or session changes.",
+  "startedAt": "2026-10-24T14:30:29.020Z",
+  "status": "passed",
+  "before": {
+    "calls": 3,
+    "byMethod": {
+      "eth_chainId": 1,
+      "arkiv_getBlockTiming": 1,
+      "arkiv_query": 1
+    },
+    "http429": 0,
+    "rpc429": 0,
+    "errors": 0,
+    "ticketQueries": 1,
+    "requestsToday": 11849
+  },
+  "errors": [],
+  "after": {
+    "calls": 96,
+    "byMethod": {
+      "eth_chainId": 7,
+      "arkiv_getBlockTiming": 7,
+      "arkiv_query": 82
+    },
+    "http429": 0,
+    "rpc429": 0,
+    "errors": 0,
+    "ticketQueries": 82,
+    "requestsToday": 19050
+  },
+  "upstream": {
+    "calls": 93,
+    "ticketQueries": 81,
+    "http429": 0,
+    "rpc429": 0,
+    "errors": 0,
+    "byMethod": {
+      "eth_chainId": 6,
+      "arkiv_getBlockTiming": 6,
+      "arkiv_query": 81
+    }
+  },
+  "p50Ms": 225,
+  "p95Ms": 483,
+  "maxMs": 1042,
+  "workerRequests": 7201,
+  "client429": 0,
+  "completedRequests": 7200,
+  "observedBlocks": 81,
+  "elapsedMs": 180454,
+  "finishedAt": "2026-10-24T14:33:29.474Z",
+  "sampleCount": 7200,
+  "fullReportSha256": "a4935562ea68f0205e66101f0ff60460fb99c0ca4d88a8c93b58aee56008ee16",
+  "sourceCommit": "4a6b620",
+  "deployedVersion": "df67fc27-80da-4ca9-b5ca-871a388e3ee6",
+  "deployedBundleSha256": "b0459490d4a58d273a817f18dc5f5eac763fd17d32da443e75d6e4fc2d2c92e0",
+  "validationJob": "j-950eaaa6c73a4a04a4f67489e90de553",
+  "regressionTests": 39,
+  "latencyByRound": [
+    {
+      "round": 0,
+      "count": 200,
+      "p95Ms": 477,
+      "maxMs": 685,
+      "http429": 0
+    },
+    {
+      "round": 1,
+      "count": 200,
+      "p95Ms": 529,
+      "maxMs": 804,
+      "http429": 0
+    },
+    {
+      "round": 2,
+      "count": 200,
+      "p95Ms": 383,
+      "maxMs": 565,
+      "http429": 0
+    },
+    {
+      "round": 3,
+      "count": 200,
+      "p95Ms": 428,
+      "maxMs": 629,
+      "http429": 0
+    },
+    {
+      "round": 4,
+      "count": 200,
+      "p95Ms": 386,
+      "maxMs": 628,
+      "http429": 0
+    },
+    {
+      "round": 5,
+      "count": 200,
+      "p95Ms": 332,
+      "maxMs": 441,
+      "http429": 0
+    },
+    {
+      "round": 6,
+      "count": 200,
+      "p95Ms": 420,
+      "maxMs": 520,
+      "http429": 0
+    },
+    {
+      "round": 7,
+      "count": 200,
+      "p95Ms": 427,
+      "maxMs": 628,
+      "http429": 0
+    },
+    {
+      "round": 8,
+      "count": 200,
+      "p95Ms": 393,
+      "maxMs": 557,
+      "http429": 0
+    },
+    {
+      "round": 9,
+      "count": 200,
+      "p95Ms": 451,
+      "maxMs": 681,
+      "http429": 0
+    },
+    {
+      "round": 10,
+      "count": 200,
+      "p95Ms": 575,
+      "maxMs": 736,
+      "http429": 0
+    },
+    {
+      "round": 11,
+      "count": 200,
+      "p95Ms": 410,
+      "maxMs": 611,
+      "http429": 0
+    },
+    {
+      "round": 12,
+      "count": 200,
+      "p95Ms": 444,
+      "maxMs": 593,
+      "http429": 0
+    },
+    {
+      "round": 13,
+      "count": 200,
+      "p95Ms": 383,
+      "maxMs": 464,
+      "http429": 0
+    },
+    {
+      "round": 14,
+      "count": 200,
+      "p95Ms": 379,
+      "maxMs": 477,
+      "http429": 0
+    },
+    {
+      "round": 15,
+      "count": 200,
+      "p95Ms": 552,
+      "maxMs": 1042,
+      "http429": 0
+    },
+    {
+      "round": 16,
+      "count": 200,
+      "p95Ms": 412,
+      "maxMs": 563,
+      "http429": 0
+    },
+    {
+      "round": 17,
+      "count": 200,
+      "p95Ms": 652,
+      "maxMs": 860,
+      "http429": 0
+    },
+    {
+      "round": 18,
+      "count": 200,
+      "p95Ms": 573,
+      "maxMs": 762,
+      "http429": 0
+    },
+    {
+      "round": 19,
+      "count": 200,
+      "p95Ms": 418,
+      "maxMs": 631,
+      "http429": 0
+    },
+    {
+      "round": 20,
+      "count": 200,
+      "p95Ms": 504,
+      "maxMs": 765,
+      "http429": 0
+    },
+    {
+      "round": 21,
+      "count": 200,
+      "p95Ms": 409,
+      "maxMs": 705,
+      "http429": 0
+    },
+    {
+      "round": 22,
+      "count": 200,
+      "p95Ms": 537,
+      "maxMs": 690,
+      "http429": 0
+    },
+    {
+      "round": 23,
+      "count": 200,
+      "p95Ms": 651,
+      "maxMs": 847,
+      "http429": 0
+    },
+    {
+      "round": 24,
+      "count": 200,
+      "p95Ms": 439,
+      "maxMs": 899,
+      "http429": 0
+    },
+    {
+      "round": 25,
+      "count": 200,
+      "p95Ms": 496,
+      "maxMs": 694,
+      "http429": 0
+    },
+    {
+      "round": 26,
+      "count": 200,
+      "p95Ms": 500,
+      "maxMs": 675,
+      "http429": 0
+    },
+    {
+      "round": 27,
+      "count": 200,
+      "p95Ms": 470,
+      "maxMs": 749,
+      "http429": 0
+    },
+    {
+      "round": 28,
+      "count": 200,
+      "p95Ms": 364,
+      "maxMs": 451,
+      "http429": 0
+    },
+    {
+      "round": 29,
+      "count": 200,
+      "p95Ms": 510,
+      "maxMs": 648,
+      "http429": 0
+    },
+    {
+      "round": 30,
+      "count": 200,
+      "p95Ms": 549,
+      "maxMs": 785,
+      "http429": 0
+    },
+    {
+      "round": 31,
+      "count": 200,
+      "p95Ms": 612,
+      "maxMs": 782,
+      "http429": 0
+    },
+    {
+      "round": 32,
+      "count": 200,
+      "p95Ms": 479,
+      "maxMs": 694,
+      "http429": 0
+    },
+    {
+      "round": 33,
+      "count": 200,
+      "p95Ms": 546,
+      "maxMs": 753,
+      "http429": 0
+    },
+    {
+      "round": 34,
+      "count": 200,
+      "p95Ms": 498,
+      "maxMs": 719,
+      "http429": 0
+    },
+    {
+      "round": 35,
+      "count": 200,
+      "p95Ms": 794,
+      "maxMs": 920,
+      "http429": 0
+    }
+  ]
+}
