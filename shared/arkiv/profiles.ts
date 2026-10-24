@@ -25,8 +25,8 @@ export const PROFILES: Record<ProfileId, NetworkProfile> = {
     chainId: 7738577,
     rpcHttp: "https://rpc.tiramisu.db-chain.testnet.arkiv.network",
     rpcWs: "wss://rpc.tiramisu.db-chain.testnet.arkiv.network",
-    // TODO(chain): verify the explorer URL and its entity/tx paths live before showing links.
-    explorer: null,
+    // Verified 2026-10-24: the explorer serves /tx/<hash>, /entity/<key> and /address/<address>.
+    explorer: "https://tiramisu.explorer.arkiv.network",
     faucet: "https://hub.arkiv.network/faucet",
     sdk: { package: "@arkiv-network/sdk", version: "0.8.1" },
     ready: true,
@@ -45,6 +45,13 @@ export const PROFILES: Record<ProfileId, NetworkProfile> = {
     ready: false,
   },
 };
+
+export type ExplorerTarget = "tx" | "entity" | "address";
+
+/** Explorer link for a tx hash, entity key or address, or null if the network has no explorer. */
+export function explorerUrl(profile: NetworkProfile, target: ExplorerTarget, id: string): string | null {
+  return profile.explorer ? `${profile.explorer}/${target}/${id}` : null;
+}
 
 export const DEFAULT_PROFILE: ProfileId = "tiramisu";
 
