@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { ArkivAdapter } from "../../shared/arkiv/adapter";
 import { createMockAdapter } from "../../shared/arkiv/mock";
-import type { ChainFilters, LiveEntity, QueryRun, StageEvent } from "../../shared/types";
+import type { ChainFilters, LiveEntity, QueryRun } from "../../shared/types";
 import { blockFeed } from "./block-feed";
-import { diffEntities, snapshotEntities } from "./entity-state";
+import { diffEntities, snapshotEntities, type VisualStageEvent } from "./entity-state";
 import { usePresenterToken } from "./presenter-auth";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
@@ -18,7 +18,7 @@ export interface LiveData {
   adapter: ArkivAdapter | null;
   source: "mock" | "live";
   run: QueryRun | null;
-  events: StageEvent[];
+  events: VisualStageEvent[];
   error: string | null;
 }
 

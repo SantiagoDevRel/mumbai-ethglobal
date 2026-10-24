@@ -55,7 +55,7 @@ try {
   stage.on("request", (request) => { if (request.url() === WRITER + "/api/rpc") proxyReads++; });
   stage.on("pageerror", (error) => errors.push(error.message));
   await stage.goto(ORIGIN, { waitUntil: "domcontentloaded" });
-  await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
+  await expect(stage.locator(".qr-image img")).toBeVisible({ timeout: 20000 });
   await stage.evaluate((code) => {
     const channel = new BroadcastChannel("arkiv-mumbai-stage");
     channel.postMessage({ kind: "command", cmd: { type: "session", code } });
@@ -63,6 +63,7 @@ try {
     channel.close();
   }, session);
   await expect(stage.locator('[data-scene="L1"]')).toBeVisible();
+  await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
   const phone = await context.newPage();
   await phone.setViewportSize({ width: 390, height: 844 });
   const phoneWriterRequests = [];
@@ -71,7 +72,8 @@ try {
   await phone.goto(`${ORIGIN}/j?s=${session}`, { waitUntil: "domcontentloaded" });
   await phone.getByPlaceholder("Name or nickname").fill("App smoke");
   await phone.getByRole("button", { name: "Color #3ddc97", exact: true }).click();
-  await phone.getByRole("combobox", { name: "Your country" }).selectOption("IN");
+  await phone.getByRole("combobox", { name: "Your country" }).click();
+  await phone.getByRole("option", { name: "India", exact: true }).click();
   await phone.locator('input[type="range"]').focus();
   await phone.keyboard.press("Home");
   const write = phone.getByRole("button", { name: "Write my entity", exact: true });
@@ -81,7 +83,7 @@ try {
   await expect(phone.getByText(/Written in block #\d+/)).toBeVisible({ timeout: 60000 });
   const includedAt = Date.now();
   const written = await phone.getByText(/Written in block #\d+/).textContent();
-  const entityHref = await phone.getByRole("link", { name: "View your entity" }).getAttribute("href");
+  const entityHref = await phone.getByRole("link", { name: "View in explorer" }).getAttribute("href");
   const key = entityHref?.split("/").at(-1);
   assert.match(key ?? "", /^0x[0-9a-f]{64}$/i);
   await expect(stage.locator(".event-log").getByRole("button", { name: /App smoke/ }).first()).toBeVisible({ timeout: 15000 });
