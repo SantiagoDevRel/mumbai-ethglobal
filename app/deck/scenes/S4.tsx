@@ -46,7 +46,7 @@ function ChainTable() {
 
 export function S4({ step }: SceneContentProps) {
   return (
-    <Slide headline="Queries like a database. Lives on a chain.">
+    <Slide headline="Queries like a database. Lives on a chain." size={72}>
       <Rise delay={0.2} className="absolute left-[96px] top-[300px]">
         <CalmRoom />
         <p className="mt-6 w-[720px] text-[32px] font-semibold text-[var(--arkiv-orange)]">Server down. Rules changed. Data gone.</p>

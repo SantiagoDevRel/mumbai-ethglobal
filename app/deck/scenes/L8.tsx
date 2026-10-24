@@ -39,12 +39,12 @@ export function L8(_props: SceneContentProps) {
         ))}
       </div>
       <motion.div
-        className="absolute left-[1560px] top-[560px]"
+        className="absolute left-[1540px] top-[580px]"
         initial={{ opacity: 0, x: 30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
       >
-        <Mascot pose="wave" unit={30} />
+        <Mascot pose="wave" variant="3d" unit={50} />
       </motion.div>
     </Slide>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 // Original illustrations that borrow only the layout idea of known meme formats, starring the
-// Arkiv mascot placeholder (app/deck/Mascot.tsx). No third-party meme images, no original artwork
+// Arkiv mascot (app/deck/Mascot.tsx). No third-party meme images, no original artwork
 // traced, no format names on screen. Palette only; props sit beside the mascot, never on it.
 
 import { Lock, ThumbsDown, ThumbsUp, X } from "lucide-react";
@@ -106,7 +106,7 @@ export function CalmRoom() {
       </div>
       {/* the mascot, calm, with a mug on a side table beside it */}
       <div className="absolute bottom-[56px] left-[292px]">
-        <Mascot pose="stand" unit={24} />
+        <Mascot pose="stand" unit={28} />
       </div>
       <div className="absolute bottom-[56px] left-[545px] h-[90px] w-[8px] bg-[var(--arkiv-stone)]/70" />
       <div className="absolute bottom-[146px] left-[515px] h-[8px] w-[70px] rounded bg-[var(--arkiv-stone)]/70" />
@@ -183,7 +183,7 @@ export function CharacterSelect({ lifespans, maxSec }: { lifespans: { label: str
                   transition={{ type: "spring", stiffness: 500, damping: 34 }}
                 />
               ) : null}
-              <Mascot pose={SLOT_POSES[i % SLOT_POSES.length]} unit={12} still />
+              <Mascot pose={SLOT_POSES[i % SLOT_POSES.length]} unit={15} />
               <p className={`font-mono text-[24px] font-semibold ${isSel ? "text-[var(--arkiv-orange)]" : ""}`}>{label}</p>
             </div>
           );
