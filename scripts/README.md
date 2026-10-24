@@ -52,8 +52,10 @@ the presenter token. Its injected EIP-1193 provider delegates to a Node function
 
 Scene starts follow `shared/scenes.ts` in real time. That contract has no reveal
 timestamps, so steps run in order at scene entry, 750 ms apart, awaiting each live
-operation. The S7 wave sends twenty synthetic phones over 32 seconds and a real
-phone at +33 seconds, all with 120-second lifetimes. Early arrivals expire before
+operation. The S7 wave sends ten synthetic phones at +0 to +1 seconds, ten at
++31 to +32 seconds and a real phone at +33 seconds, all with 120-second lifetimes.
+The two cohorts avoid entities expiring during the all-entity query and preparation.
+Early arrivals expire before
 L2; later arrivals remain available for its immediate selected/all extensions.
 The three wallet transactions are two extensions and one business patch. The
 signer validates their destination and operation tags, rejects ownership changes

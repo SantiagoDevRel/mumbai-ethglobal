@@ -31,6 +31,14 @@ SDK 0.8.1 source and deployed behavior confirmed:
   writes remain blocked until their known transaction outcome is reconciled.
 - Receipt polling is explicitly 500 ms. This is a polling cadence, not a claimed
   block duration; the unconfigured viem client default was four seconds.
+- A query snapshot does not reserve an entity's remaining lifetime. An entity
+  close to expiration can disappear before a later `getEntity` or transaction
+  simulation. The first timed rehearsal stopped before broadcasting its all-entity
+  extension after querying targets with roughly two seconds left. Its evidence
+  remains in `rehearsal-primary.json`; a later read returned `NoEntityFoundError`.
+  The rehearsal now uses two arrival cohorts so late entities have preparation
+  time after the selected extension. Participant lifetimes and scene times stay
+  unchanged. Failed presenter actions also capture the UI notice in the report.
 
 ## Checks and deployment
 

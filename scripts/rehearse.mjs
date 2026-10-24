@@ -41,7 +41,7 @@ const report = {
   scriptSha256: createHash("sha256").update(await readFile(new URL(import.meta.url))).digest("hex"),
   staticIndexSha256: createHash("sha256").update(await readFile(path.join(root, "index.html"))).digest("hex"),
   startedAt: new Date().toISOString(), plannedTalkMs: TALK_LENGTH_SEC * 1000,
-  timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits 20 synthetic phones across 32 s and a real phone at +33 s; lifetimes stay at 120 s. L2 selected then all run promptly, before late arrivals expire. Scene starts more than 1000 ms late count as overruns.",
+  timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; lifetimes stay at 120 s. The two cohorts avoid querying an entity immediately before its expiration during L2 preparation. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
   deployedWorker: { version: "c221c14e-fd84-481d-b625-b62d6e42a231", sourceCommit: "e1732fb", bundleSha256: "e2c0893aacfb1896895cbf0adeccf88779e682c4efdd4f07b3f43390d0e05d1a", verification: "Cloudflare deployments list, 100% active, checked before this campaign" },
   scenes: [], operations: [], transactions: [], phones: [], balances: [], pageErrors: [], requestFailures: [], dataErrors: [],
   ownership: { mode: "demo view", allowedWalletOperationTags: [2, 3], onChainTransfers: 0 },
@@ -161,7 +161,12 @@ async function signedAction(name, trigger, verify) {
   return op(name, async () => {
     const count = report.transactions.length;
     await trigger();
-    await expect.poll(() => report.transactions.length, { timeout: 20000 }).toBe(count + 1);
+    try { await expect.poll(() => report.transactions.length, { timeout: 20000 }).toBe(count + 1); }
+    catch (error) {
+      const notice = await stage.locator(".presenter-notice").textContent().catch(() => "No presenter notice.");
+      report.actionFailure = { scene: currentScene, name, notice: safeMessage(notice) };
+      throw new Error(`${name}: ${safeMessage(notice)}. ${safeMessage(error)}`);
+    }
     const item = report.transactions[count];
     await expect.poll(() => item.hash, { timeout: 30000 }).toBeTruthy();
     const receipt = await clients.reader.waitForTransactionReceipt({ hash: item.hash, timeout: 45000, retryCount: 0 });
@@ -222,7 +227,10 @@ async function phoneWave() {
     await expect.poll(async () => (await presenter("status")).doors).toBe("open");
   });
   const waveStart = SCENES.find((scene) => scene.id === "S7").at * 1000;
-  const tasks = Array.from({ length: 20 }, (_, index) => (async () => { await until(waveStart + index * 32000 / 19); await submitSynthetic(index); })());
+  const tasks = Array.from({ length: 20 }, (_, index) => (async () => {
+    const offset = index < 10 ? index * 1000 / 9 : 31000 + (index - 10) * 1000 / 9;
+    await until(waveStart + offset); await submitSynthetic(index);
+  })());
   const realPhone = (async () => {
     await until(waveStart + 33000);
     await op("real /j submit to stage visibility", async () => {
@@ -371,9 +379,16 @@ try {
         if (step) { await sleep(750); await command({ type: "next" }); }
         await expect.poll(() => stage.evaluate(() => window.__rehearsalState.step)).toBe(step);
         scene.steps.push({ step, plannedEarliestStartMs: definition.at * 1000 + step * 750, actualStartMs: now() });
-        await sceneWork(definition.id, step);
+        try { await sceneWork(definition.id, step); }
+        catch (error) {
+          scene.status = "failed";
+          scene.errors ??= []; scene.errors.push({ step, atMs: now(), message: safeMessage(error) });
+          // Continue the talk after a determinate UI failure; uncertain signatures
+          // and the balance floor must stop the run and enter cleanup immediately.
+          if (floorError || uncertain || sendPending) throw error;
+        }
       }
-      scene.actionsFinishedAtMs = now(); scene.status = "passed";
+      scene.actionsFinishedAtMs = now(); if (scene.status !== "failed") scene.status = "passed";
       await checkpoint();
       console.log(JSON.stringify({ scene: definition.id, actualStartMs: scene.actualStartMs, latenessMs: scene.latenessMs, actionsFinishedAtMs: scene.actionsFinishedAtMs }));
     }
@@ -385,7 +400,8 @@ try {
     const owned = await adapter.query({ kinds: ["dot", "business"], session });
     assert.ok(owned.entities.every((item) => item.owner.toLowerCase() === WRITER_ADDRESS.toLowerCase()));
     report.remainingEntities = owned.entities.length; report.ownership.allRemainingEntitiesStillWriterOwned = true;
-    report.status = "passed";
+    report.status = report.scenes.some((scene) => scene.status === "failed") ? "failed" : "passed";
+    if (report.status === "failed") process.exitCode = 1;
   }
 } catch (error) { report.status = "failed"; report.error = safeMessage(error); process.exitCode = 1; console.error(JSON.stringify({ status: "failed", scene: currentScene, message: report.error })); }
 finally {
