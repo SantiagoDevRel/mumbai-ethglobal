@@ -23,13 +23,17 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal,
     nativeCurrency: { name: "GLM", symbol: "GLM", decimals: 18 },
     rpcUrls: { default: { http: [profile.rpcHttp] } },
   });
-  const url = read.kind === "public" ? profile.rpcHttp : read.url;
+  const url = read.kind === "public" ? profile.rpcHttp : read.kind === "relay" ? "" : read.url;
   let nextId = 1;
   const transport = custom({
     async request({ method, params }: { method: string; params?: unknown }) {
       if (method === "eth_sendRawTransaction" && journal) {
         const raw = (params as Hex[])[0]!;
         await journal.beforeSend(raw, keccak256(raw));
+      }
+      if (read.kind === "relay") {
+        observe?.({ method, phase: "request" });
+        try { return await read.send(method, params ?? []); } catch (error) { observe?.({ method, phase: "error" }); throw error; }
       }
       const headers: Record<string, string> = { "content-type": "application/json" };
       if (read.kind === "keyed") headers["X-API-KEY"] = read.accessKey;

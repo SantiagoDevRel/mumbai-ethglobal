@@ -40,8 +40,8 @@ try {
       if (url.origin !== writer || url.pathname === "/api/rpc") { rpc.push({ url: request.url(), method: request.method() }); return route.abort(); }
       if (url.pathname === "/api/session") {
         sessionReads++;
-        assert.equal(url.searchParams.get("s"), "ABCD1234");
-        return route.fulfill({ json: { valid: true, doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
+        assert.equal(url.searchParams.get("s"), null);
+        return route.fulfill({ json: { valid: true, code: "ABCD1234", doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
       }
       if (url.pathname === "/api/submit") {
         submissions.push(request.postDataJSON());
@@ -64,6 +64,7 @@ try {
       assert.doesNotMatch(await page.locator("body").innerText(), /viem|RPC|429|unknown error/i);
       if (capture) await page.screenshot({ path: path.join(capture, `${width}-${colorScheme}-${name}.png`), fullPage: true });
     }
+    const clockSeconds = (text) => { const [m, sec] = text.split(":").map(Number); return m * 60 + sec; };
     async function statusFits(text) {
       const status = page.getByText(text, { exact: true });
       await expect(status).toBeVisible();
@@ -74,8 +75,6 @@ try {
       assert.ok(geometry.size <= 22 && geometry.line >= geometry.size * 1.3 && geometry.fits, JSON.stringify(geometry));
     }
     await page.goto(`${origin}/j/`, { waitUntil: "domcontentloaded" });
-    await page.getByRole("textbox", { name: "Workshop code", exact: true }).fill(" abcd1234 ");
-    await page.getByRole("button", { name: "Join the map", exact: true }).click();
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("SE test");
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
@@ -94,13 +93,13 @@ try {
     await snapshot("blocks");
     phase = "live";
     await tick(5000);
-    await expect(page.locator(".phone-countdown")).toHaveText(/^\d+ s$/);
+    await expect(page.locator(".phone-countdown")).toHaveText(/^\d+:\d{2}$/);
     await snapshot("live");
-    const previous = parseInt(await page.locator(".phone-countdown").innerText(), 10);
+    const previous = clockSeconds(await page.locator(".phone-countdown").innerText());
     phase = "error";
     await tick(5000);
     await expect(page.locator('.phone-notice[role="alert"]')).toHaveText("Reconnecting…");
-    const held = parseInt(await page.locator(".phone-countdown").innerText(), 10);
+    const held = clockSeconds(await page.locator(".phone-countdown").innerText());
     assert.ok(held > 0 && held <= previous);
     await snapshot("reconnecting");
     const firstError = tickets.at(-1);
@@ -116,7 +115,7 @@ try {
     assert.ok(tickets.at(-1).at - secondError.at >= 20000);
     await expect(page.locator('.phone-notice[role="alert"]')).toHaveCount(0);
     await expect(page.getByText("Santiago extended you! +20 min.", { exact: true })).toBeVisible();
-    await expect(page.locator(".phone-countdown")).toHaveText(/^\d+ s$/);
+    await expect(page.locator(".phone-countdown")).toHaveText(/^\d+:\d{2}$/);
     assert.equal(sessionReads, sessionReadsAfterWritten, "After written the phone reads only its ticket.");
     phase = "boundary";
     await tick(5000);

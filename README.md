@@ -4,7 +4,7 @@
 
 The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026). Five minutes of Arkiv 101,
 then the room becomes the database: everyone scans a QR code, picks a name, a color, a country and a
-lifetime (20 seconds to 2 minutes), and their Arkiv entity drops onto a live 3D globe with its own
+lifetime (5 to 15 minutes, 15 by default), and their Arkiv entity drops onto a live 3D globe with its own
 countdown. The map is just a query, and the panel under it shows the query that ran.
 
 | Route | Who | What |

@@ -91,3 +91,15 @@ test("an explicit wallet rejection permits the next explicit user action", async
     assert.equal(prompts, 2);
   } finally { globalThis.fetch = original; }
 });
+
+test("the stage relay reads without any fetch: no browser touches the public RPC", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("A relay read must not fetch."); };
+  const calls: string[] = [];
+  try {
+    const { reader } = createSdkClients({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
+      read: { kind: "relay", send: async (method) => { calls.push(method); return method === "eth_chainId" ? "0x7614d1" : "0x10"; } } });
+    assert.equal(await reader.getBlockNumber(), 16n);
+    assert.deepEqual(calls, ["eth_blockNumber"]);
+  } finally { globalThis.fetch = original; }
+});

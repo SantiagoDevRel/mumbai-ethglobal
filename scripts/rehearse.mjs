@@ -200,7 +200,7 @@ function observe(page, label) {
 let phoneKey;
 async function submitSynthetic(index) {
   return op(`synthetic phone ${index + 1}`, async () => {
-    const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : "#ff8c42", lifetimeSec: 120 };
+    const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : "#ff8c42", lifetimeSec: 300 };
     const submittedAtMs = now();
     const response = await fetch(`${WRITER}/api/submit`, { method: "POST", headers: { "content-type": "application/json", "x-device-token": crypto.randomUUID(), origin: ORIGIN }, body: JSON.stringify(draft), signal: AbortSignal.timeout(20000) });
     assert.equal(response.status, 200);
@@ -314,7 +314,7 @@ async function sceneWork(id, step) {
     // the fresh-scan route to the L8 resources.
     report.l8WrittenPhoneHeading = await phone.locator("h1").textContent();
     const resources = await phone.context().newPage(); observe(resources, "resources");
-    await resources.goto(`${ORIGIN}/j?s=${session}`, { waitUntil: "domcontentloaded" });
+    await resources.goto(`${ORIGIN}/j`, { waitUntil: "domcontentloaded" });
     await expect(resources.getByRole("heading", { name: "Build on Arkiv this weekend" })).toBeVisible({ timeout: 15000 });
     await expect(resources.getByRole("link", { name: /Docs/ })).toBeVisible();
     report.l8FreshScanResourcesVisible = true; await resources.close();
@@ -372,7 +372,7 @@ try {
     await presenter("phase", { phase: "talk" });
     phone = await context.newPage(); observe(phone, "phone");
     await phone.setViewportSize({ width: 390, height: 844 });
-    await phone.goto(`${ORIGIN}/j?s=${session}`, { waitUntil: "domcontentloaded" });
+    await phone.goto(`${ORIGIN}/j`, { waitUntil: "domcontentloaded" });
     await phone.getByPlaceholder("Name or nickname").fill("Rehearsal phone");
     await phone.getByRole("button", { name: `Color ${GREEN}`, exact: true }).click();
     await phone.getByRole("combobox", { name: "Your country" }).selectOption("IN");

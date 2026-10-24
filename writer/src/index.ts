@@ -245,7 +245,8 @@ export class WriterObject implements DurableObject {
     if (path === "/api/session" && request.method === "GET") {
       let network: string | null = null;
       try { await this.network(); network = getProfile(this.env.ARKIV_PROFILE).name; } catch { /* Fail closed in the public state. */ }
-      return Response.json({ valid: this.meta.session !== null && url.searchParams.get("s") === this.meta.session,
+      const asked = url.searchParams.get("s");
+      return Response.json({ valid: this.meta.session !== null && (asked === null || asked === this.meta.session), code: this.meta.session,
         doors: network ? this.meta.doors : "closed", phase: this.meta.phase, replay: this.meta.replay, network });
     }
     if (path === "/api/submit" && request.method === "POST") return this.submit(request);

@@ -100,7 +100,7 @@ function Countdown({ elapsed }: { elapsed: number }) {
 export function S7(_props: SceneContentProps) {
   const startedAt = useStage((s) => s.doorsCountdownAt);
   const elapsed = useCountdownElapsed(startedAt);
-  const lifespans = [LIFETIME_MIN_SEC, 60, LIFETIME_MAX_SEC].map((sec) => ({ sec, label: formatLifetime(sec) }));
+  const lifespans = [LIFETIME_MIN_SEC, (LIFETIME_MIN_SEC + LIFETIME_MAX_SEC) / 2, LIFETIME_MAX_SEC].map((sec) => ({ sec, label: formatLifetime(sec) }));
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
@@ -115,7 +115,7 @@ export function S7(_props: SceneContentProps) {
                   Name. Color. Country.
                   <br />
                   <span className="text-[var(--arkiv-orange)]">
-                    Lifetime: {LIFETIME_MIN_SEC} seconds to {LIFETIME_MAX_SEC / 60} minutes.
+                    Lifetime: {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} minutes.
                   </span>
                 </p>
               </Rise>

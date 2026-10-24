@@ -6,7 +6,7 @@ import { createMockAdapter } from "../../shared/arkiv/mock";
 import type { ChainFilters, LiveEntity, QueryRun } from "../../shared/types";
 import { blockFeed } from "./block-feed";
 import { diffEntities, snapshotEntities, type VisualStageEvent } from "./entity-state";
-import { usePresenterToken } from "./presenter-auth";
+import { stageReadTransport, usePresenterToken } from "./presenter-auth";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { createLiveAdapter } from "./adapter-loader";
@@ -20,6 +20,12 @@ export interface LiveData {
   run: QueryRun | null;
   events: VisualStageEvent[];
   error: string | null;
+}
+
+/** viem wraps transport errors ("An unknown RPC error occurred. Details: …"); the projector shows only the cause. */
+function readError(error: unknown): string {
+  if (!(error instanceof Error)) return "Unable to read the DB-Chain";
+  return "details" in error && typeof error.details === "string" && error.details ? error.details : error.message;
 }
 
 export function useLiveData(filters: ChainFilters, session: string | null): LiveData {
@@ -36,7 +42,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
         const profile = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
         const live = !isMockSource(mode, WRITER_URL);
         const mock = live ? null : createMockAdapter({ autoSpawnMs: 1500 });
-        const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: token ? { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } : { kind: "public" } });
+        const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: stageReadTransport(token, WRITER_URL + WRITER_ROUTES.rpc) });
         stopMock = mock?.stop;
         if (mock) {
           const result = await mock.createBusinesses(SEED_BUSINESSES.map((item) => ({ ...item.business, lifetimeSec: 12 * 60 * 60 })));
@@ -72,9 +78,9 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
           setData((old) => ({ ...old, run, events: [...events.reverse(), ...old.events].slice(0, 120), error: null }));
         }
       } catch (error) {
-        if (!stopped) setData((old) => ({ ...old, error: error instanceof Error ? error.message : "Unable to read the DB-Chain" }));
+        if (!stopped) setData((old) => ({ ...old, error: readError(error) }));
       }
-      if (!stopped) timer = setTimeout(tick, 700);
+      if (!stopped) timer = setTimeout(tick, 1000);
     };
     void tick();
     return () => { stopped = true; clearTimeout(timer); };

@@ -28,7 +28,7 @@ export const SubmitRequest = z.object({
     .int()
     .min(LIFETIME_MIN_SEC)
     .max(LIFETIME_MAX_SEC)
-    .refine((v) => v % LIFETIME_STEP_SEC === 0, "lifetime must be a multiple of 10 s"),
+    .refine((v) => v % LIFETIME_STEP_SEC === 0, `lifetime must be a multiple of ${LIFETIME_STEP_SEC} s`),
 });
 export type SubmitRequest = z.infer<typeof SubmitRequest>;
 
@@ -82,10 +82,13 @@ export const TicketResponse = z.object({
 });
 export type TicketResponse = z.infer<typeof TicketResponse>;
 
-/** GET /api/session?s=<code>. Phones poll this every 3 s while waiting for the doors. */
+/** GET /api/session. Phones poll this every 3 s and join whatever session is running: no code to type.
+ * With `?s=<code>`, `valid` says whether that code is still the current session. */
 export const SessionPublic = z.object({
-  /** False if the code isn't the current session. */
+  /** Without `s`: whether a session is running. With `s`: whether it is that session. */
   valid: z.boolean(),
+  /** The current session code, or null when no session is running. */
+  code: z.string().nullable(),
   doors: z.enum(["closed", "open"]),
   /** `talk` during the talk; `build` after L8 (phone switches to resources). */
   phase: z.enum(["talk", "build"]),
@@ -154,7 +157,7 @@ export const RPC_READ_ALLOWLIST = [
 export const WRITER_ROUTES = {
   submit: "/api/submit",
   ticket: (t: string) => `/api/ticket/${encodeURIComponent(t)}`,
-  session: (s: string) => `/api/session?s=${encodeURIComponent(s)}`,
+  session: (s?: string) => (s ? `/api/session?s=${encodeURIComponent(s)}` : "/api/session"),
   rpc: "/api/rpc",
   presenter: {
     sessionStart: "/api/presenter/session/start",

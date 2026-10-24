@@ -18,22 +18,13 @@
   --panel-border: rgba(246, 244, 239, 0.14);
   --app-side: #ffd23f;
 
-  /* Phone follows the system theme. */
-  --phone-bg: var(--arkiv-sand);
-  --phone-fg: var(--arkiv-ink);
-  --phone-card: #ffffff;
-  --phone-muted: #5b5a63;
-  --phone-border: var(--arkiv-stone);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --phone-bg: #0c0d24;
-    --phone-fg: var(--arkiv-sand);
-    --phone-card: #15163a;
-    --phone-muted: #a9a7b8;
-    --phone-border: rgba(246, 244, 239, 0.16);
-  }
+  /* Every surface is dark only, whatever the system theme. */
+  color-scheme: dark;
+  --phone-bg: #0c0d24;
+  --phone-fg: var(--arkiv-sand);
+  --phone-card: #15163a;
+  --phone-muted: #a9a7b8;
+  --phone-border: rgba(246, 244, 239, 0.16);
 }
 
 @theme inline {

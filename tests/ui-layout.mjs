@@ -22,7 +22,7 @@ async function setup(options) {
     try { if ((await stat(file)).isDirectory()) file = path.join(file, "index.html"); await route.fulfill({ status: 200, contentType: mime[path.extname(file)] ?? "application/octet-stream", body: await readFile(file) }); }
     catch { await route.fulfill({ status: 404, body: "Not found" }); }
   });
-  await context.route("https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev/api/session?*", (route) => route.fulfill({ json: { valid: true, doors: "open", phase: "talk", replay: false, network: "Tiramisu" } }));
+  await context.route("https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev/api/session*", (route) => route.fulfill({ json: { valid: true, code: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, network: "Tiramisu" } }));
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
   return { context, page };
@@ -43,8 +43,9 @@ try {
   await expect(page.getByRole("button", { name: "Color · Orange", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".query-scope summary code")).not.toContainText(/,\s*(?:·|$)/);
   await expect(page.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
-  await expect(page.locator(".qr-code")).toHaveText("code MOCK");
-  await expect(page.locator(".qr-url")).toHaveAttribute("href", /[?&]s=MOCK$/);
+  // No room code: the QR is the bare /j link.
+  await expect(page.locator(".qr-code")).toHaveCount(0);
+  await expect(page.locator(".qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/j");
   await page.evaluate(() => document.fonts.ready);
   await page.locator(".query-panel").evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720]]) {
@@ -53,7 +54,7 @@ try {
     const layout = await page.evaluate(() => {
       const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
       const url = document.querySelector(".qr-url");
-      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), roomCode: rect(".qr-code"), event: rect(".event-log"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
+      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), event: rect(".event-log"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
     });
     const scale = width / 1920;
     assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1);
@@ -66,8 +67,6 @@ try {
     assert.equal(layout.url.fontSize, "20px");
     assert.equal(layout.urlFits, true);
     assert.ok(layout.url.y + layout.url.height <= layout.qr.y + layout.qr.height);
-    assert.ok(layout.roomCode.y >= layout.url.y + layout.url.height - 1);
-    assert.ok(layout.roomCode.y + layout.roomCode.height <= layout.qr.y + layout.qr.height);
     assert.ok(layout.event.y >= layout.qr.y + layout.qr.height);
     assert.equal(layout.overflow, false);
     evidence.push({ surface: "stage", viewport: `${width}x${height}`, layout });
@@ -128,11 +127,11 @@ try {
   assert.ok(Math.abs(centerQR.x + centerQR.width / 2 - 660 * 1280 / 1920) < 1);
   evidence.push({ surface: "S7", centerX: centerQR.x + centerQR.width / 2, hudHidden: true, appCountdownHidden: true });
   await expect(page.locator(".globe-dots")).toHaveCount(0);
-  await expect(page.locator(".join-qr-center .qr-code")).toHaveText("code MOCK");
+  await expect(page.locator(".join-qr-center .qr-code")).toHaveCount(0);
   await commands(page, [{ type: "goto", index: 15 }]);
   await expect(page.locator(".join-qr-build .qr-image img")).toHaveAttribute("width", "320");
   await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
-  await expect(page.locator(".join-qr-build .qr-code")).toHaveText("code MOCK");
+  await expect(page.locator(".join-qr-build .qr-code")).toHaveCount(0);
   assert.ok((await page.locator(".join-qr-build").boundingBox()).y + (await page.locator(".join-qr-build").boundingBox()).height <= 782 * 1280 / 1920, "The L8 card must stay above the mascot.");
   assert.equal(await page.locator(".join-qr-build .qr-url").evaluate((element) => getComputedStyle(element).whiteSpace === "nowrap" && element.scrollWidth <= element.clientWidth), true);
   await commands(page, [{ type: "goto", index: 16 }]);
@@ -146,11 +145,11 @@ try {
   await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
   await expect(page.locator(".qr-code")).toHaveCount(0);
   await commands(page, [{ type: "session", code: "ABCD1234" }]);
-  await expect(page.locator(".qr-code")).toHaveText("code ABCD1234");
-  await expect(page.locator(".qr-url")).toHaveAttribute("href", /[?&]s=ABCD1234$/);
+  await expect(page.locator(".qr-code")).toHaveCount(0);
+  await expect(page.locator(".qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/j");
   await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("mock");
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
-  await expect(page.locator(".qr-code")).toHaveText("code MOCK");
+  await expect(page.locator(".qr-code")).toHaveCount(0);
   await commands(page, [{ type: "session", code: null }]);
   await commands(page, [{ type: "goto", index: 13 }, { type: "next" }]);
   await expect(page.locator(".owner-panel")).toHaveCount(0);
@@ -161,7 +160,7 @@ try {
 
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
     const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme });
-    await page.goto(`${origin}/j?s=UI-LAYOUT`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/j`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await page.evaluate(() => document.fonts.ready);
     const layout = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, swatches: document.querySelectorAll(".color-swatch").length, header: getComputedStyle(document.querySelector(".phone-header")).height, input: getComputedStyle(document.querySelector('input[name="name"]')).height, cta: getComputedStyle(document.querySelector(".phone-submit")).height, background: getComputedStyle(document.querySelector(".phone-surface")).backgroundColor }));
@@ -170,7 +169,8 @@ try {
     assert.equal(layout.header, "60px");
     assert.equal(layout.input, "52px");
     assert.equal(layout.cta, "56px");
-    assert.equal(layout.background, colorScheme === "dark" ? "rgb(17, 17, 17)" : "rgb(246, 244, 239)");
+    // Dark only: a light system theme still gets the dark phone.
+    assert.equal(layout.background, "rgb(17, 17, 17)");
     await page.getByRole("combobox", { name: "Your country" }).click();
     await expect(page.getByRole("option").first()).toHaveText("India");
     await page.getByRole("combobox", { name: "Search countries" }).fill("Colombia");
@@ -186,67 +186,44 @@ try {
   }
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
     const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme });
-    let ended = false;
+    let current = "ABCD1234";
     const sessionReads = [];
     const submissions = [];
     await context.route(`${writer}/**`, (route) => route.abort());
-    await context.route(`${writer}/api/session?*`, (route) => {
-      const code = new URL(route.request().url()).searchParams.get("s");
-      sessionReads.push({ code, method: route.request().method() });
-      return route.fulfill({ json: { valid: code === "ZXCV5678" || (code === "ABCD1234" && !ended), doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
+    await context.route(`${writer}/api/session*`, (route) => {
+      sessionReads.push({ code: new URL(route.request().url()).searchParams.get("s"), method: route.request().method() });
+      return route.fulfill({ json: { valid: current !== null, code: current, doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
     });
     await context.route(`${writer}/api/submit`, (route) => {
       submissions.push({ body: route.request().postDataJSON(), device: route.request().headers()["x-device-token"] });
-      ended = true;
+      current = null;
       return route.fulfill({ status: 403, json: { error: "bad_session", message: "This session has ended." } });
     });
     const snapshot = async (state) => {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-${state}.png`), fullPage: true });
     };
+    // No code to type: the bare link joins the running session.
     await page.goto(`${origin}/j/`, { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Enter the code on the screen", exact: true })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Your name" })).toHaveCount(0);
-    const historyBeforeJoin = await page.evaluate(() => history.length);
-    assert.equal(sessionReads.length, 0, "No session discovery request is allowed.");
-    await snapshot("entry");
-    const code = page.getByRole("textbox", { name: "Workshop code", exact: true });
-    await code.fill("abc");
-    await page.getByRole("button", { name: "Join the map", exact: true }).click();
-    await expect(page.locator("#code-error")).toHaveText("Enter the 8-character code on the screen.");
-    assert.equal(sessionReads.length, 0);
-    await code.fill("wrong123");
-    await page.getByRole("button", { name: "Join the map", exact: true }).click();
-    await expect(page.locator("#code-error")).toContainText("That code is not active.");
-    assert.equal(new URL(page.url()).searchParams.has("s"), false);
-    assert.equal(submissions.length, 0);
-    await snapshot("wrong");
-    await page.evaluate(() => localStorage.setItem(`arkiv-workshop-count:ABCD1234:${localStorage.getItem("arkiv-workshop-device")}`, "2"));
-    await code.fill(" abcd1234 ");
-    await expect(code).toHaveValue("ABCD1234");
-    await page.getByRole("button", { name: "Join the map", exact: true }).click();
-    await expect(page).toHaveURL(`${origin}/j/?s=ABCD1234`);
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
-    assert.equal(await page.evaluate(() => history.length), historyBeforeJoin, "Entering a code replaces the URL instead of adding a navigation.");
+    await expect(page.getByRole("textbox", { name: "Workshop code" })).toHaveCount(0);
     await snapshot("joined");
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
-    await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Typed join");
+    await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Codeless join");
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
     await expect.poll(() => submissions.length).toBe(1);
     assert.equal(submissions[0].body.session, "ABCD1234");
-    assert.equal(submissions[0].body.name, "Typed join");
+    assert.equal(submissions[0].body.lifetimeSec, 900, "The slider starts at the 15-minute default.");
     assert.match(submissions[0].device, /^[a-f0-9-]{36}$/i);
-    await expect(page.getByRole("heading", { name: "Enter the code on the screen", exact: true })).toBeVisible();
-    await expect(page.getByRole("status")).toContainText("This session is no longer active.");
-    await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Doors closed", exact: true })).toBeDisabled();
     await snapshot("ended");
-    await code.fill("zxcv5678");
-    await page.getByRole("button", { name: "Join the map", exact: true }).click();
-    await expect(page).toHaveURL(`${origin}/j/?s=ZXCV5678`);
+    await page.evaluate(() => localStorage.setItem(`arkiv-workshop-count:ZXCV5678:${localStorage.getItem("arkiv-workshop-device")}`, "3"));
+    current = "ZXCV5678";
+    await expect(page.getByRole("button", { name: "Session limit reached", exact: true })).toBeVisible();
+    await page.evaluate(() => localStorage.removeItem(`arkiv-workshop-count:ZXCV5678:${localStorage.getItem("arkiv-workshop-device")}`));
+    await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
-    assert.ok(sessionReads.every((request) => request.code && request.method === "GET"));
-    evidence.push({ surface: "typed-phone", width, colorScheme, wrongCodeRejected: true, urlReplaced: true, reloadResumes: true, endedSessionRejected: true, nextSessionAccepted: true, interceptedSubmissions: submissions.length });
+    assert.ok(sessionReads.every((request) => request.code === null && request.method === "GET"));
+    evidence.push({ surface: "codeless-phone", width, colorScheme, joinedWithoutCode: true, defaultLifetimeSec: 900, endedSessionClosed: true, nextSessionJoined: true, interceptedSubmissions: submissions.length });
     await context.close();
   }
   assert.deepEqual(errors, []);

@@ -25,7 +25,7 @@ export interface CodeBlock {
 
 /** Sample input for the create; the values on screen are labeled as a sample. */
 function sampleDot(session: string): DotCreate {
-  return { session, name: "Priya", color: "#fe7446", country: "IN", lat: 19.076, lng: 72.8777, lifetimeSec: 60 };
+  return { session, name: "Priya", color: "#fe7446", country: "IN", lat: 19.076, lng: 72.8777, lifetimeSec: 900 };
 }
 
 /** One comment line: the network and SDK the code ran on, and where `reader` and `writer` come from. */
