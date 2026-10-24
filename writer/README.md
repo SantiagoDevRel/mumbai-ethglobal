@@ -27,6 +27,8 @@ SDK 0.8.1 source and deployed behavior confirmed:
 - `getBlockTiming()` reports Unix seconds and block duration in seconds.
 - `ExpirationTime.fromSeconds()` uses the SDK's nominal two-second conversion;
   countdowns must use the actual expiry and live timing instead.
+- An explicit EIP-1193 rejection (`4001`) permits a later user action; uncertain
+  writes remain blocked until their known transaction outcome is reconciled.
 
 ## Checks and deployment
 
@@ -63,6 +65,11 @@ and their hash are persisted before forwarding. An uncertain outcome stops new
 batches until that same hash is reconciled against its transaction and receipt.
 Canonical create events supply keys and exact expiry blocks; no local timer marks
 an entity written or expired.
+
+`MIN_WRITER_BALANCE_WEI` is checked before admitting a batch. The authorized load
+test sets it to eight test GLM: a lower balance closes the doors and holds queued
+writes before any new transaction is sent. An already-broadcast transaction is
+allowed to finish. The load script also monitors the balance independently.
 
 Holds finish an in-flight batch before returning idle. They expire after a minute;
 seed scripts renew a hold while signing. Replay mode pauses queued writes. Ending

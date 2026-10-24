@@ -70,6 +70,7 @@ export class WriterObject implements DurableObject {
   private networkCheckedAt = 0;
   private balanceWei = "0";
   private blockTimeMs = 2_000;
+  private batchTask: Promise<void> | null = null;
 
   constructor(
     private readonly state: DurableObjectState,
@@ -97,7 +98,7 @@ export class WriterObject implements DurableObject {
       this.clients = createSdkClients({ profile, creator: WRITER_ADDRESS,
         read: { kind: "keyed", url: this.env.RPC, accessKey: this.env.ACCESS_KEY },
         wallet: { kind: "privateKey", privateKey: this.env.WORKSHOP_WRITER_PRIVATE_KEY as Hex },
-      }, { beforeSend: async (raw, hash) => {
+      }, { beforeSend: async (raw, hash) => this.exclusive(async () => {
         const flight = this.meta.inFlight;
         if (!flight) throw new Error("No durable batch is admitted.");
         const tx = parseTransaction(raw);
@@ -106,7 +107,7 @@ export class WriterObject implements DurableObject {
         flight.raw = raw; flight.txHash = hash;
         // This checkpoint completes before the custom transport forwards signed bytes.
         await this.save();
-      } });
+      }) });
     }
     if (this.clients.writer!.account!.address.toLowerCase() !== WRITER_ADDRESS.toLowerCase()) throw new NetworkNotConfiguredError("writer account mismatch");
     if (force || Date.now() - this.networkCheckedAt > 30_000) {
@@ -147,7 +148,7 @@ export class WriterObject implements DurableObject {
   }
 
   async fetch(request: Request): Promise<Response> {
-    return this.exclusive(async () => {
+    const response = await this.exclusive(async () => {
       await this.countRequest();
       const origin = request.headers.get("origin");
       const allowed = this.env.ALLOWED_ORIGINS.split(",").map(value => value.trim()).filter(Boolean);
@@ -173,6 +174,16 @@ export class WriterObject implements DurableObject {
       }
       return new Response(response.body, { status: response.status, headers });
     });
+    // Hold marks the lease under the mutex, then waits outside it: the active
+    // batch still needs that mutex to checkpoint signed bytes and its receipt.
+    if (request.method === "POST" && new URL(request.url).pathname === "/api/presenter/hold" && response.ok) {
+      await this.batchTask;
+      return this.exclusive(async () => {
+        if (this.meta.inFlight) await this.reconcile();
+        return Response.json({ held: true, idle: this.meta.inFlight === null }, { headers: response.headers });
+      });
+    }
+    return response;
   }
 
   private async route(request: Request): Promise<Response> {
@@ -243,7 +254,7 @@ export class WriterObject implements DurableObject {
     } else if (path === "/api/presenter/hold") {
       this.meta.heldUntil = Date.now() + 60_000;
       await this.save();
-      if (this.meta.inFlight) await this.reconcile();
+      if (this.meta.inFlight && !this.batchTask) await this.reconcile();
       await this.schedule(60_000);
       return Response.json({ held: true, idle: this.meta.inFlight === null });
     } else if (path === "/api/presenter/resume") {
@@ -318,15 +329,23 @@ export class WriterObject implements DurableObject {
   }
 
   async alarm(): Promise<void> {
-    await this.exclusive(async () => {
+    if (this.batchTask) { await this.exclusive(() => this.countRequest()); return; }
+    const task = this.runAlarm();
+    this.batchTask = task;
+    try { await task; } finally { if (this.batchTask === task) this.batchTask = null; }
+  }
+
+  private async runAlarm(): Promise<void> {
+    let nextDelay: number | undefined = 250;
+    try {
+      const prepared = await this.exclusive(async () => {
       await this.countRequest();
-      try {
-        if (this.meta.inFlight) { await this.reconcile(); if (this.meta.inFlight) { await this.schedule(5_000); return; } }
-        if (this.held()) { await this.schedule(this.meta.heldUntil - Date.now()); return; }
-        if (this.meta.replay || !this.meta.queue.length) return;
+        if (this.meta.inFlight) { await this.reconcile(); if (this.meta.inFlight) { nextDelay = 5_000; return; } }
+        if (this.held()) { nextDelay = this.meta.heldUntil - Date.now(); return; }
+        if (this.meta.replay || !this.meta.queue.length) { nextDelay = undefined; return; }
         const { reader, writer } = await this.network(true);
         const block = await reader.getBlockNumber();
-        if (block <= BigInt(this.meta.lastFlushBlock)) { await this.schedule(); return; }
+        if (block <= BigInt(this.meta.lastFlushBlock)) { nextDelay = this.blockTimeMs; return; }
         const balance = await reader.getBalance({ address: WRITER_ADDRESS });
         this.balanceWei = String(balance);
         const minimum = BigInt(this.env.MIN_WRITER_BALANCE_WEI ?? "0");
@@ -334,7 +353,7 @@ export class WriterObject implements DurableObject {
           this.meta.doors = "closed";
           this.meta.heldUntil = Date.now() + 60_000;
           await this.save();
-          await this.schedule(60_000);
+          nextDelay = 60_000;
           return;
         }
         const ids = this.meta.queue.slice(0, 20);
@@ -347,19 +366,31 @@ export class WriterObject implements DurableObject {
         const updates: Record<string, Ticket | Meta> = { meta: this.meta };
         for (const ticket of tickets as Ticket[]) { ticket.status = "sending"; updates[`ticket:${ticket.ticket}`] = ticket; }
         await this.state.storage.put(updates);
+        return { writer: writer!, tickets: tickets as Ticket[], nonce };
+      });
+      if (prepared) {
         try {
-          const result = await writer!.executeBatch({ creates: (tickets as Ticket[]).map(ticket => dotToCreate(ticket.dot)) }, { nonce });
-          if (this.meta.inFlight.txHash !== result.txHash) throw new Error("Receipt hash differs from the signed batch.");
-          await this.reconcile();
+          const result = await prepared.writer.executeBatch({ creates: prepared.tickets.map(ticket => dotToCreate(ticket.dot)) }, { nonce: prepared.nonce });
+          await this.exclusive(async () => {
+            if (this.meta.inFlight?.txHash !== result.txHash) throw new Error("Receipt hash differs from the signed batch.");
+            await this.reconcile();
+          });
         } catch {
-          if (!this.meta.inFlight?.txHash) await this.failBatch("The transaction was not broadcast. Please try again.");
+          await this.exclusive(async () => {
+            if (this.meta.inFlight && !this.meta.inFlight.txHash) await this.failBatch("The transaction was not broadcast. Please try again.");
+          });
           // A captured hash is never resent. A later alarm reconciles the same receipt.
         }
-      } catch { /* Keep the durable queue and reconcile on the next bounded alarm. */ }
+      }
+    } catch { nextDelay = 5_000; /* Keep the durable queue for the next bounded alarm. */ }
+    finally {
       // A receipt normally arrives in the next block. Admit its successor there,
       // while lastFlushBlock still prevents two sends during the same block.
-      await this.schedule(this.meta.inFlight ? 5_000 : 250);
-    });
+      await this.exclusive(async () => {
+        if (this.meta.replay && !this.meta.inFlight) return;
+        if (nextDelay !== undefined) await this.schedule(this.meta.inFlight ? 5_000 : this.held() ? this.meta.heldUntil - Date.now() : nextDelay);
+      });
+    }
   }
 
   private async failBatch(message: string) {
