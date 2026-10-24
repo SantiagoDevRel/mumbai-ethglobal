@@ -1,32 +1,38 @@
 "use client";
 
-// Placeholder deck so the stage runs from hour 1. The deck chat replaces this file's content
-// with the real scenes (WORKSHOP.md sections 2 and 3), keeping the DeckRegistry contract.
+// The deck: every scene's slide or overlay plus its speaker notes (WORKSHOP.md sections 2 and 3),
+// behind the DeckRegistry contract (lib/stage/deck-contract.ts).
 
-import type { DeckRegistry, SceneContentProps } from "../../lib/stage/deck-contract";
-import { SCENES } from "../../shared/scenes";
+import type { DeckRegistry } from "../../lib/stage/deck-contract";
+import { NOTES } from "./notes";
+import { L7 } from "./scenes/L7";
+import { L8 } from "./scenes/L8";
+import { L1, L2, L3, L4, L5, L6, L9 } from "./scenes/live";
+import { S0 } from "./scenes/S0";
+import { S1 } from "./scenes/S1";
+import { S2 } from "./scenes/S2";
+import { S3 } from "./scenes/S3";
+import { S4 } from "./scenes/S4";
+import { S5 } from "./scenes/S5";
+import { S6 } from "./scenes/S6";
+import { S7 } from "./scenes/S7";
 
-function PlaceholderSlide({ scene, step }: SceneContentProps) {
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-6 bg-[var(--stage-bg)]/80">
-      <p className="text-3xl text-[var(--stage-muted)]">{scene.id}</p>
-      <h1 className="max-w-[1400px] text-center text-8xl font-semibold">{scene.title}</h1>
-      <p className="text-2xl text-[var(--stage-muted)]">
-        step {step + 1} / {scene.steps}
-      </p>
-    </div>
-  );
-}
-
-function PlaceholderOverlay({ scene }: SceneContentProps) {
-  return (
-    <div className="absolute left-16 top-12 text-5xl font-semibold drop-shadow-lg">{scene.title}</div>
-  );
-}
-
-export const deck = Object.fromEntries(
-  SCENES.map((s) => [
-    s.id,
-    s.kind === "slide" ? { Slide: PlaceholderSlide, notes: [] } : { Overlay: PlaceholderOverlay, notes: [] },
-  ]),
-) as unknown as DeckRegistry;
+export const deck: DeckRegistry = {
+  S0: { Slide: S0, notes: NOTES.S0 },
+  S1: { Slide: S1, notes: NOTES.S1 },
+  S2: { Slide: S2, notes: NOTES.S2 },
+  S3: { Slide: S3, notes: NOTES.S3 },
+  S4: { Slide: S4, notes: NOTES.S4 },
+  S5: { Slide: S5, notes: NOTES.S5 },
+  S6: { Slide: S6, notes: NOTES.S6 },
+  S7: { Slide: S7, notes: NOTES.S7 },
+  L1: { Overlay: L1, notes: NOTES.L1 },
+  L2: { Overlay: L2, notes: NOTES.L2 },
+  L3: { Overlay: L3, notes: NOTES.L3 },
+  L4: { Overlay: L4, notes: NOTES.L4 },
+  L5: { Overlay: L5, notes: NOTES.L5 },
+  L6: { Overlay: L6, notes: NOTES.L6 },
+  L7: { Slide: L7, notes: NOTES.L7 },
+  L8: { Slide: L8, notes: NOTES.L8 },
+  L9: { Overlay: L9, notes: NOTES.L9 },
+};
