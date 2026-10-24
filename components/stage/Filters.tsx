@@ -16,6 +16,7 @@ export function Filters({ state }: { state: StageState }) {
   const setChain = (filters: Partial<typeof chain>) => stage.dispatch({ type: "setChainFilters", filters: { ...chain, ...filters } });
   const setApp = (filters: Partial<typeof app>) => stage.dispatch({ type: "setAppFilters", filters: { ...app, ...filters } });
   return <section className="filters-panel panel pointer-events-auto"><div className="panel-heading"><h2>Filter the map</h2><button aria-label="Close filters" onClick={() => stage.dispatch({ type: "togglePanel", panel: "filters", open: false })}>×</button></div>
+    <label>Creator<select disabled value={WRITER_ADDRESS}><option value={WRITER_ADDRESS}>santiago · workshop scope</option></select></label>
     <label>Owner<select value={chain.owner ?? ""} onChange={(event) => setChain({ owner: event.target.value ? WRITER_ADDRESS : undefined })}><option value="">Any owner</option><option value={WRITER_ADDRESS}>santiago</option></select></label>
     <label>Color<select value={chain.color ?? ""} onChange={(event) => setChain({ color: event.target.value || undefined })}><option value="">Any color</option>{DOT_PALETTE.map((color) => <option value={color} key={color}>{color}</option>)}</select></label>
     <label>Country<select value={chain.country ?? ""} onChange={(event) => setChain({ country: event.target.value || undefined })}><option value="">Any country</option>{countries.map((country) => <option value={country.code} key={country.code}>{country.name}</option>)}</select></label>

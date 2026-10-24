@@ -10,6 +10,8 @@ import { usePresenterToken } from "./presenter-auth";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { createLiveAdapter } from "./adapter-loader";
+import { queryStage } from "./query-stage";
+import { SEED_BUSINESSES } from "../../shared/data/seed-businesses";
 
 export interface LiveData {
   adapter: ArkivAdapter | null;
@@ -25,7 +27,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
   useEffect(() => {
     let stopped = false;
     let stopMock: (() => void) | undefined;
-    void Promise.resolve().then(() => {
+    void Promise.resolve().then(async () => {
       if (stopped) return;
       try {
         const profile = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
@@ -33,8 +35,13 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
         const mock = live ? null : createMockAdapter({ autoSpawnMs: 1500 });
         const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } });
         stopMock = mock?.stop;
+        if (mock) {
+          const result = await mock.createBusinesses(SEED_BUSINESSES.map((item) => ({ ...item.business, lifetimeSec: 12 * 60 * 60 })));
+          await mock.createReviews(SEED_BUSINESSES.flatMap((item, index) => item.reviews.map((review) => ({ ...review, business: result.keys[index]!, lifetimeSec: 12 * 60 * 60 }))));
+        }
+        if (stopped) return;
         setData({ adapter, source: live ? "live" : "mock", run: null, events: [], error: null });
-      } catch (error) { setData({ adapter: null, source: "live", run: null, events: [], error: error instanceof Error ? error.message : "Network not configured" }); }
+      } catch (error) { if (!stopped) setData({ adapter: null, source: "live", run: null, events: [], error: error instanceof Error ? error.message : "Network not configured" }); }
     });
     return () => { stopped = true; stopMock?.(); blockFeed.publish(null); };
   }, [token]);
@@ -54,7 +61,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
         if (stopped) return;
         blockFeed.publish(block);
         if (block.number !== lastBlock) {
-          const run = await adapter.query(parsed);
+          const run = await queryStage(adapter, parsed);
           if (stopped) return;
           const events = diffEntities(previous, run, lastBlock !== null);
           previous = snapshotEntities(run.entities);

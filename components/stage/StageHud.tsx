@@ -8,12 +8,14 @@ import { Filters } from "./Filters";
 import { Inspector } from "./Inspector";
 import { OwnerView } from "./OwnerView";
 import type { LiveEntity } from "../../shared/types";
+import { DoorsCountdown } from "./DoorsCountdown";
 
 export function StageHud({ data, block, state, entities, appSteps, reviews }: { data: LiveData; block: BlockInfo | null; state: StageState; entities: LiveEntity[]; appSteps: string[]; reviews: LiveEntity[] }) {
   const [tab, setTab] = useState<"code" | "query">("code");
   const text = data.run?.description[tab] ?? "Waiting for the first query…";
   return <>
-    <header className="stage-status pointer-events-auto"><span className="source-label">{data.source === "mock" ? "Mock data" : "Live · Arkiv DB-Chain"}</span><strong>{data.run?.rows ?? 0}<small> live entities</small></strong><span>Block #{block?.number.toString() ?? "—"}</span><button onClick={() => stage.dispatch({ type: "togglePanel", panel: "filters" })}>Filters <kbd>F</kbd></button><button onClick={() => stage.dispatch({ type: "togglePanel", panel: "query" })}>Query <kbd>Q</kbd></button></header>
+    <DoorsCountdown startedAt={state.doorsCountdownAt} />
+    <header className="stage-status pointer-events-auto"><span className="source-label">{data.source === "mock" ? "Mock data" : "Live · Arkiv DB-Chain"}</span><strong>{data.run?.entities.length ?? 0}<small> live entities</small></strong><span>Block #{block?.number.toString() ?? "—"}</span><button onClick={() => stage.dispatch({ type: "togglePanel", panel: "filters" })}>Filters <kbd>F</kbd></button><button onClick={() => stage.dispatch({ type: "togglePanel", panel: "query" })}>Query <kbd>Q</kbd></button></header>
     {data.error && <p className="data-error" role="alert">{data.error}</p>}
     {!state.panels.inspector && <aside className="event-log panel pointer-events-auto"><h2>On the map</h2><ol>{data.events.map((event) => <li key={event.id}><button onClick={() => stage.dispatch({ type: "inspect", key: event.key })}><b>{event.type === "created" ? "+" : event.type === "expired" ? "−" : "↗"} {event.name}</b><span>{event.type === "expired" ? event.detail : `${event.detail} · block #${event.block}`}</span></button></li>)}</ol>{!data.events.length && <p>Waiting for the room…</p>}</aside>}
     {state.panels.filters && <Filters state={state} />}

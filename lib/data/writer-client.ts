@@ -9,7 +9,7 @@ export async function writerRequest(path: string, options: { token?: string; bod
   if (options.token) headers.authorization = `Bearer ${options.token}`;
   if (options.device) headers["x-device-token"] = options.device;
   const response = await fetch(WRITER_URL + path, { method: options.body === undefined ? "GET" : "POST", headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: options.signal, cache: "no-store" });
+    body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000), cache: "no-store" });
   const json: unknown = await response.json();
   if (!response.ok) {
     const error = ErrorResponse.safeParse(json);

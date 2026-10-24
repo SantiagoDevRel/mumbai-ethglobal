@@ -11,7 +11,7 @@ export function OwnerView({ transferred, count }: { transferred: boolean; count:
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const tick = (now: number) => {
       const progress = reduced ? 1 : Math.min(1, (now - start) / 1400);
-      setAnimated(transferred ? Math.round(count * progress) : Math.min(1, count));
+      setAnimated(transferred ? count ? 1 + Math.round((count - 1) * progress) : 0 : Math.min(1, count));
       if (progress < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);

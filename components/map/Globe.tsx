@@ -9,6 +9,8 @@ import { darkStyle } from "../../lib/map/style";
 import { mapViewport } from "../../lib/map/viewport";
 import { remainingSeconds } from "../../lib/data/entity-state";
 import { usePrefersReducedMotion } from "../stage/StageFrame";
+import countries from "../../shared/geo/countries.json";
+import { pointInPolygon, type LngLat } from "../../shared/geo/place";
 
 export function Globe({ entities, block, state }: { entities: LiveEntity[]; block: BlockInfo | null; state: StageState }) {
   const container = useRef<HTMLDivElement>(null);
@@ -29,6 +31,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
     const born = new Map<Hex, number>();
     const leaving = new Map<Hex, { entity: LiveEntity; at: number }>();
     let lastEntities = new Map<Hex, LiveEntity>();
+    let hasLanded = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     void Promise.all([import("maplibre-gl"), darkStyle(controller.signal)]).then(([gl, style]) => {
       if (stopped || !container.current) return;
@@ -55,7 +58,11 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         if (hit && hit.distance < 26) {
           stage.dispatch({ type: "select", keys: [hit.entity.key], mode: event.originalEvent.shiftKey ? "toggle" : "set" });
           stage.dispatch({ type: "inspect", key: hit.entity.key });
-        } else map.flyTo({ center: event.lngLat, zoom: Math.max(4, map.getZoom()), duration: reducedMotion ? 0 : 1700 });
+        } else {
+          const point: LngLat = [event.lngLat.wrap().lng, event.lngLat.lat];
+          const country = countries.find((item) => point[0] >= item.bbox[0]! && point[0] <= item.bbox[2]! && point[1] >= item.bbox[1]! && point[1] <= item.bbox[3]! && pointInPolygon(point, item.polygon as LngLat[]));
+          if (country) map.fitBounds([[country.bbox[0]!, country.bbox[1]!], [country.bbox[2]!, country.bbox[3]!]], { padding: { top: 120, bottom: 210, left: 100, right: 310 }, duration: reducedMotion ? 0 : 1700, maxZoom: 10 });
+        }
       });
       resize = new ResizeObserver(() => map.resize());
       resize.observe(container.current);
@@ -75,17 +82,21 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
         const delta = now - (last || now);
         last = now;
         const { entities, block, state } = current.current;
-        if (!entities.length && !reducedMotion && state.camera.cue === "globe-idle" && !map.isMoving()) map.jumpTo({ center: [map.getCenter().lng + delta * 0.0018, map.getCenter().lat] });
+        if (entities.length) hasLanded = true;
+        if (!hasLanded && !reducedMotion && state.camera.cue === "globe-idle" && !map.isMoving()) map.jumpTo({ center: [map.getCenter().lng + delta * 0.0018, map.getCenter().lat] });
         const surface = canvas.current;
         const width = surface.clientWidth, height = surface.clientHeight;
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
         if (surface.width !== width * ratio || surface.height !== height * ratio) { surface.width = width * ratio; surface.height = height * ratio; }
         const ctx = surface.getContext("2d");
         if (!ctx) return;
+        const fontFamily = getComputedStyle(surface).fontFamily;
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
         const active = new Map(entities.map((entity) => [entity.key, entity]));
+        for (const key of active.keys()) leaving.delete(key);
         for (const [key, entity] of lastEntities) if (!active.has(key)) leaving.set(key, { entity, at: now });
+        for (const [key, item] of leaving) if (now - item.at > 600) { leaving.delete(key); born.delete(key); }
         lastEntities = active;
         for (const entity of [...entities, ...[...leaving.values()].map((item) => item.entity)]) {
           if (entity.attrs.kind === "review") continue;
@@ -116,7 +127,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
             ctx.globalAlpha *= 1 - phase; ctx.beginPath(); ctx.arc(point.x, y, radius + phase * 26, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = exit ? Math.max(0, 1 - (now - exit.at) / 600) : 1;
           }
           if (state.map === "business") { ctx.fillStyle = "#111111"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText(a.kind === "business" ? a.category.slice(0, 1).toUpperCase() : "C", point.x, y + 4); }
-          ctx.fillStyle = "#f6f4ef"; ctx.font = "500 13px 'IBM Plex Sans', sans-serif"; ctx.textAlign = "center"; ctx.shadowColor = "#111111"; ctx.shadowBlur = 5;
+          ctx.fillStyle = "#f6f4ef"; ctx.font = `500 13px ${fontFamily}`; ctx.textAlign = "center"; ctx.shadowColor = "#111111"; ctx.shadowBlur = 5;
           ctx.fillText(state.map === "owner" && state.transferred ? `${a.name} · owner` : a.name, point.x, y + radius + 23); ctx.shadowBlur = 0;
         }
         ctx.globalAlpha = 1;

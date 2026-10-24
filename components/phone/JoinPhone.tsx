@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { DOT_PALETTE, normalizeColor, shortKey } from "../../shared/encoding";
-import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
+import { explorerUrl, getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { SessionPublic, SubmitRequest, SubmitResponse, TicketResponse } from "../../shared/writer-api";
 import type { BlockInfo, DotDraft, Hex, LiveEntity } from "../../shared/types";
-import { LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, NAME_MAX_CHARS } from "../../shared/types";
+import { LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, NAME_MAX_CHARS, MAX_ENTITIES_PER_DEVICE } from "../../shared/types";
 import { countryOptions } from "../../lib/data/countries";
 import { deviceToken, writerRequest, WRITER_ROUTES, WRITER_URL } from "../../lib/data/writer-client";
 import { createLiveAdapter } from "../../lib/data/adapter-loader";
@@ -32,13 +32,14 @@ export function JoinPhone() {
   const [writes, setWrites] = useState(0);
   const submitLock = useRef(false);
   const countries = useMemo(() => countryOptions(), []);
+  const profile = useMemo(() => { try { return getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE); } catch { return null; } }, []);
   const visibleCountries = countries.filter((country) => country.name.toLowerCase().includes(search.toLowerCase()) || country.code.toLowerCase() === search.toLowerCase());
 
   useEffect(() => {
     let stopped = false;
     void Promise.resolve().then(() => {
       if (stopped) return;
-      const code = new URLSearchParams(location.search).get("s") ?? "";
+    const code = new URLSearchParams(location.search).get("s") ?? "";
       setSession(code);
       try { setDevice(deviceToken()); } catch { setError("Allow browser storage so we can keep your place on the map."); }
     });
@@ -115,14 +116,17 @@ export function JoinPhone() {
     submitLock.current = true;
     setError(null);
     try {
-      const body = SubmitRequest.parse({ ...draft, session });
+      const validated = SubmitRequest.safeParse({ ...draft, session });
+      if (!validated.success) throw new Error("Check your name, country, color and lifetime, then try again.");
+      const body = validated.data;
       setState({ status: "submitting" });
       const result = SubmitResponse.parse(await writerRequest(WRITER_ROUTES.submit, { body, device }));
       setState({ status: "queued", ticket: result.ticket });
     } catch (err) { setError(err instanceof Error ? err.message : "Unable to write. Try again."); setState({ status: "form" }); }
     finally { submitLock.current = false; }
   }
-  const open = sessionInfo?.valid && sessionInfo.doors === "open" && !sessionInfo.replay && sessionInfo.network;
+  const open = sessionInfo?.valid && sessionInfo.doors === "open" && !sessionInfo.replay && sessionInfo.network && profile;
+  const entityLink = profile && state.status === "written" ? explorerUrl(profile, "entity", state.key) : null;
   const seconds = entity ? remainingSeconds(entity, block, now) : null;
   return <div className="phone-surface"><main className="phone-main">
     <header className="phone-header"><picture><source media="(prefers-color-scheme: dark)" srcSet="/brand/arkiv-white.svg" /><img src="/brand/arkiv-black.svg" width={112} height={28} alt="Arkiv" /></picture><span>Join the map</span></header>
@@ -130,6 +134,7 @@ export function JoinPhone() {
     <h1>{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : state.status === "written" ? "You’re on the map." : state.status === "expired" ? "Your moment, on-chain." : "A name. A color. Your place."}</h1>
     {sessionInfo?.replay && <p className="phone-notice">We’re in replay mode.</p>}
     {!WRITER_URL && <p className="phone-notice">The workshop writer is not connected yet.</p>}
+    {!profile && <p className="phone-notice">Network not configured</p>}
     {!session && <p className="phone-notice">Scan the workshop QR to join the current session.</p>}
     {error && <p className="phone-notice" role="alert">{error}</p>}
     {sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
@@ -137,8 +142,8 @@ export function JoinPhone() {
       <p className="phone-countdown">{seconds === null ? "Reading your lifetime…" : seconds > 0 ? `${Math.ceil(seconds)} s` : "Checking Entity Expiration…"}</p>
       {extended && <p className="phone-notice">Santiago extended you! +20 min.</p>}
       <code>{shortKey(state.key)}</code>
-      {getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE).explorer && <a href={`${getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE).explorer}/entity/${state.key}`} target="_blank" rel="noreferrer">View your entity ↗</a>}
-    </section> : state.status === "expired" ? <section className="phone-entity" aria-live="polite"><p>You expired at block #{state.block.toString()}. That’s Entity Expiration.</p>{open && writes < 3 && <button className="phone-submit" onClick={() => { setEntity(null); setExtended(false); setState({ status: "form" }); }}>Write another</button>}</section> : state.status === "queued" ? <section className="phone-entity" role="status"><span className="queue-orbit" /><h2>In the queue: next block</h2><p>Your dot is on its way.</p></section> : <form className="phone-form" onSubmit={submit}>
+      {entityLink && <a href={entityLink} target="_blank" rel="noreferrer">View your entity ↗</a>}
+    </section> : state.status === "expired" ? <section className="phone-entity" aria-live="polite"><p>You expired at block #{state.block.toString()}. That’s Entity Expiration.</p>{open && writes < MAX_ENTITIES_PER_DEVICE && <button className="phone-submit" onClick={() => { setEntity(null); setExtended(false); setState({ status: "form" }); }}>Write another</button>}</section> : state.status === "queued" ? <section className="phone-entity" role="status"><span className="queue-orbit" /><h2>In the queue: next block</h2><p>Your dot is on its way.</p></section> : <form className="phone-form" onSubmit={submit}>
       <label>Your name<input name="name" placeholder="Name or nickname" autoComplete="nickname" maxLength={NAME_MAX_CHARS} required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
       <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={`Color ${color}`} aria-pressed={!custom && draft.color === color} onClick={() => { setCustom(false); setDraft({ ...draft, color }); }} />)}</div><button type="button" className="custom-toggle" aria-expanded={custom} onClick={() => setCustom(!custom)}>Custom</button>{custom && <div className="custom-color"><input type="color" aria-label="Choose any color" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} /><input aria-label="Custom hex color" pattern="#[0-9a-fA-F]{6}" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} onBlur={() => { const color = normalizeColor(draft.color); if (color) setDraft({ ...draft, color }); }} /></div>}</fieldset>
       <label>Where are you from?<input type="search" placeholder="Search countries" value={search} onChange={(event) => setSearch(event.target.value)} /><select aria-label="Your country" value={draft.country} onChange={(event) => setDraft({ ...draft, country: event.target.value })}>{!visibleCountries.some((country) => country.code === draft.country) && <option value={draft.country}>{countries.find((country) => country.code === draft.country)?.name}</option>}{visibleCountries.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
@@ -150,5 +155,5 @@ export function JoinPhone() {
 }
 
 function BuildResources() {
-  return <div className="build-resources"><a href="https://arkiv.network" target="_blank" rel="noreferrer">Arkiv · start building ↗</a><p>Find the Docs, Arkiv AI plugin and Arkiv MCP from Arkiv’s website. Your agent can help you build.</p><p>Prizes · details to be announced.</p></div>;
+  return <div className="build-resources"><a href="https://docs.arkiv.network/start-here/fundamentals/" target="_blank" rel="noreferrer">Docs ↗</a><a href="https://hub.arkiv.network/ai-tools" target="_blank" rel="noreferrer">Arkiv AI plugin ↗</a><a href="https://hub.arkiv.network/ai-tools#mcp" target="_blank" rel="noreferrer">Arkiv MCP ↗</a><p>Your agent can help you build.</p><p>Prizes · details to be announced.</p></div>;
 }
