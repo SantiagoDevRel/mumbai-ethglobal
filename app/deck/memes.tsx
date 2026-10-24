@@ -134,9 +134,9 @@ export function NobodyMeme() {
       <div className="relative mt-5 flex h-[260px] items-end gap-10 rounded-[12px] bg-[var(--arkiv-ink)] px-8 pb-4">
         <Mascot pose="stand" unit={24} />
         <motion.div
-          className="mb-6 flex h-[100px] w-[180px] items-center justify-center gap-3 rounded-[12px] border-2 border-[var(--arkiv-stone)] font-mono text-[40px] font-semibold text-[var(--arkiv-stone)]"
+          className="mb-6 flex h-[100px] w-[180px] items-center justify-center gap-3 rounded-[12px] border-2 border-[rgba(246,244,239,0.64)] font-mono text-[40px] font-semibold text-[rgba(246,244,239,0.64)]"
           initial={{ opacity: 1, y: 0 }}
-          animate={{ opacity: [1, 1, 0.12], y: [0, 0, 20] }}
+          animate={{ opacity: [1, 1, 0.5], y: [0, 0, 16] }}
           transition={{ duration: 2.6, times: [0, 0.45, 1], repeat: Infinity, repeatDelay: 1.4, ease: EASE }}
         >
           EVM <X size={34} strokeWidth={3} className="text-[var(--arkiv-orange)]" />

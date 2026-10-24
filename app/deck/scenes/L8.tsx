@@ -2,7 +2,8 @@
 
 // L8 · Your turn: build it this weekend. Every URL here was checked with a live request
 // (docs.arkiv.network 200; hub.arkiv.network/ai-tools 200 with #arkiv-ai-plugin and #mcp anchors).
-// Prizes stay a placeholder: never invent amounts or details.
+// Prizes stay a placeholder: never invent amounts or details. The right column belongs to the big
+// QR (about 320 px at (1480, 300)); the mascot stands under it.
 
 import { BookOpen, Bot, Plug, Trophy, type LucideIcon } from "lucide-react";
 import { motion } from "motion/react";
@@ -11,10 +12,10 @@ import { Mascot } from "../Mascot";
 import { EASE, Slide } from "../ui";
 
 export const RESOURCES: { title: string; line: string | null; url: string | null; icon: LucideIcon }[] = [
-  { title: "Docs", line: null, url: "docs.arkiv.network", icon: BookOpen },
+  { title: "Docs", line: "TypeScript SDK and JSON-RPC API", url: "docs.arkiv.network", icon: BookOpen },
   { title: "Arkiv AI plugin", line: "Your agent already knows Arkiv", url: "hub.arkiv.network/ai-tools", icon: Bot },
   { title: "Arkiv MCP", line: null, url: "hub.arkiv.network/ai-tools#mcp", icon: Plug },
-  { title: "Prizes", line: "Prizes: announced at the event", url: null, icon: Trophy },
+  { title: "Prizes", line: "Announced at the event", url: null, icon: Trophy },
 ];
 
 export function L8(_props: SceneContentProps) {
@@ -39,12 +40,12 @@ export function L8(_props: SceneContentProps) {
         ))}
       </div>
       <motion.div
-        className="absolute left-[1540px] top-[580px]"
+        className="absolute left-[1520px] top-[712px]"
         initial={{ opacity: 0, x: 30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
       >
-        <Mascot pose="wave" variant="3d" unit={50} />
+        <Mascot pose="wave" variant="3d" unit={36} />
       </motion.div>
     </Slide>
   );

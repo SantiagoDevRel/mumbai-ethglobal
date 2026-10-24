@@ -35,17 +35,16 @@ export function encodedFields(fields: Record<string, unknown>): AttributeInputs 
 
 /** On-screen text (L7) of `extend` below, for `addSeconds`. Change the two together. */
 export function describeExtend(addSeconds: number): { code: string } {
+  // Whole minutes read as minutes on screen (20 * 60_000); the value is the same addSeconds * 1000.
+  const ms = addSeconds % 60 === 0 ? `${addSeconds / 60} * 60_000` : `${addSeconds * 1000}`;
   return { code: [
-    `const extraBlocks = BigInt(Math.ceil(${addSeconds * 1000} / blockTimeMs))`,
+    `const extraBlocks = BigInt(Math.ceil(${ms} / blockTimeMs))`,
     `const entities = await Promise.all(`,
     `  keys.map((key) => reader.getEntity(key)))`,
-    `await writer.executeBatch({`,
-    `  extensions: entities.map((entity) => ({`,
-    `    entityKey: entity.key,`,
-    `    expires: ExpirationTime.atBlock(`,
-    `      entity.expiresAt + extraBlocks),`,
-    `  })),`,
-    `})`,
+    `await writer.executeBatch({ extensions: entities.map((entity) => ({`,
+    `  entityKey: entity.key,`,
+    `  expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks),`,
+    `})) })`,
   ].join("\n") };
 }
 

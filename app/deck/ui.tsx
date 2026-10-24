@@ -198,14 +198,14 @@ export function Chip({ children, tone = "orange" }: { children: ReactNode; tone?
   return <span className={`inline-flex items-center gap-3 rounded-full border-[1.5px] px-6 py-2.5 text-[26px] font-semibold ${styles}`}>{children}</span>;
 }
 
-/** The `app-side` chip: 1.5 px dashed, radius 8, 15/600 (handoff 4). */
-export function AppSide({ className = "" }: { className?: string }) {
+/** The `app-side` chip: 1.5 px dashed, radius 8, 15/600 (handoff 4). `label` reuses it, e.g. "not run today". */
+export function AppSide({ className = "", label = "app-side" }: { className?: string; label?: string }) {
   return (
     <span
       className={`inline-flex shrink-0 items-center rounded-[8px] border-[1.5px] border-dashed px-2 py-0.5 text-[15px] font-semibold ${className}`}
       style={{ borderColor: T.t50, color: T.t84 }}
     >
-      app-side
+      {label}
     </span>
   );
 }

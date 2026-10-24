@@ -16,18 +16,24 @@ function LiveBlock() {
   return (
     <span className="flex items-baseline gap-5">
       <span className="text-[rgba(246,244,239,0.64)]">block</span>
-      <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
-          key={block.number.toString()}
-          className="tabular-nums text-[var(--arkiv-orange)]"
-          initial={{ y: 22, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -22, opacity: 0 }}
-          transition={{ duration: 0.35, ease: EASE }}
-        >
+      {/* The number rolls inside its own clipped slot, so the old one never leaves the chip. */}
+      <span className="relative inline-flex h-[1.25em] items-center overflow-hidden align-baseline">
+        <span className="invisible tabular-nums" aria-hidden>
           #{block.number.toLocaleString("en-US")}
-        </motion.span>
-      </AnimatePresence>
+        </span>
+        <AnimatePresence initial={false}>
+          <motion.span
+            key={block.number.toString()}
+            className="absolute inset-0 flex items-center tabular-nums text-[var(--arkiv-orange)]"
+            initial={{ y: "100%", opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: "-100%", opacity: 0 }}
+            transition={{ duration: 0.35, ease: EASE }}
+          >
+            #{block.number.toLocaleString("en-US")}
+          </motion.span>
+        </AnimatePresence>
+      </span>
       <span className="text-[26px] text-[rgba(246,244,239,0.64)]">
         one every {(block.blockTimeMs / 1000).toFixed(1)} s, measured live
       </span>

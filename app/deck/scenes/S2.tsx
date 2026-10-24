@@ -51,7 +51,7 @@ export function S2({ step }: SceneContentProps) {
     >
       {/* Storage: the heavy layer */}
       <motion.div
-        className="absolute left-[224px] top-[656px] grid h-[360px] w-[1352px] grid-cols-6 grid-rows-2 gap-4 rounded-[24px] border p-6"
+        className="absolute left-[224px] top-[656px] grid h-[360px] w-[1320px] grid-cols-6 grid-rows-2 gap-4 rounded-[24px] border p-6"
         style={{ background: "rgba(233,230,222,0.10)", borderColor: "rgba(246,244,239,0.18)" }}
         initial={false}
         animate={{ y: apart ? 0 : -150, opacity: apart ? 1 : 0.7 }}
@@ -92,10 +92,9 @@ export function S2({ step }: SceneContentProps) {
           INDEXING DATA <span aria-hidden>→</span> Arkiv
         </span>
       </Reveal>
-      <Reveal step={step} at={1} className="absolute left-[1608px] top-[800px]">
-        <span className="inline-flex flex-col items-start rounded-[20px] bg-[var(--arkiv-stone)] px-5 py-2.5 text-[26px] font-bold tracking-[0.04em] text-[var(--arkiv-ink)]">
-          STORAGE
-          <span>→ Swarm</span>
+      <Reveal step={step} at={1} className="absolute right-[32px] top-[800px]">
+        <span className="inline-flex items-center gap-3 whitespace-nowrap rounded-full bg-[var(--arkiv-stone)] px-5 py-2.5 text-[26px] font-bold tracking-[0.04em] text-[var(--arkiv-ink)]">
+          STORAGE <span aria-hidden>→</span> Swarm
         </span>
       </Reveal>
     </Slide>
