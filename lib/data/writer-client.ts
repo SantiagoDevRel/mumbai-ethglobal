@@ -1,7 +1,12 @@
-import { ErrorResponse, WRITER_ROUTES } from "../../shared/writer-api";
+import { ErrorResponse, WRITER_ROUTES, type ErrorCode } from "../../shared/writer-api";
 
 export const WRITER_URL = process.env.NEXT_PUBLIC_WRITER_URL?.replace(/\/$/, "") ?? "";
 export { WRITER_ROUTES };
+
+export class WriterRequestError extends Error {
+  readonly code: ErrorCode;
+  constructor(code: ErrorCode, message: string) { super(message); this.name = "WriterRequestError"; this.code = code; }
+}
 
 export async function writerRequest(path: string, options: { token?: string; body?: unknown; signal?: AbortSignal; device?: string } = {}): Promise<unknown> {
   if (!WRITER_URL) throw new Error("The workshop writer is not connected yet.");
@@ -13,7 +18,8 @@ export async function writerRequest(path: string, options: { token?: string; bod
   const json: unknown = await response.json();
   if (!response.ok) {
     const error = ErrorResponse.safeParse(json);
-    throw new Error(error.success ? error.data.message : `Writer request failed (${response.status}).`);
+    if (error.success) throw new WriterRequestError(error.data.error, error.data.message);
+    throw new Error(`Writer request failed (${response.status}).`);
   }
   return json;
 }
