@@ -9,8 +9,9 @@
 // `onCommand`, which run on the leader after the reducer.
 
 import { useSyncExternalStore } from "react";
-import { SCENES, type CameraCue, type MapMode } from "../../shared/scenes";
-import type { AppSideFilters, ChainFilters, Hex } from "../../shared/types";
+import { SCENES, type CameraCue, type MapMode } from "../../shared/scenes.ts";
+import type { AppSideFilters, ChainFilters, Hex } from "../../shared/types.ts";
+import { choreograph } from "./choreography.ts";
 
 export type Panel = "filters" | "inspector" | "query" | "controls";
 
@@ -107,8 +108,7 @@ function enterScene(state: StageState, index: number, step = 0): StageState {
   if (scene.camera !== "keep") {
     next.camera = { cue: scene.camera, nonce: state.camera.nonce + 1 };
   }
-  if (scene.id === "L3" || scene.id === "L5") next.panels = { ...next.panels, query: true };
-  return next;
+  return choreograph(next, scene.id, true);
 }
 
 export function reduce(state: StageState, cmd: Command, now = Date.now()): StageState {
@@ -116,11 +116,11 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
   switch (cmd.type) {
     case "next": {
       const started = state.timerStartedAt ?? now;
-      if (state.step < scene.steps - 1) return { ...state, step: state.step + 1, timerStartedAt: started };
+      if (state.step < scene.steps - 1) return choreograph({ ...state, step: state.step + 1, timerStartedAt: started }, scene.id, false);
       return { ...enterScene(state, state.sceneIndex + 1), timerStartedAt: started };
     }
     case "prev": {
-      if (state.step > 0) return { ...state, step: state.step - 1 };
+      if (state.step > 0) return choreograph({ ...state, step: state.step - 1 }, scene.id, false);
       const prev = SCENES[state.sceneIndex - 1];
       return prev ? enterScene(state, state.sceneIndex - 1, prev.steps - 1) : state;
     }

@@ -67,7 +67,8 @@ export function StageFrame({
       <div className="absolute inset-0 z-0">{map}</div>
 
       <div className={scene.kind === "slide" ? "absolute inset-0 z-10" : "pointer-events-none absolute inset-0 z-10"}>
-        <AnimatePresence mode="wait">
+        {/* Crossfade: the outgoing slide keeps its wash until the next one is in, so the bright globe never flashes. */}
+        <AnimatePresence initial={false}>
           {Content ? (
             <motion.div
               key={scene.id}
