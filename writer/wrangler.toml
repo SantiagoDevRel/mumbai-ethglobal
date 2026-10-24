@@ -9,7 +9,7 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 ARKIV_PROFILE = "tiramisu"
 # Origins allowed by CORS (the Vercel app and local dev).
-ALLOWED_ORIGINS = "http://localhost:3000"
+ALLOWED_ORIGINS = "https://mumbai-ethglobal.vercel.app,http://localhost:3000"
 
 [[durable_objects.bindings]]
 name = "WRITER"
