@@ -2,7 +2,7 @@ import { ExpirationTime } from "@arkiv-network/sdk/utils";
 import { i32 } from "@arkiv-network/sdk/attr";
 import { eq, gte, lte } from "@arkiv-network/sdk/query";
 import { createSdkClients } from "../../shared/arkiv/clients-0.8.ts";
-import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles.ts";
+import { getProfile, WRITER_ADDRESS, NetworkNotConfiguredError } from "../../shared/arkiv/profiles.ts";
 import { APP_ID, type Hex } from "../../shared/types.ts";
 import type { Env } from "./index.ts";
 
@@ -24,6 +24,7 @@ interface Proof {
 
 /** One durable proof, never a new write on a repeated request. */
 export async function phaseZero(state: DurableObjectState, env: Env): Promise<Response> {
+  if (!env.ARKIV_PROFILE || !env.RPC || !env.ACCESS_KEY) throw new NetworkNotConfiguredError("writer configuration is incomplete");
   const previous = await state.storage.get<Proof>("phase0");
   const proof: Proof = previous ?? { status: "prepared" };
   const profile = getProfile(env.ARKIV_PROFILE);
@@ -40,6 +41,7 @@ export async function phaseZero(state: DurableObjectState, env: Env): Promise<Re
     },
   });
   const publicProof = () => { const { raw: _raw, ...safe } = proof; return safe; };
+  if (writer!.account!.address.toLowerCase() !== WRITER_ADDRESS.toLowerCase()) throw new NetworkNotConfiguredError("writer account mismatch");
   await checkNetwork();
   proof.chainId = await reader.getChainId();
   proof.latestBlock = String(await reader.getBlockNumber());

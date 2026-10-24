@@ -1,0 +1,25 @@
+{
+  "day": "2026-10-24",
+  "chainId": 7738577,
+  "businesses": 42,
+  "reviews": 126,
+  "lifetimeHours": 12,
+  "allEntitiesReadBack": true,
+  "allReviewBusinessKeysVerified": true,
+  "sameDayRerunSkippedWithoutWrites": true,
+  "businessGasPerEntity": 140384,
+  "reviewGasPerEntity": 115384,
+  "balanceWeiAfter": "9979445103958890208",
+  "txHashes": [
+    "0xa1e7a4fc5fab64a1ce52b3a038d83feb93a4fbcf4f30742a8827f44e84f2e7b9",
+    "0xfb5e2983c9342cdd42a96a14bd1c7a4c2fd33a3ff3867cd0f566eb958aa8f9bc",
+    "0xe639b59a65a76b241b6b365a65a0b94e5feb7aeb9b74dfb0ed66fcb3bf7ff03d",
+    "0xc445e915b11bf555a3d18b7e5966042219ff84909379bb20f2d8b2cf8d2e6877",
+    "0x5be0bd28e814c774e5aff8632db2861aef4c0795da5f2fccb7d8fbe301c16f93",
+    "0x2e209589f9a61bedf9affad4aab4f161d17fc9d19ef4a5b49d3af65df0f88cab",
+    "0x41705907da1a9507b98bdc265149431f2369c517225c17545f47cc13e8eccbfc",
+    "0x544bf18d6c7fd9f554874ee88a053c075d553970d6aada1e66113a512bb5fdaa",
+    "0xf63a4d826db81ec59bc8959294ed5dedb6ae8ad52181e62a2f2171748b7009ca",
+    "0x60a6680ad51b7552b5f2e042d02072951c8eaf704584715ac8f33db996eaada1"
+  ]
+}

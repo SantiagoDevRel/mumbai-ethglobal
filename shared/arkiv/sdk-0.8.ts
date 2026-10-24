@@ -9,6 +9,15 @@ import { APP_ID, type BlockInfo, type ChainFilters, type EntityAttrs, type Hex, 
 
 export const LIVE_SELECTION = { key: true, owner: true, creator: true, createdAt: true, updatedAt: true, expiresAt: true, attributes: true } as const;
 
+function isUserRejection(error: unknown): boolean {
+  let cause = error;
+  for (let depth = 0; depth < 12 && cause && typeof cause === "object"; depth++) {
+    if ("code" in cause && cause.code === 4001) return true;
+    cause = "cause" in cause ? cause.cause : undefined;
+  }
+  return false;
+}
+
 export function encodedFields(fields: Record<string, unknown>): AttributeInputs {
   const result: Record<string, AttributeInputs[string]> = {};
   for (const [name, value] of Object.entries(fields)) {
@@ -114,7 +123,16 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       if (uncertain) throw new Error("Previous write needs reconciliation before another write.");
       await checkNetwork();
       try { return await work(); }
-      catch (error) { uncertain = true; throw error; }
+      catch (error) {
+        uncertain = !isUserRejection(error);
+        // A canonical revert proves the operations did not apply. A new explicit
+        // action may proceed; an uncertain or successful-but-undecoded write may not.
+        if (uncertain && error && typeof error === "object" && "txHash" in error && typeof error.txHash === "string") {
+          try { uncertain = (await reader.getTransactionReceipt({ hash: error.txHash as Hex })).status !== "reverted"; }
+          catch { /* Preserve the uncertainty barrier. */ }
+        }
+        throw error;
+      }
     });
     writes = next.catch(() => undefined);
     return next;

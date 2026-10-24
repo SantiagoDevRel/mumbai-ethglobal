@@ -7,8 +7,8 @@ import { STAGE_EXTENSION_SEC } from "../../shared/types";
 import { HoldResponse } from "../../shared/writer-api";
 import { WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { stage } from "../stage/store";
-import { writerRequest, WRITER_ROUTES, WRITER_URL } from "./writer-client";
-import { usePresenterToken } from "./presenter-auth";
+import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
+import { presenterRequest, usePresenterToken } from "./presenter-auth";
 import { createLiveAdapter } from "./adapter-loader";
 
 interface Provider { request(args: { method: string; params?: unknown[] }): Promise<unknown>; isRabby?: boolean; providers?: Provider[] }
@@ -34,7 +34,7 @@ async function connectWallet(adapter: ArkivAdapter, token: string): Promise<Arki
       await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
     }
   }
-  return createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token }, wallet: { kind: "eip1193", provider, account: accounts[0] as Hex } });
+  return createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: token ? { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } : { kind: "public" }, wallet: { kind: "eip1193", provider, account: accounts[0] as Hex } });
 }
 
 export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "live", entities: LiveEntity[]) {
@@ -48,10 +48,7 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
     let wallet: ArkivAdapter | null = null;
     let lastPhase = stage.getState().phase;
     const notify = (value: string) => { if (!stopped) setNotice(value); };
-    const presenter = async (path: string, body: unknown) => {
-      if (!token) throw new Error("Connect the presenter token in /notes first.");
-      return writerRequest(path, { token, body });
-    };
+    const presenter = presenterRequest;
     const disconnect = stage.onCommand(async (command, state) => {
       try {
         if (state.phase !== lastPhase && source === "live") { lastPhase = state.phase; await presenter(WRITER_ROUTES.presenter.phase, { phase: state.phase }); }
@@ -68,8 +65,14 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
         if (busy) throw new Error("Wait for the current transaction to finish.");
         busy = true;
         let held = false;
+        let heartbeat: ReturnType<typeof setInterval> | undefined;
         try {
-          const keys = command.type === "extend" ? command.scope === "all" ? latest.current.map((entity) => entity.key) : state.selected : [command.key];
+          let keys = command.type === "extend" ? state.selected.filter((key) => latest.current.some((entity) => entity.key === key)) : [command.key];
+          if (command.type === "extend" && command.scope === "all") {
+            if (source === "live" && !state.session) throw new Error("Start the workshop session in /notes first.");
+            const everyone = await adapter.query({ kinds: ["dot", "business"], session: source === "mock" ? "MOCK" : state.session! });
+            keys = everyone.entities.map((entity) => entity.key);
+          }
           if (!keys.length) throw new Error("Select an entity first.");
           let writer = adapter;
           if (source === "live") {
@@ -79,6 +82,7 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
             const hold = HoldResponse.parse(await presenter(WRITER_ROUTES.presenter.hold, {}));
             held = hold.held;
             if (!hold.idle) throw new Error("The writer is still sending. Wait for it to become idle.");
+            heartbeat = setInterval(() => { void presenter(WRITER_ROUTES.presenter.hold, {}).catch(() => notify("Writer hold renewal failed. Check /notes before another transaction.")); }, 20_000);
           }
           notify(source === "mock" ? "Mock data · applying demo action" : "Confirm in Rabby…");
           if (command.type === "extend") await writer.extend(keys, STAGE_EXTENSION_SEC);
@@ -86,9 +90,11 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
             const entity = latest.current.find((item) => item.key === command.key);
             if (!entity || entity.attrs.kind === "review") throw new Error("Select a live dot first.");
             await writer.patch(command.key, { kind: "business", name: entity.attrs.name, category: "cafe", rating: 4.6, opens: 480, closes: 1320, city: "Mumbai" }, entity.attrs);
+            stage.dispatch({ type: "setMap", map: "business" });
           }
           notify(source === "mock" ? "Mock data · action applied" : "Transaction confirmed. Waiting for the next query…");
         } finally {
+          clearInterval(heartbeat);
           if (held) {
             try { await presenter(WRITER_ROUTES.presenter.resume, {}); }
             catch { notify("Writer resume failed. Use Resume writer in /notes."); }

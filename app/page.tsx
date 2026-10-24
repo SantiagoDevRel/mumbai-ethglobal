@@ -24,7 +24,7 @@ export default function StagePage() {
   useEffect(() => stage.connect("stage"), []);
   usePresenterKeys();
   const state = useSyncExternalStore(stage.subscribe, stage.getState, serverSnapshot);
-  const data = useLiveData({ ...state.chainFilters, kinds: state.map === "business" ? ["dot", "business"] : state.chainFilters.kinds }, state.session);
+  const data = useLiveData({ ...state.chainFilters, kinds: state.map !== "dots" ? ["dot", "business"] : state.chainFilters.kinds }, state.session);
   const block = useLiveBlock();
   const notice = useStageEffects(data.adapter, data.source, data.run?.entities ?? []);
   const reviews = useReviews(data.adapter, state.map === "business" ? state.inspected : null, block?.number);

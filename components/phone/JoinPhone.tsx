@@ -41,7 +41,12 @@ export function JoinPhone() {
       if (stopped) return;
     const code = new URLSearchParams(location.search).get("s") ?? "";
       setSession(code);
-      try { setDevice(deviceToken()); } catch { setError("Allow browser storage so we can keep your place on the map."); }
+      try {
+        const identity = deviceToken();
+        setDevice(identity);
+        const used = Number(localStorage.getItem(`arkiv-workshop-count:${code}:${identity}`) ?? 0);
+        setWrites(Number.isSafeInteger(used) && used >= 0 ? Math.min(used, MAX_ENTITIES_PER_DEVICE) : 0);
+      } catch { setError("Allow browser storage so we can keep your place on the map."); }
     });
     return () => { stopped = true; };
   }, []);
@@ -72,7 +77,9 @@ export function JoinPhone() {
         if (controller.signal.aborted) return;
         if (ticket.status === "failed") { setError(ticket.error ?? "The write failed. Try again."); setState({ status: "form" }); return; }
         if (ticket.entityKey && ticket.block && ticket.expiresAtBlock) {
-          setWrites((value) => value + 1);
+          const used = writes + 1;
+          setWrites(used);
+          try { localStorage.setItem(`arkiv-workshop-count:${session}:${device}`, String(used)); } catch { /* The writer still enforces the device limit. */ }
           setState({ status: "written", key: ticket.entityKey as Hex, includedAt: BigInt(ticket.block), expiresAt: BigInt(ticket.expiresAtBlock), draft });
           return;
         }
@@ -81,7 +88,7 @@ export function JoinPhone() {
     };
     void poll();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [state, draft, device]);
+  }, [state, draft, device, writes, session]);
 
   useEffect(() => {
     if (state.status !== "written") return;
@@ -100,7 +107,7 @@ export function JoinPhone() {
           lastExpiry = current.expiresAtBlock;
           setEntity(current);
           setError(null);
-        } else if (run.block >= lastExpiry) { setState({ status: "expired", block: run.block }); return; }
+        } else if (run.block >= lastExpiry) { setState({ status: "expired", block: lastExpiry }); return; }
       } catch (err) { if (!stopped) setError(err instanceof Error ? err.message : "Reconnecting to the DB-Chain…"); }
       if (!stopped) timer = setTimeout(read, 10000);
     };
@@ -148,7 +155,7 @@ export function JoinPhone() {
       <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={`Color ${color}`} aria-pressed={!custom && draft.color === color} onClick={() => { setCustom(false); setDraft({ ...draft, color }); }} />)}</div><button type="button" className="custom-toggle" aria-expanded={custom} onClick={() => setCustom(!custom)}>Custom</button>{custom && <div className="custom-color"><input type="color" aria-label="Choose any color" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} /><input aria-label="Custom hex color" pattern="#[0-9a-fA-F]{6}" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} onBlur={() => { const color = normalizeColor(draft.color); if (color) setDraft({ ...draft, color }); }} /></div>}</fieldset>
       <label>Where are you from?<input type="search" placeholder="Search countries" value={search} onChange={(event) => setSearch(event.target.value)} /><select aria-label="Your country" value={draft.country} onChange={(event) => setDraft({ ...draft, country: event.target.value })}>{!visibleCountries.some((country) => country.code === draft.country) && <option value={draft.country}>{countries.find((country) => country.code === draft.country)?.name}</option>}{visibleCountries.map((country) => <option key={country.code} value={country.code}>{country.name}</option>)}</select></label>
       <label>How long should you live?<output className="lifetime-value">{draft.lifetimeSec < 60 ? `${draft.lifetimeSec} s` : `${Math.floor(draft.lifetimeSec / 60)} min${draft.lifetimeSec % 60 ? ` ${draft.lifetimeSec % 60} s` : ""}`}</output><input type="range" min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>20 s</span><span>2 min</span></span></label>
-      {!open && <p className="doors-note">Hang tight. Santiago opens the doors in a moment.</p>}<button className="phone-submit" disabled={!open || !device || state.status === "submitting"}>{state.status === "submitting" ? "Sending…" : open ? "Write my entity" : "Doors closed"}</button>
+      {!open && <p className="doors-note">Hang tight. Santiago opens the doors in a moment.</p>}{writes >= MAX_ENTITIES_PER_DEVICE && <p className="doors-note">You’ve reached the limit for this session.</p>}<button className="phone-submit" disabled={!open || !device || writes >= MAX_ENTITIES_PER_DEVICE || state.status === "submitting"}>{state.status === "submitting" ? "Sending…" : writes >= MAX_ENTITIES_PER_DEVICE ? "Session limit reached" : open ? "Write my entity" : "Doors closed"}</button>
     </form>}
     <footer>Arkiv testnet · everything you write is public.<span>Arkiv, the Web3 database</span></footer>
   </main></div>;
