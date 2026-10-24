@@ -49,6 +49,9 @@ exact local export through route interception under the production origin; Worke
 requests, public phone reads, signatures and receipts are real. No web server is
 started. The private key and RPC access key stay in Node; only the stage receives
 the presenter token. Its injected EIP-1193 provider delegates to a Node function.
+The preflight also exercises India and green filters and checks their exact query
+text through the Worker. It may read an active session in a separate browser
+profile; it never changes that session or signs a transaction.
 
 Scene starts follow `shared/scenes.ts` in real time. That contract has no reveal
 timestamps, so steps run in order at scene entry, 750 ms apart, awaiting each live

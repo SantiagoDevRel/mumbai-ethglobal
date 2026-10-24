@@ -280,12 +280,12 @@ async function sceneWork(id, step) {
   }
   if (id === "L3" && step === 0) await op("show filters and exact query", async () => { await command({ type: "inspect", key: null }); await command({ type: "togglePanel", panel: "filters", open: true }); await expect(stage.locator(".query-panel")).toBeVisible(); });
   if (id === "L3" && step === 1) await op("country filter India", async () => {
-    await stage.locator(".filters-panel").getByLabel("Country", { exact: true }).selectOption("IN");
+    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Country/ }).selectOption("IN");
     await expect(stage.locator(".query-panel")).toContainText('eq("country", "IN")', { timeout: 20000 });
     const run = await adapter.query({ kinds: ["dot"], session, country: "IN" }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.country === "IN"));
   });
   if (id === "L3" && step === 2) await op("colour filter green", async () => {
-    await stage.locator(".filters-panel").getByLabel("Color", { exact: true }).selectOption(GREEN);
+    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Color/ }).selectOption(GREEN);
     await expect(stage.locator(".query-panel")).toContainText(`eq("color", "${GREEN}")`, { timeout: 20000 });
     const run = await adapter.query({ kinds: ["dot"], session, country: "IN", color: GREEN }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.color === GREEN && item.attrs.country === "IN"));
     report.filterEvidence = { query: run.description.query, block: run.block.toString(), keys: run.entities.map((item) => item.key) };
@@ -325,7 +325,7 @@ try {
   await clients.checkNetwork();
   await balance("preflight");
   const status = await presenter("status");
-  assert.equal(status.session, null, "An existing session belongs to someone else; it will not be replaced.");
+  if (!preflight) assert.equal(status.session, null, "An existing session belongs to someone else; it will not be replaced.");
   assert.ok(!status.inFlight && status.queued === 0 && !status.held && !status.replay);
   assert.equal(status.network, profile.name);
   await stat(path.join(root, "index.html"));
@@ -353,7 +353,19 @@ try {
   await command({ type: "goto", index: SCENES.findIndex((scene) => scene.id === "L1") });
   await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
   await command({ type: "goto", index: 0 });
-  if (preflight) { assert.equal(report.pageErrors.length, 0); console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0 })); }
+  if (preflight) {
+    // A separate browser profile exercises selectors and real readback only. It
+    // never starts, ends or changes an existing session and cannot sign a write.
+    await command({ type: "session", code: status.session });
+    await command({ type: "goto", index: SCENES.findIndex((scene) => scene.id === "L3") });
+    await command({ type: "togglePanel", panel: "filters", open: true });
+    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Country/ }).selectOption("IN");
+    await expect(stage.locator(".query-panel")).toContainText('eq("country", "IN")', { timeout: 20000 });
+    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Color/ }).selectOption(GREEN);
+    await expect(stage.locator(".query-panel")).toContainText(`eq("color", "${GREEN}")`, { timeout: 20000 });
+    assert.ok(proxyReads > 0); assert.equal(report.pageErrors.length, 0);
+    console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0, filters: ["IN", GREEN] }));
+  }
   else {
     session = (await presenter("session/start", {})).code; report.session = session;
     await command({ type: "session", code: session });
