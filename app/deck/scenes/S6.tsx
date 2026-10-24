@@ -17,7 +17,7 @@ const TILES: { label: string; icon: LucideIcon }[] = [
 export function S6({ step }: SceneContentProps) {
   return (
     <Slide headline="That's the whole talk">
-      <div className="absolute left-[120px] top-[330px] grid w-[1500px] grid-cols-4 gap-8">
+      <div className="absolute left-[96px] top-[330px] grid w-[1728px] grid-cols-4 gap-8">
         {TILES.map(({ label, icon: Icon }, i) => {
           const lit = step >= i;
           return (
@@ -31,11 +31,11 @@ export function S6({ step }: SceneContentProps) {
                 backgroundColor: lit ? "rgba(254,116,70,0.16)" : "rgba(17,17,17,0.6)",
               }}
               transition={{ duration: 0.5, ease: EASE }}
-              className="flex h-[380px] flex-col items-center justify-center gap-8 rounded-[32px] border-[3px]"
+              className="flex h-[380px] flex-col items-center justify-center gap-8 rounded-[20px] border-[3px]"
             >
               <motion.div
                 initial={false}
-                animate={{ rotate: lit ? [0, -8, 8, 0] : 0, color: lit ? "#fe7446" : "#a9a7b8" }}
+                animate={{ rotate: lit ? [0, -8, 8, 0] : 0, color: lit ? "#fe7446" : "rgba(246,244,239,0.64)" }}
                 transition={{ duration: 0.6, ease: EASE }}
               >
                 <Icon size={120} strokeWidth={1.6} />
@@ -45,8 +45,8 @@ export function S6({ step }: SceneContentProps) {
           );
         })}
       </div>
-      <Reveal step={step} at={3} className="absolute left-[120px] top-[790px]">
-        <p className="text-[44px] font-medium">Let&apos;s do all four. Live. With you.</p>
+      <Reveal step={step} at={3} className="absolute left-[96px] top-[790px]">
+        <p className="text-[44px] font-semibold">Let&apos;s do all four. Live. With you.</p>
       </Reveal>
     </Slide>
   );

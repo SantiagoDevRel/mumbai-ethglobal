@@ -1,137 +1,123 @@
 "use client";
 
-// The Arkiv mascot, in one place. The real mascot is still awaiting brand review, so for now this
-// draws a placeholder voxel character in the approved palette with the official [ A ] mark on its
-// chest. To swap in the approved art later, change only this file (keep the props).
-// Never print the mascot's internal codename on screen or in alt text.
+// The Arkiv mascot placeholder, in one place (design handoff section 10). A voxel figure on a 9x9
+// grid: an Ink head with the official orange [ A ] mark as its face, a Sand body with two Orange
+// accents, Stone arms and legs, Ink boots. The intended art is pending brand review; to swap it in
+// later, change only this file and keep the props (poses map one to one).
+// Never print the mascot's name on screen or in alt text.
 
 import { motion } from "motion/react";
 import type { CSSProperties } from "react";
 
-export type MascotPose = "stand" | "wave";
-export type MascotMood = "smile" | "serious";
+export type MascotPose = "wave" | "stand" | "nope" | "point";
 
+const INK = "#111111";
 const SAND = "#F6F4EF";
 const STONE = "#E9E6DE";
 const ORANGE = "#FE7446";
-const INK = "#111111";
-const BLUE = "#181EA9";
-const SHADE = "rgba(17,17,17,0.16)";
 
-/** One solid block with a shaded right and bottom face, so each part reads as a cube. */
-function Block({ x, y, w, h, fill }: { x: number; y: number; w: number; h: number; fill: string }) {
-  return (
-    <g>
-      <rect x={x} y={y} width={w} height={h} fill={fill} />
-      <rect x={x + w - 0.7} y={y} width={0.7} height={h} fill={SHADE} />
-      <rect x={x} y={y + h - 0.7} width={w - 0.7} height={0.7} fill={SHADE} />
-    </g>
-  );
-}
+type Cell = [x: number, y: number, fill: string];
 
-/** Small Orange voxels sprinkled on the Sand blocks. */
-function Voxels({ cells }: { cells: [number, number][] }) {
-  return (
-    <g fill={ORANGE}>
-      {cells.map(([x, y]) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width={1.4} height={1.4} />
-      ))}
-    </g>
-  );
-}
+/** Head, body, left arm, legs and boots: the cells every pose shares. */
+const BASE: Cell[] = (() => {
+  const cells: Cell[] = [];
+  for (let y = 0; y < 4; y++) for (let x = 2; x < 6; x++) cells.push([x, y, INK]);
+  for (let y = 4; y < 7; y++) {
+    for (let x = 2; x < 6; x++) cells.push([x, y, (x === 3 && y === 5) || (x === 5 && y === 4) ? ORANGE : SAND]);
+  }
+  cells.push([1, 4, STONE], [1, 5, STONE], [1, 6, SAND]);
+  cells.push([2, 7, STONE], [5, 7, STONE], [2, 8, INK], [5, 8, INK]);
+  return cells;
+})();
 
-function Face({ mood }: { mood: MascotMood }) {
-  return (
-    <g>
-      <rect x={10} y={6} width={3.4} height={3.4} fill={INK} />
-      <rect x={16.6} y={6} width={3.4} height={3.4} fill={INK} />
-      <rect x={11.9} y={6.6} width={1} height={1} fill={SAND} />
-      <rect x={18.5} y={6.6} width={1} height={1} fill={SAND} />
-      {mood === "smile" ? (
-        <g fill={ORANGE}>
-          <rect x={11.5} y={10.6} width={1.2} height={1.2} />
-          <rect x={12.7} y={11.8} width={4.6} height={1.2} />
-          <rect x={17.3} y={10.6} width={1.2} height={1.2} />
-        </g>
-      ) : (
-        <rect x={12} y={11.8} width={6} height={1.1} fill={ORANGE} />
-      )}
-    </g>
-  );
+/** The right arm (viewer's right) per pose. */
+const ARMS: Record<MascotPose, Cell[]> = {
+  wave: [[6, 4, STONE], [7, 3, STONE], [7, 2, STONE], [7, 1, ORANGE]],
+  stand: [[6, 4, STONE], [6, 5, STONE], [6, 6, SAND]],
+  nope: [[6, 4, STONE], [6, 3, STONE], [6, 2, ORANGE], [7, 2, ORANGE]],
+  point: [[6, 4, STONE], [7, 4, STONE], [8, 4, ORANGE]],
+};
+
+/** [ A ] mark aspect (public/brand/a-orange.svg is 388 x 218). */
+const MARK_ASPECT = 218 / 388;
+
+function cubeStyle([x, y, fill]: Cell, unit: number, joint: string): CSSProperties {
+  const bevel = Math.round(unit / 10);
+  const ink = fill === INK;
+  return {
+    position: "absolute",
+    left: x * unit,
+    top: y * unit,
+    width: unit,
+    height: unit,
+    boxSizing: "border-box",
+    borderRadius: 2,
+    background: fill,
+    border: `${Math.max(1, Math.round(unit / 20))}px solid ${ink ? "rgba(246,244,239,0.22)" : "rgba(17,17,17,0.22)"}`,
+    boxShadow:
+      `inset ${bevel}px ${bevel}px 0 rgba(255,255,255,${ink ? 0.08 : 0.4}),` +
+      `inset -${bevel}px -${bevel}px 0 rgba(17,17,17,${ink ? 0.5 : 0.14}),` +
+      `0 0 0 ${Math.max(1, Math.round(unit / 16))}px ${joint}`,
+  };
 }
 
 /**
- * Placeholder mascot. `height` in px; the aspect is fixed at 3:4 and the boots touch the bottom
- * edge. `waving` animates the raised arm (pose `wave` only); motion respects reduced motion
- * through the parent MotionConfig.
+ * Placeholder mascot, `9 * unit` px square (smallest unit 8). `on` picks the joint outline: Sand on
+ * dark backgrounds, Ink on light ones. In the `wave` pose the raised arm swings unless `still`;
+ * motion respects reduced motion through the parent MotionConfig.
  */
 export function Mascot({
   pose = "stand",
-  mood = "smile",
-  height,
-  waving = true,
+  unit = 20,
+  on = "dark",
+  still = false,
   className,
   style,
 }: {
   pose?: MascotPose;
-  mood?: MascotMood;
-  height: number;
-  waving?: boolean;
+  unit?: number;
+  on?: "dark" | "light";
+  still?: boolean;
   className?: string;
   style?: CSSProperties;
 }) {
-  const width = Math.round((height * 3) / 4);
+  const u = Math.max(8, unit);
+  const joint = on === "dark" ? SAND : INK;
+  const markW = 3.2 * u;
+  const arm = ARMS[pose];
   return (
-    <svg
+    <div
       role="img"
-      aria-label="Arkiv mascot"
-      width={width}
-      height={height}
-      viewBox="0 0 30 40"
+      aria-label={`Arkiv mascot placeholder, ${pose}`}
       className={className}
-      style={style}
-      shapeRendering="crispEdges"
+      style={{ position: "relative", width: 9 * u, height: 9 * u, flex: "none", ...style }}
     >
-      <g style={{ filter: "drop-shadow(0 0 0.4px rgba(246,244,239,0.85))" }}>
-        {/* head with three nubs on top */}
-        <Block x={9} y={0.5} w={2.4} h={2} fill={SAND} />
-        <Block x={13.8} y={0.5} w={2.4} h={2} fill={SAND} />
-        <Block x={18.6} y={0.5} w={2.4} h={2} fill={SAND} />
-        <Block x={7} y={2} w={16} h={13} fill={SAND} />
-        <Voxels cells={[[7, 3], [20.9, 2.6], [7.6, 12.6], [20.4, 12]]} />
-        <Face mood={mood} />
-        {/* neck */}
-        <Block x={13} y={15} w={4} h={1.2} fill={STONE} />
-        {/* body with the official [ A ] mark */}
-        <Block x={9} y={16} w={12} h={11} fill={SAND} />
-        <Voxels cells={[[9.4, 16.4], [18.6, 24.6]]} />
-        <rect x={10.6} y={18} width={8.8} height={5} rx={0.4} fill={INK} />
-        <image href="/brand/a-orange.svg" x={11.2} y={18.5} width={7.6} height={4} preserveAspectRatio="xMidYMid meet" />
-        {/* left arm (viewer's left), always down */}
-        <Block x={5} y={17} w={4} h={9} fill={SAND} />
-        {/* right arm (viewer's right) */}
-        {pose === "stand" ? (
-          <Block x={21} y={17} w={4} h={9} fill={SAND} />
-        ) : (
-          <motion.g
-            style={{ transformOrigin: "22px 18px", transformBox: "view-box" }}
-            animate={waving ? { rotate: [0, -12, 6, -12, 0] } : undefined}
-            transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
-          >
-            <Block x={21} y={16.5} w={3} h={3.5} fill={SAND} />
-            <Block x={23} y={8.5} w={4} h={11.5} fill={SAND} />
-            <Block x={22.5} y={4.5} w={5} h={4.5} fill={STONE} />
-          </motion.g>
-        )}
-        {/* legs */}
-        <Block x={11} y={27} w={3.2} h={7} fill={STONE} />
-        <Block x={15.8} y={27} w={3.2} h={7} fill={STONE} />
-        {/* boots: Blue with an Orange sole, outlined in Stone so they read on Ink */}
-        <rect x={9.8} y={34} width={4.8} height={4} fill={BLUE} stroke={STONE} strokeWidth={0.25} />
-        <rect x={15.4} y={34} width={4.8} height={4} fill={BLUE} stroke={STONE} strokeWidth={0.25} />
-        <rect x={9.8} y={38} width={4.8} height={2} fill={ORANGE} />
-        <rect x={15.4} y={38} width={4.8} height={2} fill={ORANGE} />
-      </g>
-    </svg>
+      {BASE.map((c) => (
+        <div key={`${c[0]}-${c[1]}`} style={cubeStyle(c, u, joint)} />
+      ))}
+      {pose === "wave" && !still ? (
+        <motion.div
+          className="absolute inset-0"
+          style={{ transformOrigin: `${6.5 * u}px ${4.5 * u}px` }}
+          animate={{ rotate: [0, -10, 4, -10, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, repeatDelay: 1.4, ease: "easeInOut" }}
+        >
+          {arm.map((c) => (
+            <div key={`${c[0]}-${c[1]}`} style={cubeStyle(c, u, joint)} />
+          ))}
+        </motion.div>
+      ) : (
+        arm.map((c) => <div key={`${c[0]}-${c[1]}`} style={cubeStyle(c, u, joint)} />)
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element -- a fixed brand SVG inside a sized box */}
+      <img
+        src="/brand/a-orange.svg"
+        alt=""
+        aria-hidden
+        width={markW}
+        height={markW * MARK_ASPECT}
+        style={{ position: "absolute", left: 2 * u + (4 * u - markW) / 2, top: 1.15 * u, width: markW, height: markW * MARK_ASPECT }}
+      />
+    </div>
   );
 }

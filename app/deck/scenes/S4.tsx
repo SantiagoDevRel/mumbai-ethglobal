@@ -18,7 +18,7 @@ function ChainTable() {
     <div className="w-[700px]">
       <div className="overflow-hidden rounded-[20px] border-[3px] border-[var(--arkiv-orange)] bg-[rgba(17,17,17,0.9)]">
         {rows.map((r, i) => (
-          <div key={r} className={`px-6 py-4 font-mono text-[28px] ${i > 0 ? "border-t border-[var(--panel-border)]" : ""}`}>
+          <div key={r} className={`px-6 py-4 font-mono text-[28px] ${i > 0 ? "border-t border-[rgba(246,244,239,0.08)]" : ""}`}>
             {r}
           </div>
         ))}
@@ -47,13 +47,13 @@ function ChainTable() {
 export function S4({ step }: SceneContentProps) {
   return (
     <Slide headline="Queries like a database. Lives on a chain.">
-      <Rise delay={0.2} className="absolute left-[120px] top-[300px]">
+      <Rise delay={0.2} className="absolute left-[96px] top-[300px]">
         <CalmRoom />
-        <p className="mt-6 w-[720px] text-[34px] font-semibold text-[var(--arkiv-orange)]">Server down. Rules changed. Data gone.</p>
+        <p className="mt-6 w-[720px] text-[32px] font-semibold text-[var(--arkiv-orange)]">Server down. Rules changed. Data gone.</p>
       </Rise>
-      <Reveal step={step} at={1} className="absolute left-[920px] top-[300px]">
+      <Reveal step={step} at={1} className="absolute left-[912px] top-[300px]">
         {step >= 1 ? <ChainTable /> : <div className="h-[400px]" />}
-        <p className="mt-8 w-[700px] text-[34px] font-semibold leading-snug">
+        <p className="mt-8 w-[700px] text-[32px] font-semibold leading-[1.35]">
           Every write is a transaction. Anyone can query. Owners are wallets.
         </p>
       </Reveal>

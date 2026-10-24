@@ -49,7 +49,7 @@ export const NOTES: Record<SceneId, string[]> = {
   L3: [
     "Fly to India: dots spread across the whole country. \"Same country, different spots.\"",
     "One filter per →: color is orange (\"show me the orange ones\") · country is India · inside this map view (\"what's on my screen right now\") · owner is santiago (\"Hold that thought.\").",
-    "Honest limit: No ORDER BY. Your app sorts.",
+    "Honest limit, on the query panel's app-side line: No ORDER BY. Your app sorts.",
   ],
   L4: [
     "Pick a dot and extend it first: \"let's keep this one alive while we look.\"",
@@ -60,7 +60,7 @@ export const NOTES: Record<SceneId, string[]> = {
     "\"What if every dot were a business?\" Make it a business on the inspected dot → Rabby → a real patch adds category, rating and opening hours.",
     "B for business view: fly to Mumbai at street level. Filters: category is cafe · rating 4.5 or more · open now (app-side).",
     "Business card with its reviews: each review is its own entity pointing to the business.",
-    "Photos: Swarm. Everything you filter on: Arkiv.",
+    "Point at the business card footer: Photos: Swarm. Everything you filter on: Arkiv.",
   ],
   L6: [
     "Owner view: every dot draws a line to one santiago badge. \"Santiago owns all the businesses' data.\" Pause. \"Sound familiar? That's every platform today.\"",

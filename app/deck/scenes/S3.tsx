@@ -1,72 +1,94 @@
 "use client";
 
-// S3 · One pin = one entity: a card shaped like a table row, your columns on top and Arkiv's
-// fields in a thinner strip underneath. The milk carton analogy for Entity Expiration.
+// S3 · One pin = one entity (handoff board "S3 · Slide template: one pin = one entity"). A table
+// row: your columns on Sand, Arkiv's fields underneath on Arkiv Blue (→ reveals them), and the
+// milk carton for Entity Expiration. Values are illustrative; the key is left elided on purpose.
 
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { EASE, Reveal, Rise, Slide } from "../ui";
+import { EASE, Reveal, Rise, Slide, T } from "../ui";
 
-const COLUMNS: [string, string][] = [
+const COLUMNS: [name: string, value: string, mono?: boolean][] = [
   ["name", "Chai Corner"],
   ["category", "cafe"],
   ["rating", "4.6"],
-  ["photos", "swarm://3f…a1"],
+  ["photos", "swarm://3f…a1", true],
 ];
 
-const FIELDS = ["$key", "$owner", "$creator", "$expiresAt"];
+const FIELDS: [name: string, value: string][] = [
+  ["$key", "0x…"],
+  ["$owner", "santiago"],
+  ["$creator", "santiago"],
+  ["$expiresAt", "block #…"],
+];
 
 function MilkCarton() {
   return (
-    <svg width="210" height="300" viewBox="0 0 210 300" aria-hidden>
-      <path d="M40 70 L105 20 L170 70 Z" fill="#e9e6de" stroke="#111" strokeWidth="4" strokeLinejoin="round" />
-      <rect x="85" y="4" width="40" height="22" rx="3" fill="#fe7446" stroke="#111" strokeWidth="4" />
-      <rect x="40" y="70" width="130" height="220" rx="6" fill="#f6f4ef" stroke="#111" strokeWidth="4" />
-      <rect x="40" y="118" width="130" height="60" fill="#181ea9" />
-      <text x="105" y="157" textAnchor="middle" fontFamily="var(--font-plex-sans)" fontSize="26" fontWeight="700" fill="#f6f4ef">MILK</text>
-      <text x="105" y="222" textAnchor="middle" fontFamily="var(--font-plex-mono)" fontSize="15" fill="#111">best before</text>
-      <text x="105" y="248" textAnchor="middle" fontFamily="var(--font-plex-mono)" fontSize="18" fontWeight="600" fill="#fe7446">block #…</text>
+    <svg width="132" height="190" viewBox="0 0 66 95" aria-hidden>
+      <path d="M8 26 L18 8 H48 L58 26 Z" fill="#E9E6DE" stroke="#111111" strokeWidth="2.5" strokeLinejoin="round" />
+      <rect x="18" y="2" width="30" height="7" fill="#F6F4EF" stroke="#111111" strokeWidth="2.5" />
+      <rect x="8" y="26" width="50" height="66" rx="2" fill="#F6F4EF" stroke="#111111" strokeWidth="2.5" />
+      <rect x="14" y="58" width="38" height="26" rx="2" fill="#FE7446" />
+      <path d="M18 66 h30 M18 74 h22" stroke="#111111" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M22 38 l6 -6 l6 6 M34 38 l6 -6 l6 6" fill="none" stroke="#181EA9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function S3({ step }: SceneContentProps) {
+  const fields = step >= 1;
   return (
-    <Slide headline="One pin = one entity" under="Your columns on top. Arkiv's fields underneath.">
-      <Rise delay={0.2} className="absolute left-[120px] top-[400px] w-[1180px]">
-        <div className="overflow-hidden rounded-[24px] border-[3px] border-[var(--arkiv-orange)] bg-[rgba(17,17,17,0.9)]">
-          <div className="grid grid-cols-[1.1fr_0.8fr_0.6fr_1.2fr]">
+    <Slide headline="One pin = one entity" under="Your columns on top. Arkiv's fields underneath." wash={0.8}>
+      <Rise delay={0.15} className="absolute left-[160px] top-[380px] text-[18px] font-semibold" style={{ color: T.t64 }}>
+        Your columns
+      </Rise>
+      <Rise delay={0.2} className="absolute left-[160px] top-[412px] w-[1600px]">
+        <div className="overflow-hidden rounded-[20px] shadow-[0_28px_72px_rgba(0,0,0,0.55)]">
+          <div className="grid grid-cols-[1.25fr_1fr_0.8fr_1.35fr] bg-[var(--arkiv-sand)]">
             {COLUMNS.map(([name]) => (
-              <div key={name} className="border-b border-r border-[var(--panel-border)] px-7 py-4 font-mono text-[26px] text-[var(--stage-muted)] last:border-r-0">
+              <div key={name} className="px-7 py-4 font-mono text-[20px] text-[rgba(17,17,17,0.56)]">
                 {name}
               </div>
             ))}
-            {COLUMNS.map(([name, value]) => (
-              <div key={name} className="border-r border-[var(--panel-border)] px-7 py-6 font-mono text-[36px] font-medium last:border-r-0">
+            {COLUMNS.map(([name, value, mono]) => (
+              <div
+                key={name}
+                className={`whitespace-nowrap px-7 pb-7 text-[var(--arkiv-ink)] ${mono ? "pt-2.5 font-mono text-[36px] font-medium" : "pt-1 text-[44px] font-semibold"}`}
+              >
                 {value}
               </div>
             ))}
           </div>
           <motion.div
             initial={false}
-            animate={{ height: step >= 1 ? "auto" : 0, opacity: step >= 1 ? 1 : 0 }}
+            animate={{ height: fields ? "auto" : 0 }}
             transition={{ duration: 0.6, ease: EASE }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-4 bg-[rgba(254,116,70,0.14)]">
-              {FIELDS.map((f) => (
-                <div key={f} className="border-t-2 border-[var(--arkiv-orange)] px-7 py-4 font-mono text-[30px] font-medium text-[var(--arkiv-orange)]">
-                  {f}
+            <div className="grid grid-cols-4 border-t-4 border-[var(--arkiv-ink)] bg-[var(--arkiv-blue)]">
+              {FIELDS.map(([name, value]) => (
+                <div key={name} className="flex flex-col gap-1.5 px-7 py-5">
+                  <span className="font-mono text-[22px] font-semibold text-[var(--arkiv-sand)]">{name}</span>
+                  <span className="font-mono text-[20px] text-[rgba(246,244,239,0.72)]">{value}</span>
                 </div>
               ))}
             </div>
           </motion.div>
         </div>
       </Rise>
-      <Reveal step={step} at={1} className="absolute left-[1380px] top-[360px]">
+      <Reveal step={step} at={1} className="absolute left-[1776px] top-[640px] w-[120px] text-[18px] font-semibold leading-[1.3]" style={{ color: T.t64 }}>
+        Arkiv fields
+      </Reveal>
+      <Reveal step={step} at={1} className="absolute left-[160px] top-[800px] flex items-center gap-8">
         <motion.div animate={{ rotate: [-3, 3, -3] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}>
           <MilkCarton />
         </motion.div>
+        <div className="flex flex-col gap-2.5">
+          <span className="text-[26px]" style={{ color: T.t64 }}>
+            Like a milk carton:
+          </span>
+          <span className="font-mono text-[36px] font-semibold text-[var(--arkiv-orange)]">best before block #…</span>
+        </div>
       </Reveal>
     </Slide>
   );

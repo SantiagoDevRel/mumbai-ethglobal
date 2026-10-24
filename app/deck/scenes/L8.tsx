@@ -20,31 +20,31 @@ export const RESOURCES: { title: string; line: string | null; url: string | null
 export function L8(_props: SceneContentProps) {
   return (
     <Slide headline="Your turn: build it this weekend">
-      <div className="absolute left-[120px] top-[360px] grid w-[1360px] grid-cols-2 gap-7">
+      <div className="absolute left-[96px] top-[320px] grid w-[1360px] grid-cols-2 gap-6">
         {RESOURCES.map(({ title, line, url, icon: Icon }, i) => (
           <motion.div
             key={title}
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.2 + i * 0.1, ease: EASE }}
-            className={`flex gap-7 rounded-[28px] border-[3px] p-8 ${url ? "border-[var(--panel-border)] bg-[rgba(17,17,17,0.82)]" : "border-dashed border-[var(--panel-border)] bg-[rgba(17,17,17,0.6)]"}`}
+            className={`flex gap-7 rounded-[20px] p-8 ${url ? "border border-[rgba(246,244,239,0.12)] bg-[rgba(17,17,17,0.78)] backdrop-blur-[16px]" : "border-[1.5px] border-dashed border-[rgba(246,244,239,0.5)] bg-[rgba(17,17,17,0.6)]"}`}
           >
             <Icon size={64} strokeWidth={1.6} className="shrink-0 text-[var(--arkiv-orange)]" />
             <div>
               <p className="text-[44px] font-semibold leading-tight">{title}</p>
-              {line ? <p className="mt-1 text-[28px] text-[var(--stage-muted)]">{line}</p> : null}
+              {line ? <p className="mt-1 text-[28px] text-[rgba(246,244,239,0.64)]">{line}</p> : null}
               {url ? <p className="mt-3 font-mono text-[28px] text-[var(--arkiv-orange)]">{url}</p> : null}
             </div>
           </motion.div>
         ))}
       </div>
       <motion.div
-        className="absolute left-[1540px] top-[420px]"
+        className="absolute left-[1560px] top-[560px]"
         initial={{ opacity: 0, x: 30 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
       >
-        <Mascot pose="wave" mood="smile" height={300} />
+        <Mascot pose="wave" unit={30} />
       </motion.div>
     </Slide>
   );

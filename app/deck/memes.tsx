@@ -1,45 +1,50 @@
 "use client";
 
 // Original illustrations that borrow only the layout idea of known meme formats, starring the
-// Arkiv mascot (app/deck/Mascot.tsx). No third-party meme images, no original artwork traced, no
-// format names on screen. Palette only; props sit beside the mascot, never on it.
+// Arkiv mascot placeholder (app/deck/Mascot.tsx). No third-party meme images, no original artwork
+// traced, no format names on screen. Palette only; props sit beside the mascot, never on it.
 
 import { Lock, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useStage } from "../../lib/stage/store";
-import { Mascot, type MascotMood, type MascotPose } from "./Mascot";
-import { EASE } from "./ui";
+import { Mascot, type MascotPose } from "./Mascot";
+import { EASE, T } from "./ui";
 
-/** Reject / approve, two rows: the mascot with a thumbs icon, the text on a Sand panel. */
+/**
+ * Reject / approve on a 2x2 grid (handoff board "S1 · Meme style"): the mascot saying nope on
+ * Stone, then pointing on Sand, each beside its line of text. Ink rules between the cells.
+ */
 export function RejectApproveMeme({ no, yes }: { no: string; yes: string }) {
-  const row = (good: boolean) => (
-    <motion.div
-      className="grid grid-cols-[260px_1fr]"
-      initial={{ opacity: 0, x: 60 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.55, delay: good ? 0.6 : 0, ease: EASE }}
-    >
-      <div className="relative flex h-[300px] items-end justify-center bg-[var(--arkiv-ink)] pb-3">
-        <Mascot pose={good ? "wave" : "stand"} mood={good ? "smile" : "serious"} height={260} />
-        <span className="absolute left-4 top-4">
-          {good ? (
-            <ThumbsUp size={56} strokeWidth={2.2} className="text-[var(--arkiv-orange)]" />
-          ) : (
-            <ThumbsDown size={56} strokeWidth={2.2} className="text-[var(--arkiv-stone)]" />
-          )}
-        </span>
-      </div>
-      <div className="flex h-[300px] items-center bg-[var(--arkiv-sand)] px-9">
-        <p className="text-[36px] font-semibold leading-tight text-[var(--arkiv-ink)]">{good ? yes : no}</p>
-      </div>
-    </motion.div>
+  const cell = (good: boolean) => (
+    <>
+      <motion.div
+        className={`flex items-center justify-center border-r-[3px] border-[var(--arkiv-ink)] ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] bg-[var(--arkiv-stone)]"}`}
+        initial={{ opacity: 0, x: -24 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: good ? 0.5 : 0, ease: EASE }}
+      >
+        <Mascot pose={good ? "point" : "nope"} unit={34} on="light" />
+      </motion.div>
+      <motion.div
+        className={`flex flex-col justify-center gap-5 p-10 ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] border-[var(--arkiv-ink)] bg-[var(--arkiv-stone)]"}`}
+        initial={{ opacity: 0, x: 24 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.5, delay: good ? 0.6 : 0.1, ease: EASE }}
+      >
+        {good ? (
+          <ThumbsUp size={48} strokeWidth={2} className="text-[var(--arkiv-orange)]" aria-label="Yes" role="img" />
+        ) : (
+          <ThumbsDown size={48} strokeWidth={2} className="text-[var(--arkiv-ink)]" aria-label="No" role="img" />
+        )}
+        <p className="text-[44px] font-semibold leading-[1.15] text-[var(--arkiv-ink)]">{good ? yes : no}</p>
+      </motion.div>
+    </>
   );
   return (
-    <div className="w-[700px] overflow-hidden rounded-[24px] border-2 border-[var(--arkiv-stone)] shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
-      {row(false)}
-      <div className="h-[2px] bg-[var(--arkiv-stone)]" />
-      {row(true)}
+    <div className="grid h-[772px] w-[912px] grid-cols-2 grid-rows-2 overflow-hidden rounded-[20px] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+      {cell(false)}
+      {cell(true)}
     </div>
   );
 }
@@ -70,7 +75,7 @@ export function CalmRoom() {
     [-10, 150], [40, 200], [100, 140], [560, 170], [610, 210], [650, 150],
   ];
   return (
-    <div className="relative h-[470px] w-[720px] overflow-hidden rounded-[24px] border-2 border-[var(--panel-border)] bg-[var(--arkiv-ink)]">
+    <div className="relative h-[470px] w-[720px] overflow-hidden rounded-[20px] border border-[rgba(246,244,239,0.12)] bg-[var(--arkiv-ink)]">
       {/* smoke */}
       {[[90, 30, 70], [230, 10, 90], [420, 24, 80], [580, 8, 100]].map(([x, y, r], i) => (
         <motion.div
@@ -100,14 +105,14 @@ export function CalmRoom() {
         </div>
       </div>
       {/* the mascot, calm, with a mug on a side table beside it */}
-      <div className="absolute bottom-[56px] left-[330px]">
-        <Mascot pose="stand" mood="smile" height={280} />
+      <div className="absolute bottom-[56px] left-[292px]">
+        <Mascot pose="stand" unit={24} />
       </div>
       <div className="absolute bottom-[56px] left-[545px] h-[90px] w-[8px] bg-[var(--arkiv-stone)]/70" />
       <div className="absolute bottom-[146px] left-[515px] h-[8px] w-[70px] rounded bg-[var(--arkiv-stone)]/70" />
       <div className="absolute bottom-[154px] left-[535px] h-[30px] w-[26px] rounded-b-[6px] bg-[var(--arkiv-sand)]" />
       {/* speech bubble */}
-      <div className="absolute left-[420px] top-[56px] rounded-[18px] bg-[var(--arkiv-sand)] px-6 py-3 text-[30px] font-semibold text-[var(--arkiv-ink)]">
+      <div className="absolute left-[420px] top-[56px] rounded-[16px] bg-[var(--arkiv-sand)] px-6 py-3 text-[30px] font-semibold text-[var(--arkiv-ink)]">
         This is fine.
         <span className="absolute -bottom-[12px] left-[30px] h-0 w-0 border-l-[12px] border-r-[12px] border-t-[14px] border-l-transparent border-r-transparent border-t-[var(--arkiv-sand)]" />
       </div>
@@ -121,15 +126,15 @@ export function CalmRoom() {
 /** "Nobody: / Arkiv:" post, the mascot deadpan next to an EVM box that fades away. */
 export function NobodyMeme() {
   return (
-    <div className="relative w-[640px] rounded-[16px] bg-[var(--arkiv-sand)] p-9 text-[var(--arkiv-ink)] shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
+    <div className="relative w-[640px] rounded-[20px] bg-[var(--arkiv-sand)] p-9 text-[var(--arkiv-ink)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
       <p className="text-[34px]">Nobody:</p>
       <p className="mt-4 text-[34px] leading-tight">
         <span className="font-semibold">Arkiv:</span> removes the EVM on purpose
       </p>
       <div className="relative mt-5 flex h-[260px] items-end gap-10 rounded-[12px] bg-[var(--arkiv-ink)] px-8 pb-4">
-        <Mascot pose="stand" mood="serious" height={230} />
+        <Mascot pose="stand" unit={24} />
         <motion.div
-          className="mb-6 flex h-[100px] w-[180px] items-center justify-center gap-3 rounded-[14px] border-2 border-[var(--arkiv-stone)] font-mono text-[40px] font-semibold text-[var(--arkiv-stone)]"
+          className="mb-6 flex h-[100px] w-[180px] items-center justify-center gap-3 rounded-[12px] border-2 border-[var(--arkiv-stone)] font-mono text-[40px] font-semibold text-[var(--arkiv-stone)]"
           initial={{ opacity: 1, y: 0 }}
           animate={{ opacity: [1, 1, 0.12], y: [0, 0, 20] }}
           transition={{ duration: 2.6, times: [0, 0.45, 1], repeat: Infinity, repeatDelay: 1.4, ease: EASE }}
@@ -141,46 +146,56 @@ export function NobodyMeme() {
   );
 }
 
-const SLOT_LOOKS: { pose: MascotPose; mood: MascotMood }[] = [
-  { pose: "stand", mood: "serious" },
-  { pose: "stand", mood: "smile" },
-  { pose: "wave", mood: "serious" },
-  { pose: "wave", mood: "smile" },
-];
+const SLOT_POSES: MascotPose[] = ["stand", "wave", "point"];
 
-/** Game-style select panel: "Choose your lifespan." The frame hops slot to slot until the doors open. */
+/**
+ * Game-style select panel (handoff board "S7 · Doors open"): "Choose your lifespan." The Orange
+ * frame hops slot to slot until the doors open; the bar shows the selected lifetime.
+ */
 export function CharacterSelect({ lifespans, maxSec }: { lifespans: { label: string; sec: number }[]; maxSec: number }) {
   const doorsOpen = useStage((s) => s.doors === "open");
-  const [selected, setSelected] = useState(lifespans.length - 1);
+  const [selected, setSelected] = useState(1);
   useEffect(() => {
     if (doorsOpen) return;
     const id = setInterval(() => setSelected((s) => (s + 1) % lifespans.length), 900);
     return () => clearInterval(id);
   }, [doorsOpen, lifespans.length]);
+  const current = lifespans[selected] ?? lifespans[0]!;
   return (
-    <div className="w-[560px] rounded-[20px] border-2 border-[var(--arkiv-stone)] bg-[var(--arkiv-ink)] p-7">
-      <p className="text-center text-[44px] font-semibold">Choose your lifespan.</p>
-      <div className="mt-6 grid grid-cols-2 gap-4">
-        {lifespans.map(({ label, sec }, i) => {
+    <div className="flex w-[560px] flex-col gap-6 rounded-[20px] border-[3px] border-[var(--arkiv-sand)] bg-[var(--arkiv-ink)] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
+      <p className="font-mono text-[20px] tracking-[0.12em]" style={{ color: T.t64 }}>
+        PLAYER 1 · SELECT
+      </p>
+      <p className="text-[48px] font-bold leading-[1.05]">Choose your lifespan.</p>
+      <div className="grid grid-cols-3 gap-4">
+        {lifespans.map(({ label }, i) => {
           const isSel = i === selected;
-          const look = SLOT_LOOKS[i % SLOT_LOOKS.length]!;
           return (
-            <div key={label} className="relative flex flex-col items-center rounded-[14px] bg-[rgba(246,244,239,0.05)] pb-4 pt-4">
+            <div
+              key={label}
+              className={`relative flex flex-col items-center gap-3 rounded-[12px] border-[3px] px-2 pb-4 pt-5 ${isSel ? "border-transparent bg-[rgba(254,116,70,0.14)]" : "bg-[rgba(17,17,17,0.6)]"}`}
+              style={isSel ? undefined : { borderColor: "rgba(246,244,239,0.24)" }}
+            >
               {isSel ? (
                 <motion.div
                   layoutId="lifespan-frame"
-                  className="absolute inset-0 rounded-[14px] border-4 border-[var(--arkiv-orange)]"
+                  className="absolute -inset-[3px] rounded-[12px] border-[3px] border-[var(--arkiv-orange)] shadow-[0_0_0_4px_rgba(254,116,70,0.25)]"
                   transition={{ type: "spring", stiffness: 500, damping: 34 }}
                 />
               ) : null}
-              <Mascot pose={look.pose} mood={look.mood} height={150} waving={false} />
-              <p className="mt-2 font-mono text-[28px] font-medium">{label}</p>
-              <div className="mt-2 h-[10px] w-[180px] overflow-hidden rounded-full bg-[var(--arkiv-stone)]/25">
-                <div className="h-full rounded-full bg-[var(--arkiv-orange)]" style={{ width: `${(sec / maxSec) * 100}%` }} />
-              </div>
+              <Mascot pose={SLOT_POSES[i % SLOT_POSES.length]} unit={12} still />
+              <p className={`font-mono text-[24px] font-semibold ${isSel ? "text-[var(--arkiv-orange)]" : ""}`}>{label}</p>
             </div>
           );
         })}
+      </div>
+      <div className="h-[14px] overflow-hidden rounded-full" style={{ background: "rgba(246,244,239,0.16)" }}>
+        <motion.div
+          className="h-full bg-[var(--arkiv-orange)]"
+          initial={false}
+          animate={{ width: `${(current.sec / maxSec) * 100}%` }}
+          transition={{ duration: 0.3, ease: EASE }}
+        />
       </div>
     </div>
   );

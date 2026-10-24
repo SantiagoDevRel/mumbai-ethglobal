@@ -28,19 +28,10 @@ function sampleDot(session: string): DotCreate {
   return { session, name: "Priya", color: "#fe7446", country: "IN", lat: 19.076, lng: 72.8777, lifetimeSec: 60 };
 }
 
+/** One comment line: the network and SDK the code ran on, and where `reader` and `writer` come from. */
 export function codeHeader(profile: NetworkProfile): string {
-  return `// ${profile.name} · chain ${profile.chainId} · ${profile.sdk.package} ${profile.sdk.version}`;
-}
-
-/** Four lines so the whole scene fits one 1080p screen; `reader` matches the query text. */
-export function setupCode(profile: NetworkProfile): string {
   const pkg = profile.sdk.package;
-  return [
-    `import { createPublicClient, createWalletClient } from "${pkg}"; import { ExpirationTime } from "${pkg}/utils"`,
-    `import { i32 } from "${pkg}/attr"; import { eq } from "${pkg}/query"`,
-    `const reader = createPublicClient({ chain, transport }) // chain: the ${profile.name} profile`,
-    `const writer = createWalletClient({ chain, account, transport })`,
-  ].join("\n");
+  return `// ${profile.name} · chain ${profile.chainId} · ${pkg} ${profile.sdk.version} · reader: createPublicClient · writer: createWalletClient`;
 }
 
 /** One attribute value as source: strings quoted, typed numbers as their helper call. */
@@ -61,7 +52,8 @@ export function createDotsCode(dot: DotCreate): string {
     `  attributes: {`,
     ...rows,
     `  },`,
-    `  payload: new Uint8Array(), contentType: "${create.contentType}",`,
+    `  payload: new Uint8Array(),`,
+    `  contentType: "${create.contentType}",`,
     `  flags: { permissionlessExtension: ${create.flags.permissionlessExtension} },`,
     `  expires: ExpirationTime.fromSeconds(${dot.lifetimeSec}),`,
     `}] })`,
@@ -72,11 +64,13 @@ export function createDotsCode(dot: DotCreate): string {
 export function extendCode(addSeconds: number): string {
   return [
     `const extraBlocks = BigInt(Math.ceil(${addSeconds * 1000} / blockTimeMs))`,
-    `const entities = await Promise.all(keys.map((key) => reader.getEntity(key)))`,
+    `const entities = await Promise.all(`,
+    `  keys.map((key) => reader.getEntity(key)))`,
     `await writer.executeBatch({`,
     `  extensions: entities.map((entity) => ({`,
     `    entityKey: entity.key,`,
-    `    expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks),`,
+    `    expires: ExpirationTime.atBlock(`,
+    `      entity.expiresAt + extraBlocks),`,
     `  })),`,
     `})`,
   ].join("\n");
