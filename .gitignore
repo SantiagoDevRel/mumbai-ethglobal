@@ -14,3 +14,6 @@ playwright-report/
 .dev.vars
 next-env.d.ts
 *.tsbuildinfo
+
+# Stage screenshots (scripts/stage-shots.mjs)
+shots/
