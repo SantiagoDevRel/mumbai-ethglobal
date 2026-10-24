@@ -69,7 +69,7 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   L7: [
     "This is the code that ran today. Copy it.",
-    "Write, query and extend are the real calls (the create shows sample values). Own it is labeled app-side: today's finale was a demo view, this is the call for your app.",
+    "Write, extend and query are the calls that ran (the create shows sample values; the query is today's session). Own it is labeled app-side: today's finale was a demo view, this is the call for your app.",
   ],
   L8: [
     "Docs, the Arkiv AI plugin (your agent already knows Arkiv), the Arkiv MCP.",

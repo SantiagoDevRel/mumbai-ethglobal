@@ -1,20 +1,19 @@
 // L7 code, rendered from the real path, never typed by hand:
-// - Query it: `describeFilters`, the same text the query panel shows (mock.ts today; switch to the
-//   adapter's `describe()` once sdk-0.8.ts lands).
-// - Write it: the writer's createDots call shape (executeBatch of creates, as proven on Tiramisu by
-//   writer/src/phase-zero.ts), filled from a `DotCreate` through the shared encodings.
-// - Expire it, or extend it: the adapter's `extend(keys, addSeconds)` as one executeBatch.
+// - Query it: the live adapter's `describe()` (shared/arkiv/sdk-0.8.ts), the same text the query
+//   panel shows, for the session that ran today.
+// - Write it: the attributes come from `dotToCreate`, the exact function the writer's createDots
+//   sends in one executeBatch.
+// - Expire it, or extend it: mirrors the adapter's `extend` (read each entity, then one batch with
+//   ExpirationTime.atBlock). The adapter has no text for writes yet, so this one is kept in step by
+//   hand; see the TODO below.
 // - Own it: never runs on stage (the finale is a demo view), so the slide labels it app-side.
-// Field names checked against the installed @arkiv-network/sdk 0.8.1 typings (CreateEntityParameters,
-// ExtendEntityParameters { entityKey, expires }, ChangeOwnershipParameters { entityKey, newOwner }).
-// TODO(orchestrator): take these from the adapter once it exposes its write text next to `describe()`.
+// TODO(orchestrator): take the write text from the adapter once it exposes it next to `describe()`.
 
 import type { DotCreate } from "../../shared/arkiv/adapter";
-import { describeFilters } from "../../shared/arkiv/mock";
 import type { NetworkProfile } from "../../shared/arkiv/profiles";
 import { WRITER_ADDRESS } from "../../shared/arkiv/profiles";
-import { encodeCoord, normalizeColor } from "../../shared/encoding";
-import { APP_ID, STAGE_EXTENSION_SEC } from "../../shared/types";
+import { createArkivAdapter, dotToCreate } from "../../shared/arkiv/sdk-0.8";
+import { STAGE_EXTENSION_SEC } from "../../shared/types";
 
 export interface CodeBlock {
   title: string;
@@ -25,54 +24,59 @@ export interface CodeBlock {
 }
 
 /** Sample input for the create; the values on screen are labeled as a sample. */
-const SAMPLE_DOT: DotCreate = {
-  session: "demo",
-  name: "Priya",
-  color: "#fe7446",
-  country: "IN",
-  lat: 19.076,
-  lng: 72.8777,
-  lifetimeSec: 60,
-};
+function sampleDot(session: string): DotCreate {
+  return { session, name: "Priya", color: "#fe7446", country: "IN", lat: 19.076, lng: 72.8777, lifetimeSec: 60 };
+}
 
 export function codeHeader(profile: NetworkProfile): string {
   return `// ${profile.name} · chain ${profile.chainId} · ${profile.sdk.package} ${profile.sdk.version}`;
 }
 
+/** Four lines so the whole scene fits one 1080p screen; `reader` matches the query text. */
 export function setupCode(profile: NetworkProfile): string {
   const pkg = profile.sdk.package;
   return [
-    `import { createPublicClient, createWalletClient } from "${pkg}"`,
-    `import { ExpirationTime } from "${pkg}/utils"; import { i32 } from "${pkg}/attr"`,
-    `const client = createPublicClient({ chain, transport }) // chain: the ${profile.name} profile`,
+    `import { createPublicClient, createWalletClient } from "${pkg}"; import { ExpirationTime } from "${pkg}/utils"`,
+    `import { i32 } from "${pkg}/attr"; import { eq } from "${pkg}/query"`,
+    `const reader = createPublicClient({ chain, transport }) // chain: the ${profile.name} profile`,
     `const writer = createWalletClient({ chain, account, transport })`,
   ].join("\n");
 }
 
-/** The writer's createDots: one executeBatch of creates, one entry per dot. */
+/** One attribute value as source: strings quoted, typed numbers as their helper call. */
+function attrSource(value: unknown): string {
+  if (typeof value === "string") return JSON.stringify(value);
+  if (value && typeof value === "object" && "type" in value && "value" in value) return `${String(value.type)}(${String(value.value)})`;
+  return String(value);
+}
+
+/** The writer's createDots for one dot: the attributes are `dotToCreate`'s own output. */
 export function createDotsCode(dot: DotCreate): string {
+  const create = dotToCreate(dot);
+  const entries = Object.entries(create.attributes).map(([name, value]) => `${name}: ${attrSource(value)}`);
+  const rows: string[] = [];
+  for (let i = 0; i < entries.length; i += 3) rows.push(`    ${entries.slice(i, i + 3).join(", ")},`);
   return [
     `await writer.executeBatch({ creates: [{`,
     `  attributes: {`,
-    `    app: "${APP_ID}", kind: "dot", session: "${dot.session}",`,
-    `    name: "${dot.name}", color: "${normalizeColor(dot.color) ?? dot.color}", country: "${dot.country}",`,
-    `    lat: i32(${encodeCoord(dot.lat)}), lng: i32(${encodeCoord(dot.lng)}),`,
+    ...rows,
     `  },`,
-    `  payload: new Uint8Array(),`,
-    `  contentType: "application/octet-stream",`,
-    `  flags: { permissionlessExtension: true },`,
+    `  payload: new Uint8Array(), contentType: "${create.contentType}",`,
+    `  flags: { permissionlessExtension: ${create.flags.permissionlessExtension} },`,
     `  expires: ExpirationTime.fromSeconds(${dot.lifetimeSec}),`,
     `}] })`,
   ].join("\n");
 }
 
-/** The adapter's extend(keys, addSeconds): one batch, signed in Rabby. */
+/** The adapter's extend(keys, addSeconds): new deadline = current deadline + the added blocks. */
 export function extendCode(addSeconds: number): string {
   return [
+    `const extraBlocks = BigInt(Math.ceil(${addSeconds * 1000} / blockTimeMs))`,
+    `const entities = await Promise.all(keys.map((key) => reader.getEntity(key)))`,
     `await writer.executeBatch({`,
-    `  extensions: keys.map((entityKey) => ({`,
-    `    entityKey,`,
-    `    expires: ExpirationTime.fromSeconds(${addSeconds}),`,
+    `  extensions: entities.map((entity) => ({`,
+    `    entityKey: entity.key,`,
+    `    expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks),`,
     `  })),`,
     `})`,
   ].join("\n");
@@ -83,11 +87,14 @@ export function changeOwnerCode(): string {
   return [`await writer.changeOwnership({`, `  entityKey,`, `  newOwner: businessWallet,`, `})`].join("\n");
 }
 
-export function codeBlocks(): CodeBlock[] {
+/** Every block for L7. `session` is today's session code when one is running. */
+export function codeBlocks(profile: NetworkProfile, session: string | null): CodeBlock[] {
+  const reader = createArkivAdapter({ profile, creator: WRITER_ADDRESS, read: { kind: "public" } });
+  const query = reader.describe({ kinds: ["dot"], session: session ?? undefined }).code;
   return [
-    { title: "Write it", verb: "the writer's batch of creates (sample values)", code: createDotsCode(SAMPLE_DOT) },
-    { title: "Query it", verb: "run again every block", code: describeFilters({ kinds: ["dot"] }, WRITER_ADDRESS).code },
+    { title: "Write it", verb: "the writer's batch of creates (sample values)", code: createDotsCode(sampleDot(session ?? "demo")) },
     { title: "Expire it, or extend it", verb: "Lifetime Extension, signed in Rabby", code: extendCode(STAGE_EXTENSION_SEC) },
-    { title: "Own it", verb: "for your app; today's finale was a demo view", code: changeOwnerCode(), appSide: true },
+    { title: "Query it", verb: "run again every block, every page", code: query },
+    { title: "Own it", verb: "", code: changeOwnerCode(), appSide: true },
   ];
 }
