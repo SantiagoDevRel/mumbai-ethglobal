@@ -10,7 +10,7 @@
 //   controls the "?" keyboard overlay                              z-40
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { KEY_HELP } from "../../lib/stage/keyboard";
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
 import { useScene, useStage } from "../../lib/stage/store";
@@ -20,14 +20,14 @@ export const STAGE_H = 1080;
 
 /** Scale of the 1920x1080 box in the current viewport. */
 export function useStageScale(): number {
-  const [scale, setScale] = useState(1);
-  useEffect(() => {
-    const update = () => setScale(Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H));
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-  return scale;
+  return useSyncExternalStore(
+    (onChange) => {
+      window.addEventListener("resize", onChange);
+      return () => window.removeEventListener("resize", onChange);
+    },
+    () => Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H),
+    () => 1,
+  );
 }
 
 /** A 1920x1080 box, centered and scaled to the viewport. Children use stage pixels. */
@@ -109,14 +109,16 @@ export function StageFrame({
   );
 }
 
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
 export function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReduced(mq.matches);
-    const on = () => setReduced(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduced;
+  return useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia(REDUCED_MOTION);
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(REDUCED_MOTION).matches,
+    () => false,
+  );
 }

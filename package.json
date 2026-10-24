@@ -11,7 +11,7 @@
     "start": "npx serve out",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --test --experimental-strip-types \"tests/**/*.test.ts\"",
+    "test": "node --test --experimental-strip-types \"shared/**/*.test.ts\"",
     "check:network": "node --experimental-strip-types scripts/check-network.ts",
     "seed": "node --experimental-strip-types scripts/seed.ts",
     "loadtest": "node --experimental-strip-types scripts/loadtest.ts"
