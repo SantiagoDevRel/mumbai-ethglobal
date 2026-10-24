@@ -24,7 +24,7 @@ export async function writerRequest(path: string, options: { token?: string; bod
   return json;
 }
 
-/** Only the random device identity is durable; presenter credentials never enter localStorage. */
+/** The phone's random device identity. (The presenter's 12-hour login token is kept by presenter-auth.) */
 export function deviceToken(): string {
   const key = "arkiv-workshop-device";
   let value = localStorage.getItem(key);

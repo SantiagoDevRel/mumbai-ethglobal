@@ -29,7 +29,7 @@ function readError(error: unknown): string {
 }
 
 export function useLiveData(filters: ChainFilters, session: string | null): LiveData {
-  const token = usePresenterToken();
+  const token = usePresenterToken() ?? "";
   const mode = useSourceMode();
   const previous = useRef<{ adapter: ArkivAdapter; queryKey: string; entities: LiveEntity[] } | null>(null);
   const [data, setData] = useState<LiveData>({ adapter: null, source: "mock", run: null, events: [], error: null });

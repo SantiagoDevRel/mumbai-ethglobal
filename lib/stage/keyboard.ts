@@ -3,12 +3,11 @@
 // Presenter keys (WORKSHOP.md 4.9). Contract owned by the orchestrator.
 
 import { useEffect } from "react";
-import { SCENES } from "../../shared/scenes";
 import { stage, type Command } from "./store";
 
 export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "→ / ←", action: "Next / previous scene" },
-  { keys: "D", action: "Open / close the doors" },
+  { keys: "D", action: "3 · 2 · 1 · write! countdown (S7)" },
   { keys: "E / Shift+E", action: "Extend the selected dots / every live dot (Rabby)" },
   { keys: "B", action: "Business view" },
   { keys: "O / T", action: "Owner view / transfer animation" },
@@ -30,7 +29,7 @@ export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Comma
       return { type: "prev" };
     case "d":
     case "D":
-      return { type: "doors" };
+      return { type: "countdown" };
     case "e":
       return { type: "extend", scope: "selected" };
     case "E":
@@ -69,24 +68,12 @@ export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Comma
   }
 }
 
-/** → past S0 waits for the workshop session (/notes "Start session"); mock rehearsals skip the lock. */
-function lockedBeforeSession(cmd: Command): boolean {
-  if (cmd.type !== "next") return false;
-  const state = stage.getState();
-  if (state.sceneIndex !== 0 || state.session || state.step < SCENES[0]!.steps - 1) return false;
-  try {
-    return sessionStorage.getItem("arkiv-stage-source") !== "mock";
-  } catch {
-    return true;
-  }
-}
-
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-/** Mount once on `/` and on `/notes`. */
+/** Mount once on /map and on /slides. */
 export function usePresenterKeys(enabled = true): void {
   useEffect(() => {
     if (!enabled) return;
@@ -95,7 +82,6 @@ export function usePresenterKeys(enabled = true): void {
       const cmd = commandForKey(e);
       if (!cmd) return;
       e.preventDefault();
-      if (lockedBeforeSession(cmd)) return;
       stage.dispatch(cmd);
     };
     window.addEventListener("keydown", onKey);

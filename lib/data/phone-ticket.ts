@@ -54,8 +54,8 @@ export function ticketPollDelay(written: boolean, failures: number, random = Mat
 export function phoneWriteMessage(code?: string): string {
   const messages: Record<string, string> = {
     invalid: "Check your name, country, color and lifetime, then try again.",
-    bad_session: "This session has ended. Hang tight for the next one.",
-    doors_closed: "Hang tight. Santiago opens the doors in a moment.",
+    bad_session: "The map was reset. Try again.",
+    doors_closed: "Writing is paused. Try again in a moment.",
     name_blocked: "Try another name.",
     device_live: "You already have a live entity.",
     device_limit: "You’ve reached the limit for this session.",

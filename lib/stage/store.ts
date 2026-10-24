@@ -2,11 +2,11 @@
 
 // Scene engine. Contract owned by the orchestrator.
 //
-// One store per window. The projector (`/`) is the leader: it applies every command and
-// broadcasts the resulting state. `/notes` is a follower: it sends commands and mirrors the
-// leader's state over a BroadcastChannel. Side effects that touch the chain or the writer
-// (doors, extend, patch, hold) are not done here: the app registers effect handlers with
-// `onCommand`, which run on the leader after the reducer.
+// One store per window. /map is the leader: it applies every command and broadcasts the resulting
+// state. /slides is a follower: it sends commands and mirrors the leader's state over a
+// BroadcastChannel, and applies them itself while no /map is open. Side effects that touch the
+// chain or the writer (extend, patch, hold, phase) are not done here: the app registers effect
+// handlers with `onCommand`, which run on the leader after the reducer.
 
 import { useSyncExternalStore } from "react";
 import { SCENES, type CameraCue, type MapMode } from "../../shared/scenes.ts";
@@ -19,9 +19,8 @@ export interface StageState {
   sceneIndex: number;
   /** Reveal step inside the scene, 0-based. */
   step: number;
-  doors: "closed" | "open";
-  /** Set when D opens the doors: the 3 · 2 · 1 animation runs from this time (ms). */
-  doorsCountdownAt: number | null;
+  /** Set when D starts S7's 3 · 2 · 1 · write! animation (ms). Phones can write from the first slide. */
+  countdownAt: number | null;
   phase: "talk" | "build";
   /** Map layer; follows the scene unless B / O override it inside the scene. */
   map: MapMode;
@@ -47,7 +46,9 @@ export type Command =
   | { type: "next" }
   | { type: "prev" }
   | { type: "goto"; index: number }
-  | { type: "doors"; open?: boolean }
+  | { type: "countdown" }
+  /** Reset: back to S0 with nothing hidden, selected or added, on the session the writer just started. */
+  | { type: "reset"; session: string | null }
   | { type: "phase"; phase: "talk" | "build" }
   | { type: "extend"; scope: "selected" | "all" }
   | { type: "makeBusiness"; key: Hex }
@@ -75,8 +76,7 @@ export function initialState(): StageState {
   return {
     sceneIndex: 0,
     step: 0,
-    doors: "closed",
-    doorsCountdownAt: null,
+    countdownAt: null,
     phase: "talk",
     map: first.map,
     transferred: false,
@@ -126,9 +126,11 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
     }
     case "goto":
       return enterScene(state, cmd.index);
-    case "doors": {
-      const open = cmd.open ?? state.doors === "closed";
-      return { ...state, doors: open ? "open" : "closed", doorsCountdownAt: open ? now : null };
+    case "countdown":
+      return { ...state, countdownAt: state.countdownAt === null ? now : null };
+    case "reset": {
+      const fresh = initialState();
+      return { ...fresh, session: cmd.session, camera: { cue: fresh.camera.cue, nonce: state.camera.nonce + 1 } };
     }
     case "phase":
       return { ...state, phase: cmd.phase };
@@ -197,12 +199,13 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
 
 // ---------- store + channel ----------
 
-export type Role = "stage" | "notes";
+export type Role = "leader" | "follower";
 
 type Message =
   | { kind: "command"; cmd: Command }
   | { kind: "state"; state: StageState }
-  | { kind: "hello" };
+  | { kind: "hello" }
+  | { kind: "bye" };
 
 const CHANNEL = "arkiv-mumbai-stage";
 
@@ -214,8 +217,8 @@ class StageStore {
   private listeners = new Set<Listener>();
   private handlers = new Set<CommandHandler>();
   private channel: BroadcastChannel | null = null;
-  private role: Role = "stage";
-  /** Follower: time of the last state received from the leader. */
+  private role: Role = "leader";
+  /** Follower: time of the last state received from the leader; 0 while no leader is open. */
   lastLeaderStateAt = 0;
 
   connect(role: Role): () => void {
@@ -225,17 +228,22 @@ class StageStore {
     this.channel = channel;
     channel.onmessage = (ev: MessageEvent<Message>) => {
       const msg = ev.data;
-      if (this.role === "stage") {
+      if (this.role === "leader") {
         if (msg.kind === "command") this.dispatch(msg.cmd);
         else if (msg.kind === "hello") channel.postMessage({ kind: "state", state: this.state } satisfies Message);
       } else if (msg.kind === "state") {
         this.lastLeaderStateAt = Date.now();
         this.set(msg.state);
-      }
+      } else if (msg.kind === "bye") this.lastLeaderStateAt = 0;
     };
-    if (role === "notes") channel.postMessage({ kind: "hello" } satisfies Message);
+    if (role === "follower") channel.postMessage({ kind: "hello" } satisfies Message);
     else channel.postMessage({ kind: "state", state: this.state } satisfies Message);
+    // A closing /map tells /slides to drive itself again.
+    const bye = () => { if (this.role === "leader") channel.postMessage({ kind: "bye" } satisfies Message); };
+    window.addEventListener("pagehide", bye);
     return () => {
+      bye();
+      window.removeEventListener("pagehide", bye);
       channel.close();
       if (this.channel === channel) this.channel = null;
     };
@@ -255,7 +263,7 @@ class StageStore {
   }
 
   dispatch = (cmd: Command): void => {
-    if (this.role === "notes" && this.channel) {
+    if (this.role === "follower" && this.channel && this.lastLeaderStateAt) {
       this.channel.postMessage({ kind: "command", cmd } satisfies Message);
       return;
     }

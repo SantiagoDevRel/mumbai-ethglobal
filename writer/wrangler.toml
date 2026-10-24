@@ -4,7 +4,7 @@ compatibility_date = "2026-10-01"
 compatibility_flags = ["nodejs_compat"]
 
 # Secrets (set with `wrangler secret put`, never committed):
-#   WORKSHOP_WRITER_PRIVATE_KEY, RPC, ACCESS_KEY, WORKSHOP_PRESENTER_TOKEN
+#   WORKSHOP_WRITER_PRIVATE_KEY, RPC, ACCESS_KEY, WORKSHOP_PRESENTER_TOKEN, PRESENTER_PASSWORD
 
 [vars]
 ARKIV_PROFILE = "tiramisu"

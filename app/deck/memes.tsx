@@ -150,16 +150,16 @@ const SLOT_POSES: MascotPose[] = ["stand", "wave", "point"];
 
 /**
  * Game-style select panel (handoff board "S7 · Doors open"): "Choose your lifespan." The Orange
- * frame hops slot to slot until the doors open; the bar shows the selected lifetime.
+ * frame hops slot to slot until the countdown starts; the bar shows the selected lifetime.
  */
 export function CharacterSelect({ lifespans, maxSec }: { lifespans: { label: string; sec: number }[]; maxSec: number }) {
-  const doorsOpen = useStage((s) => s.doors === "open");
+  const counting = useStage((s) => s.countdownAt !== null);
   const [selected, setSelected] = useState(1);
   useEffect(() => {
-    if (doorsOpen) return;
+    if (counting) return;
     const id = setInterval(() => setSelected((s) => (s + 1) % lifespans.length), 900);
     return () => clearInterval(id);
-  }, [doorsOpen, lifespans.length]);
+  }, [counting, lifespans.length]);
   const current = lifespans[selected] ?? lifespans[0]!;
   return (
     <div className="flex w-[560px] flex-col gap-6 rounded-[20px] border-[3px] border-[var(--arkiv-sand)] bg-[var(--arkiv-ink)] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.55)]">

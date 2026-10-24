@@ -54,8 +54,8 @@ Deploy the resulting `dist/index.js` with `wrangler deploy dist/index.js --no-bu
 
 Current deployment (October 24): version `430f0a2d-b5a3-4736-ad36-535bfd72f2b0`, with the code-less
 `GET /api/session` and the 5-15 minute lifetime range. Version notes further down are history.
-Configure `RPC`, `ACCESS_KEY`, `WORKSHOP_WRITER_PRIVATE_KEY`, and
-`WORKSHOP_PRESENTER_TOKEN` as Worker secrets, never as committed files.
+Configure `RPC`, `ACCESS_KEY`, `WORKSHOP_WRITER_PRIVATE_KEY`, `WORKSHOP_PRESENTER_TOKEN` and
+`PRESENTER_PASSWORD` as Worker secrets, never as committed files.
 
 ## Public and presenter API
 
@@ -99,7 +99,14 @@ The cache reduces upstream RPC traffic; Worker requests still scale with phones.
 At this polling cadence, 200 phones use 40 requests per second, or 48,000 across
 twenty minutes, before presenter, session and browser preflight traffic.
 
-Presenter routes and `POST /api/rpc` require `Authorization: Bearer <token>`.
+Presenter routes and `POST /api/rpc` require `Authorization: Bearer <token>`: either
+`WORKSHOP_PRESENTER_TOKEN` itself (scripts) or a login from `POST /api/login {password}`, which
+checks `PRESENTER_PASSWORD` and returns `{token, expiresAt}`. The login is
+`p.<expiry ms>.<HMAC-SHA256 of the expiry keyed by WORKSHOP_PRESENTER_TOKEN>`, valid 12 hours;
+rotating `WORKSHOP_PRESENTER_TOKEN` ends every login. After ten wrong passwords from one IP in ten
+minutes, login answers 429 `too_many_attempts` until the window ends. A new session
+(`/api/presenter/session/start`, the stage's Reset) opens for writes at once; `/api/presenter/doors`
+remains for scripts. Submit accepts only the seven `DOT_PALETTE` colors.
 The proxy accepts only `RPC_READ_ALLOWLIST`; neither the key nor upstream error
 details appear in responses. CORS permits only `ALLOWED_ORIGINS` and all responses
 use `Cache-Control: no-store`.
@@ -152,7 +159,7 @@ Node. It follows every scene and reveal in the twenty-minute run of show. See
 `../scripts/README.md` for the credential names, private journal and safety checks.
 
 `rehearsal-final.json` is the passing Tiramisu run: all seventeen scenes and thirty-two
-reveals, twenty synthetic phones and one real `/j` page, two extensions, one patch,
+reveals, twenty synthetic phones and one real phone page (then `/j`, now `/scan`), two extensions, one patch,
 and zero ownership transactions. The demo leaves owner and creator unchanged.
 Talk time was 1,200,001 ms; setup through cleanup was 1,208,483 ms. Every scene
 started within 28 ms of its planned time. No scene-start delay exceeded the

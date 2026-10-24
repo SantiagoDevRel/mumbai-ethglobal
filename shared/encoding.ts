@@ -24,30 +24,32 @@ export function decodeRating(stored: number): number {
   return stored / 10;
 }
 
-/** `#rrggbb`, lower case, as stored in the `color` attribute. */
-export function normalizeColor(input: string): string | null {
-  const m = /^#?([0-9a-fA-F]{6})$/.exec(input.trim());
-  return m ? `#${m[1]!.toLowerCase()}` : null;
-}
-
 /** Display form of an entity key: `0x3f2a…a1c9`. */
 export function shortKey(key: string, head = 4, tail = 4): string {
   if (key.length <= 2 + head + tail) return key;
   return `${key.slice(0, 2 + head)}…${key.slice(-tail)}`;
 }
 
-/** Twelve bright preset dot colors (participants' data, no brand review needed). */
+/** The seven dot colors a phone can pick: Arkiv, Solana and Ethereum tones, bright enough for the
+ * night globe (Arkiv Blue #181ea9 is too dark there, so Arkiv is Orange and Sand). The writer
+ * accepts only these. */
 export const DOT_PALETTE = [
-  "#fe7446",
-  "#ffd23f",
-  "#3ddc97",
-  "#2ec4f1",
-  "#6c8cff",
-  "#b07cff",
-  "#ff5fa2",
-  "#ff4d4d",
-  "#a3e635",
-  "#00e5c7",
-  "#ffffff",
-  "#f6a6ff",
+  "#fe7446", // Arkiv Orange
+  "#f6f4ef", // Arkiv Sand
+  "#14f195", // Solana green
+  "#9945ff", // Solana purple
+  "#dc1fff", // Solana magenta
+  "#627eea", // Ethereum blue
+  "#00c2ff", // cyan
 ] as const;
+export type DotColor = (typeof DOT_PALETTE)[number];
+
+export const DOT_COLOR_NAMES: Record<DotColor, string> = {
+  "#fe7446": "Orange",
+  "#f6f4ef": "Sand",
+  "#14f195": "Green",
+  "#9945ff": "Purple",
+  "#dc1fff": "Magenta",
+  "#627eea": "Ether blue",
+  "#00c2ff": "Cyan",
+};

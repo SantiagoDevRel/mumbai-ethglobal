@@ -1,29 +1,37 @@
 "use client";
 
-// Projector stage: deck + live map in one frame. The app chat fills `map`, `hud` and `qr`.
+// /map: the live globe, its HUD, the QR and the live scenes' captions. The leader window: it runs
+// the scene engine, reads the DB-Chain through the writer and signs Rabby transactions. /slides
+// sits beside it on a split screen and follows the same scene.
 
 import { useEffect, useSyncExternalStore } from "react";
-import { StageBox, StageFrame } from "../components/stage/StageFrame";
-import { usePresenterKeys } from "../lib/stage/keyboard";
-import { initialState, stage } from "../lib/stage/store";
-import { useLiveData } from "../lib/data/useLiveData";
-import { useLiveBlock } from "../lib/data/useLiveBlock";
-import { Globe } from "../components/map/Globe";
-import { JoinQR } from "../components/stage/JoinQR";
-import { StageHud } from "../components/stage/StageHud";
-import { applyAppFilters } from "../lib/data/view-model";
-import { useStageEffects } from "../lib/data/useStageEffects";
-import { useReviews } from "../lib/data/useReviews";
-import "../components/stage/app-stage.css";
-import { deck } from "./deck/registry";
-import { SCENES } from "../shared/scenes";
+import { MapFrame, StageBox } from "../../components/stage/StageFrame";
+import { PresenterBar, PresenterGate, usePresenterSession } from "../../components/stage/Presenter";
+import { usePresenterKeys } from "../../lib/stage/keyboard";
+import { initialState, stage } from "../../lib/stage/store";
+import { useLiveData } from "../../lib/data/useLiveData";
+import { useLiveBlock } from "../../lib/data/useLiveBlock";
+import { Globe } from "../../components/map/Globe";
+import { JoinQR } from "../../components/stage/JoinQR";
+import { StageHud } from "../../components/stage/StageHud";
+import { applyAppFilters } from "../../lib/data/view-model";
+import { useStageEffects } from "../../lib/data/useStageEffects";
+import { useReviews } from "../../lib/data/useReviews";
+import "../../components/stage/app-stage.css";
+import { deck } from "../deck/registry";
+import { SCENES } from "../../shared/scenes";
 
 const SERVER_STATE = initialState();
 const serverSnapshot = () => SERVER_STATE;
 
-export default function StagePage() {
-  useEffect(() => stage.connect("stage"), []);
+export default function MapPage() {
+  return <PresenterGate><MapStage /></PresenterGate>;
+}
+
+function MapStage() {
+  useEffect(() => stage.connect("leader"), []);
   usePresenterKeys();
+  usePresenterSession();
   const state = useSyncExternalStore(stage.subscribe, stage.getState, serverSnapshot);
   const data = useLiveData({ ...state.chainFilters, kinds: state.map !== "dots" ? ["dot", "business"] : state.chainFilters.kinds }, state.session);
   const scene = SCENES[state.sceneIndex]!;
@@ -46,5 +54,13 @@ export default function StagePage() {
   const reviews = useReviews(data.adapter, reviewKey, block?.number);
   const view = applyAppFilters((data.run?.entities ?? []).filter((entity) => !state.hidden.includes(entity.key)), state.appFilters, state.overlays, block?.timestampMs ?? 0);
   const appSteps = [...view.steps, ...(state.map === "business" ? ["Audience dots: invented business category and rating"] : []), ...(state.map === "owner" ? ["Ownership badges and transfer animation · demo view"] : []), ...(state.hidden.length ? ["Hidden entities · local moderation"] : [])];
-  return <StageFrame deck={deck} map={<Globe source={data.source} entities={view.entities} block={block} state={state} />} hud={<StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} />{notice && <p className="presenter-notice" role="status">{notice}</p>}</div></StageBox>} qr={<StageBox><JoinQR /></StageBox>} />;
+  // The live captions belong on the map; L9's closing lines and every slide are on /slides.
+  const Overlay = scene.kind === "live" && scene.id !== "L9" ? deck[scene.id].Overlay : undefined;
+  return <MapFrame
+    map={<Globe source={data.source} entities={view.entities} block={block} state={state} />}
+    overlay={Overlay ? <StageBox><Overlay scene={scene} step={state.step} /></StageBox> : undefined}
+    hud={<StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} />{notice && <p className="presenter-notice" role="status">{notice}</p>}</div></StageBox>}
+    qr={<StageBox><JoinQR screen="map" /></StageBox>}
+    bar={<PresenterBar inline />}
+  />;
 }

@@ -17,7 +17,7 @@ export interface DeckEntry {
   /** Overlay for `kind: "live"` scenes (captions, L6 small print, L9 tagline). Drawn in the
    * same 1920x1080 box above the map with `pointer-events: none`; opt back in per element. */
   Overlay?: ComponentType<SceneContentProps>;
-  /** Speaker notes shown in /notes, one paragraph per item. */
+  /** The scene's script, one paragraph per item (reference only; not shown on screen). */
   notes: string[];
 }
 

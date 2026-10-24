@@ -1,4 +1,5 @@
-// Screenshots of every scene and step, /notes and /j, from the static build in out/, in mock mode.
+// Screenshots of every scene and step on /map and /slides, and of /scan, from the static build in
+// out/, in mock mode.
 // Read-only: the writer's session endpoint is a fixture and nothing is sent to the chain.
 // Usage: npm run build && node scripts/stage-shots.mjs [outDir]   (default: shots/)
 import { mkdir, readFile, stat } from "node:fs/promises";
@@ -18,7 +19,10 @@ const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "
 
 async function open(url, viewport) {
   const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
-  await context.addInitScript(() => sessionStorage.setItem("arkiv-stage-source", "mock"));
+  await context.addInitScript(() => {
+    sessionStorage.setItem("arkiv-stage-source", "mock");
+    localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token: "p.fixture", expiresAt: Date.now() + 3_600_000 }));
+  });
   await context.route(`${origin}/**`, async (route) => {
     let file = path.resolve(root, "." + decodeURIComponent(new URL(route.request().url()).pathname));
     if (!file.startsWith(root + path.sep) && file !== root) return route.abort();
@@ -44,21 +48,21 @@ const send = (page, cmds) => page.evaluate((items) => {
 const settle = (page) => page.waitForTimeout(3500);
 const shot = (page, name) => page.screenshot({ path: path.join(dir, `${name}.png`), timeout: 60_000 });
 
-for (const [width, height] of [[1920, 1080], [1280, 720]]) {
-  const { context, page } = await open("/", { width, height });
+for (const [screen, width, height] of [["map", 1920, 1080], ["map", 1280, 720], ["map", 960, 1080], ["slides", 1920, 1080], ["slides", 960, 1080]]) {
+  const { context, page } = await open(`/${screen}/`, { width, height });
   await settle(page);
   for (const [index, scene] of SCENES.entries()) {
     await send(page, [{ type: "goto", index }]);
     await settle(page);
     for (let step = 1; step <= scene.steps; step++) {
       if (step > 1) { await send(page, [{ type: "next" }]); await settle(page); }
-      await shot(page, `${width}-${String(index).padStart(2, "0")}-${scene.id}-step${step}`);
+      await shot(page, `${screen}-${width}x${height}-${String(index).padStart(2, "0")}-${scene.id}-step${step}`);
     }
   }
   await context.close();
 }
 
-for (const [name, url, viewport] of [["notes-1440", "/notes/", { width: 1440, height: 900 }], ["phone-390", "/j/", { width: 390, height: 844 }], ["phone-360", "/j/", { width: 360, height: 780 }]]) {
+for (const [name, url, viewport] of [["phone-390", "/scan/", { width: 390, height: 844 }], ["phone-360", "/scan/", { width: 360, height: 780 }]]) {
   const { context, page } = await open(url, viewport);
   await settle(page);
   await page.screenshot({ path: path.join(dir, `${name}.png`), fullPage: true, timeout: 60_000 });

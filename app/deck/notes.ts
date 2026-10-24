@@ -1,6 +1,6 @@
-// Speaker notes for /notes, one paragraph per item (WORKSHOP.md sections 2 and 3), and what each
-// → reveals inside a scene (lib/stage/choreography.ts and the scene files). "Step n" matches the
-// "Step n of N" line on /notes.
+// The script for each scene, one paragraph per item (WORKSHOP.md sections 2 and 3), and what each
+// → reveals inside a scene (lib/stage/choreography.ts and the scene files). Not shown on screen:
+// the talk runs from /map and /slides only.
 
 import type { SceneId } from "../../shared/scenes";
 

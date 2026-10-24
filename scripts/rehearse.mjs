@@ -18,7 +18,8 @@ const FLOOR = 8n * 10n ** 18n;
 // Verified against the pinned SDK's entity/operations.ts and entity/params.ts.
 const EXECUTE = parseAbi(["function execute((uint8 operation, bytes operationData)[] ops) external returns (bytes32[] keys)"]);
 const REGISTRY = "0x4400000000000000000000000000000000000044";
-const GREEN = "#3ddc97";
+const GREEN = "#14f195";
+const ORANGE = "#fe7446";
 const root = path.resolve("out");
 const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json" };
 const flag = (name) => process.argv[process.argv.indexOf(name) + 1];
@@ -39,7 +40,7 @@ const report = {
   schema: 1, network: profile.id, origin: ORIGIN, writerUrl: WRITER,
   sourceSnapshot: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   scriptSha256: createHash("sha256").update(await readFile(new URL(import.meta.url))).digest("hex"),
-  staticIndexSha256: createHash("sha256").update(await readFile(path.join(root, "index.html"))).digest("hex"),
+  staticIndexSha256: createHash("sha256").update(await readFile(path.join(root, "map", "index.html"))).digest("hex"),
   startedAt: new Date().toISOString(), plannedTalkMs: TALK_LENGTH_SEC * 1000,
   timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; lifetimes stay at 120 s. The two cohorts avoid querying an entity immediately before its expiration during L2 preparation. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
   deployedWorker: { version: "c221c14e-fd84-481d-b625-b62d6e42a231", sourceCommit: "e1732fb", bundleSha256: "e2c0893aacfb1896895cbf0adeccf88779e682c4efdd4f07b3f43390d0e05d1a", verification: "Cloudflare deployments list, 100% active, checked before this campaign" },
@@ -200,7 +201,7 @@ function observe(page, label) {
 let phoneKey;
 async function submitSynthetic(index) {
   return op(`synthetic phone ${index + 1}`, async () => {
-    const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : "#ff8c42", lifetimeSec: 300 };
+    const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : ORANGE, lifetimeSec: 300 };
     const submittedAtMs = now();
     const response = await fetch(`${WRITER}/api/submit`, { method: "POST", headers: { "content-type": "application/json", "x-device-token": crypto.randomUUID(), origin: ORIGIN }, body: JSON.stringify(draft), signal: AbortSignal.timeout(20000) });
     assert.equal(response.status, 200);
@@ -222,10 +223,8 @@ async function submitSynthetic(index) {
   });
 }
 async function phoneWave() {
-  await op("open doors", async () => {
-    await command({ type: "doors", open: true });
-    await expect.poll(async () => (await presenter("status")).doors).toBe("open");
-  });
+  // A started session is already open; there is no doors step on stage any more.
+  await op("session open", async () => { assert.equal((await presenter("status")).doors, "open"); });
   const waveStart = SCENES.find((scene) => scene.id === "S7").at * 1000;
   const tasks = Array.from({ length: 20 }, (_, index) => (async () => {
     const offset = index < 10 ? index * 1000 / 9 : 31000 + (index - 10) * 1000 / 9;
@@ -233,7 +232,7 @@ async function phoneWave() {
   })());
   const realPhone = (async () => {
     await until(waveStart + 33000);
-    await op("real /j submit to stage visibility", async () => {
+    await op("real /scan submit to stage visibility", async () => {
       const submittedAtMs = now();
       await phone.getByRole("button", { name: "Write my entity", exact: true }).click();
       await expect(phone.getByText(/Written in block #\d+/)).toBeVisible({ timeout: 60000 });
@@ -285,7 +284,7 @@ async function sceneWork(id, step) {
     const run = await adapter.query({ kinds: ["dot"], session, country: "IN" }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.country === "IN"));
   });
   if (id === "L3" && step === 2) await op("colour filter green", async () => {
-    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Color/ }).selectOption(GREEN);
+    { const more = stage.locator(".filters-panel .more-filters"); await more.evaluate((element) => { element.open = true; }); await more.getByRole("button", { name: "Filter color Green", exact: true }).click(); }
     await expect(stage.locator(".query-panel")).toContainText(`eq("color", "${GREEN}")`, { timeout: 20000 });
     const run = await adapter.query({ kinds: ["dot"], session, country: "IN", color: GREEN }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.color === GREEN && item.attrs.country === "IN"));
     report.filterEvidence = { query: run.description.query, block: run.block.toString(), keys: run.entities.map((item) => item.key) };
@@ -314,7 +313,7 @@ async function sceneWork(id, step) {
     // the fresh-scan route to the L8 resources.
     report.l8WrittenPhoneHeading = await phone.locator("h1").textContent();
     const resources = await phone.context().newPage(); observe(resources, "resources");
-    await resources.goto(`${ORIGIN}/j`, { waitUntil: "domcontentloaded" });
+    await resources.goto(`${ORIGIN}/scan/`, { waitUntil: "domcontentloaded" });
     await expect(resources.getByRole("heading", { name: "Build on Arkiv this weekend" })).toBeVisible({ timeout: 15000 });
     await expect(resources.getByRole("link", { name: /Docs/ })).toBeVisible();
     report.l8FreshScanResourcesVisible = true; await resources.close();
@@ -328,7 +327,7 @@ try {
   if (!preflight) assert.equal(status.session, null, "An existing session belongs to someone else; it will not be replaced.");
   assert.ok(!status.inFlight && status.queued === 0 && !status.held && !status.replay);
   assert.equal(status.network, profile.name);
-  await stat(path.join(root, "index.html"));
+  await stat(path.join(root, "map", "index.html"));
   browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
   await context.route(`${ORIGIN}/**`, async (route) => {
@@ -340,13 +339,15 @@ try {
   stage = await context.newPage(); observe(stage, "stage");
   await stage.exposeFunction("__rehearsalWallet", walletRequest);
   await stage.addInitScript((token) => {
-    sessionStorage.setItem("arkiv-presenter-token", token);
+    // The static presenter credential stands in for the password login (the Worker accepts both).
+    localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token, expiresAt: Date.now() + 12 * 3_600_000 }));
     window.ethereum = { isRabby: true, request: (request) => window.__rehearsalWallet(request), on() {}, removeListener() {} };
     window.__rehearsalState = null;
     window.__rehearsalChannel = new BroadcastChannel("arkiv-mumbai-stage");
     window.__rehearsalChannel.onmessage = (event) => { if (event.data.kind === "state") window.__rehearsalState = event.data.state; };
   }, process.env.WORKSHOP_PRESENTER_TOKEN);
-  await stage.goto(ORIGIN, { waitUntil: "domcontentloaded" });
+  // /map starts a writer session by itself when none is running; the rehearsal's own start below replaces it.
+  await stage.goto(`${ORIGIN}/map/`, { waitUntil: "domcontentloaded" });
   await stage.evaluate(() => window.__rehearsalChannel.postMessage({ kind: "hello" }));
   await expect.poll(() => stage.evaluate(() => window.__rehearsalState?.sceneIndex)).toBe(0);
   // The HUD is only mounted in live scenes; check its live source briefly, then reset before the clock.
@@ -361,7 +362,7 @@ try {
     await command({ type: "togglePanel", panel: "filters", open: true });
     await stage.locator(".filters-panel").getByRole("combobox", { name: /^Country/ }).selectOption("IN");
     await expect(stage.locator(".query-panel")).toContainText('eq("country", "IN")', { timeout: 20000 });
-    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Color/ }).selectOption(GREEN);
+    { const more = stage.locator(".filters-panel .more-filters"); await more.evaluate((element) => { element.open = true; }); await more.getByRole("button", { name: "Filter color Green", exact: true }).click(); }
     await expect(stage.locator(".query-panel")).toContainText(`eq("color", "${GREEN}")`, { timeout: 20000 });
     assert.ok(proxyReads > 0); assert.equal(report.pageErrors.length, 0);
     console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0, filters: ["IN", GREEN] }));
@@ -372,10 +373,11 @@ try {
     await presenter("phase", { phase: "talk" });
     phone = await context.newPage(); observe(phone, "phone");
     await phone.setViewportSize({ width: 390, height: 844 });
-    await phone.goto(`${ORIGIN}/j`, { waitUntil: "domcontentloaded" });
+    await phone.goto(`${ORIGIN}/scan/`, { waitUntil: "domcontentloaded" });
     await phone.getByPlaceholder("Name or nickname").fill("Rehearsal phone");
-    await phone.getByRole("button", { name: `Color ${GREEN}`, exact: true }).click();
-    await phone.getByRole("combobox", { name: "Your country" }).selectOption("IN");
+    await phone.getByRole("button", { name: "Green", exact: true }).click();
+    await phone.getByRole("combobox", { name: "Your country" }).click();
+    await phone.getByRole("option", { name: "India", exact: true }).click();
     await phone.locator('input[type="range"]').focus(); await phone.keyboard.press("End");
     monitor = setInterval(() => { void balance("10 s monitor").catch((error) => { floorError ??= error; }); }, 10000);
     epoch = performance.now(); report.clockStartedAt = new Date().toISOString();

@@ -1,6 +1,7 @@
 // Writer HTTP API (Cloudflare Worker + one Durable Object). Contract owned by the orchestrator.
-// Phones call the public endpoints; /notes and the stage call presenter endpoints with
-// `Authorization: Bearer <presenter token>`. All bodies are JSON.
+// Phones call the public endpoints. The presenter pages (/map, /slides) trade the password for a
+// signed token at /api/login and call presenter endpoints with `Authorization: Bearer <token>`;
+// scripts send the presenter secret itself. All bodies are JSON.
 
 import { z } from "zod";
 import {
@@ -9,6 +10,7 @@ import {
   LIFETIME_STEP_SEC,
   NAME_MAX_CHARS,
 } from "./types";
+import { DOT_PALETTE } from "./encoding";
 
 const hex = z.string().regex(/^0x[0-9a-fA-F]+$/);
 
@@ -21,7 +23,8 @@ export const DEVICE_HEADER = "x-device-token";
 export const SubmitRequest = z.object({
   session: z.string().min(4).max(16),
   name: z.string().trim().min(1).max(NAME_MAX_CHARS),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+  /** One of the seven preset colors. */
+  color: z.enum(DOT_PALETTE),
   country: z.string().regex(/^[A-Z]{2}$/),
   lifetimeSec: z
     .number()
@@ -46,13 +49,14 @@ export type SubmitResponse = z.infer<typeof SubmitResponse>;
 export const ErrorCode = z.enum([
   "invalid", // 400
   "bad_session", // 403: wrong or ended session code
-  "doors_closed", // 409: "Hang tight. Santiago opens the doors in a moment."
+  "doors_closed", // 409: writing is paused (balance floor, seed or load test)
   "name_blocked", // 422: "Try another name."
   "device_live", // 429: this device already has a live entity
   "device_limit", // 429: three per device per session
   "map_full", // 429: "The map is full!"
   "network_not_configured", // 503
-  "unauthorized", // 401 presenter endpoints
+  "unauthorized", // 401 presenter endpoints and a wrong password
+  "too_many_attempts", // 429: too many wrong passwords from one IP
   "internal", // 500
 ]);
 export type ErrorCode = z.infer<typeof ErrorCode>;
@@ -89,6 +93,7 @@ export const SessionPublic = z.object({
   valid: z.boolean(),
   /** The current session code, or null when no session is running. */
   code: z.string().nullable(),
+  /** `open` from the moment a session starts; `closed` only while the writer is paused. */
   doors: z.enum(["closed", "open"]),
   /** `talk` during the talk; `build` after L8 (phone switches to resources). */
   phase: z.enum(["talk", "build"]),
@@ -103,10 +108,15 @@ export type SessionPublic = z.infer<typeof SessionPublic>;
 
 export const PRESENTER_AUTH_HEADER = "authorization"; // `Bearer <token>`
 
-/** POST /api/presenter/session/start → new session code. Ends the previous one. */
+/** POST /api/login (public): the presenter password for a signed token, valid 12 hours. */
+export const LoginRequest = z.object({ password: z.string().min(1).max(200) });
+export const LoginResponse = z.object({ token: z.string(), expiresAt: z.number().int() });
+export type LoginResponse = z.infer<typeof LoginResponse>;
+
+/** POST /api/presenter/session/start → new session code, open for writes. Ends the previous one (the presenter's Reset). */
 export const SessionStartResponse = z.object({ code: z.string() });
 /** POST /api/presenter/session/end → {} */
-/** POST /api/presenter/doors */
+/** POST /api/presenter/doors: pause or resume writes (scripts only: seed, load test). */
 export const DoorsRequest = z.object({ open: z.boolean() });
 /** POST /api/presenter/phase */
 export const PhaseRequest = z.object({ phase: z.enum(["talk", "build"]) });
@@ -116,7 +126,7 @@ export const ReplayRequest = z.object({ on: z.boolean() });
 export const HoldResponse = z.object({ held: z.literal(true), idle: z.boolean() });
 /** POST /api/presenter/resume → {} (also auto-resumes 60 s after a hold). */
 
-/** GET /api/presenter/status, polled every 2 s by /notes. */
+/** GET /api/presenter/status, polled every 3 s by /map. */
 export const PresenterStatus = z.object({
   session: z.string().nullable(),
   doors: z.enum(["closed", "open"]),
@@ -138,7 +148,7 @@ export const PresenterStatus = z.object({
 });
 export type PresenterStatus = z.infer<typeof PresenterStatus>;
 
-/** POST /api/rpc: read-only JSON-RPC proxy through the keyed RPC (presenter token).
+/** POST /api/rpc: read-only JSON-RPC proxy through the keyed RPC (presenter token or login token).
  * Only these methods are forwarded; anything else gets a JSON-RPC error. */
 export const RPC_READ_ALLOWLIST = [
   "eth_chainId",
@@ -159,6 +169,7 @@ export const WRITER_ROUTES = {
   ticket: (t: string) => `/api/ticket/${encodeURIComponent(t)}`,
   session: (s?: string) => (s ? `/api/session?s=${encodeURIComponent(s)}` : "/api/session"),
   rpc: "/api/rpc",
+  login: "/api/login",
   presenter: {
     sessionStart: "/api/presenter/session/start",
     sessionEnd: "/api/presenter/session/end",

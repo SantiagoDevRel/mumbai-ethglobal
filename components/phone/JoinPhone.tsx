@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import Image from "next/image";
-import { DOT_PALETTE, normalizeColor, shortKey } from "../../shared/encoding";
+import { DOT_COLOR_NAMES, DOT_PALETTE, shortKey } from "../../shared/encoding";
 import { explorerUrl, getProfile } from "../../shared/arkiv/profiles";
 import { SessionPublic, SubmitRequest, SubmitResponse } from "../../shared/writer-api";
 import type { DotDraft, Hex } from "../../shared/types";
@@ -12,7 +11,7 @@ import { phoneWriteMessage, ticketSeconds, writeBlockMs } from "../../lib/data/p
 import { usePhoneTicket } from "../../lib/data/usePhoneTicket";
 import { CountryPicker } from "./CountryPicker";
 import { LifetimeRing } from "./LifetimeRing";
-import { Plus, ArrowUpRight, BookOpen, Plug, Terminal, Gift } from "lucide-react";
+import { ArrowUpRight, BookOpen, Plug, Terminal, Gift } from "lucide-react";
 import "./phone.css";
 
 type PhoneState = { status: "form" } | { status: "submitting" } | { status: "queued"; ticket: string } |
@@ -25,7 +24,6 @@ export function JoinPhone() {
   const [sessionInfo, setSessionInfo] = useState<SessionPublic | null>(null);
   const [state, setState] = useState<PhoneState>({ status: "form" });
   const [draft, setDraft] = useState<DotDraft>({ name: "", color: DOT_PALETTE[0], country: "IN", lifetimeSec: LIFETIME_DEFAULT_SEC });
-  const [custom, setCustom] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionReconnecting, setSessionReconnecting] = useState(false);
   const [now, setNow] = useState(0);
@@ -120,6 +118,7 @@ export function JoinPhone() {
     finally { submitLock.current = false; }
   }
   const open = sessionInfo?.valid && sessionInfo.doors === "open" && !sessionInfo.replay && sessionInfo.network && profile;
+  const closedLabel = !sessionInfo ? "Connecting…" : !sessionInfo.code ? "Not live yet" : "Paused";
   const entityLink = profile && state.status === "written" ? explorerUrl(profile, "entity", state.key) : null;
   const seconds = ticketSeconds(reading.clock, now, state.status === "written" ? writeBlockMs(state.draft.lifetimeSec, state.includedAt, state.expiresAt) : null);
   const blocksLeft = reading.clock ? reading.clock.expiresAt > reading.clock.block ? reading.clock.expiresAt - reading.clock.block : 0n : null;
@@ -127,10 +126,9 @@ export function JoinPhone() {
   const progress = blocksLeft === null || totalBlocks <= 0n ? 1 : Number(blocksLeft) / Number(totalBlocks);
   const reconnecting = sessionReconnecting || reading.reconnecting;
   return <div className="phone-surface"><main className="phone-main">
-    <header className="phone-header"><Image unoptimized src="/brand/arkiv-white.svg" width={70} height={16} alt="Arkiv" /><span>· Join the map</span>{(state.status === "form" || state.status === "submitting") && <small className={open ? "phone-doors is-open" : "phone-doors"}>{open ? "Open" : "Closed"}</small>}</header>
-    <h1 className={sessionInfo?.phase === "build" ? undefined : "sr-only"}>{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : state.status === "written" ? "You’re on the map." : state.status === "expired" ? "Your moment, on-chain." : "Join the map"}</h1>
+    <h1 className="phone-header">{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : "Join the map"}</h1>
     {sessionInfo?.replay && <p className="phone-notice">We’re in replay mode.</p>}
-    {!WRITER_URL && <p className="phone-notice">Not ready yet. Hang tight.</p>}
+    {!WRITER_URL && <p className="phone-notice">Not ready yet.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
     {(reconnecting || error) && <p className="phone-notice" role="alert">{reconnecting ? "Reconnecting…" : error}</p>}
     {sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
@@ -141,12 +139,11 @@ export function JoinPhone() {
       {entityLink && <a className="entity-explorer" href={entityLink} target="_blank" rel="noreferrer">View in explorer <ArrowUpRight size={18} /></a>}
     </section> : state.status === "expired" ? <section className="phone-entity" aria-live="polite"><p className="phone-status">Entity Expiration</p><LifetimeRing color={draft.color} progress={0} muted /><h2>{draft.name}</h2><p>You expired at block #{state.block.toString()}. That’s Entity Expiration.</p>{open && writes < MAX_ENTITIES_PER_DEVICE && <button className="phone-submit" onClick={() => setState({ status: "form" })}>Write another</button>}</section> : state.status === "queued" ? <section className="phone-entity" role="status"><p className="phone-status">In the queue: next block</p><LifetimeRing color={draft.color} progress={0} muted /><h2>{draft.name}</h2><p>Your dot is on its way.</p></section> : <form className="phone-form" onSubmit={submit}>
       <label>Your name<input name="name" placeholder="Name or nickname" autoComplete="nickname" maxLength={NAME_MAX_CHARS} required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
-      <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={`Color ${color}`} aria-pressed={!custom && draft.color === color} onClick={() => { setCustom(false); setDraft({ ...draft, color }); }} />)}<button type="button" className="custom-toggle" aria-label="Custom hex color" aria-expanded={custom} onClick={() => setCustom(!custom)}><Plus size={20} /><span>Custom hex</span></button></div>{custom && <div className="custom-color"><input type="color" aria-label="Choose any color" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} /><input aria-label="Custom hex color value" pattern="#[0-9a-fA-F]{6}" value={draft.color} onChange={(event) => setDraft({ ...draft, color: event.target.value })} onBlur={() => { const color = normalizeColor(draft.color); if (color) setDraft({ ...draft, color }); }} /></div>}</fieldset>
-      <div className="phone-field"><span>Where are you from?</span><CountryPicker value={draft.country} onChange={(country) => setDraft({ ...draft, country })} /></div>
-      <label>How long should you live?<output className="lifetime-value">{draft.lifetimeSec / 60} min</output><input type="range" style={{ background: `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span></label>
-      {!open && <p className="doors-note">Hang tight. Santiago opens the doors in a moment.</p>}{writes >= MAX_ENTITIES_PER_DEVICE && <p className="doors-note">You’ve reached the limit for this session.</p>}<button className="phone-submit" disabled={!open || !device || writes >= MAX_ENTITIES_PER_DEVICE || state.status === "submitting"}>{state.status === "submitting" ? "Sending…" : writes >= MAX_ENTITIES_PER_DEVICE ? "Session limit reached" : open ? "Write my entity" : "Doors closed"}</button>
+      <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={DOT_COLOR_NAMES[color]} aria-pressed={draft.color === color} onClick={() => setDraft({ ...draft, color })} />)}</div></fieldset>
+      <div className="phone-field"><span>Choose a country</span><CountryPicker value={draft.country} onChange={(country) => setDraft({ ...draft, country })} /></div>
+      <label>How long should this data (entity) live?<output className="lifetime-value">{draft.lifetimeSec / 60} min</output><input type="range" style={{ background: `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span></label>
+      {writes >= MAX_ENTITIES_PER_DEVICE && <p className="limit-note">You’ve reached the limit for this session.</p>}<button className="phone-submit" disabled={!open || !device || writes >= MAX_ENTITIES_PER_DEVICE || state.status === "submitting"}>{state.status === "submitting" ? "Sending…" : writes >= MAX_ENTITIES_PER_DEVICE ? "Session limit reached" : open ? "Write my entity" : closedLabel}</button>
     </form>}
-    <footer>Arkiv testnet · everything you write is public.<span>Arkiv, the Web3 database</span></footer>
   </main></div>;
 }
 

@@ -14,8 +14,8 @@ writes Arkiv entities from their phones, and watches them land, count down and e
 | `shared/arkiv/sdk-0.8.ts` | The adapter on `@arkiv-network/sdk` 0.8.x | chain |
 | `lib/stage/` | Scene engine: store, BroadcastChannel sync, presenter keys, deck contract | orchestrator |
 | `components/stage/StageFrame.tsx` | Stage layers: map, scene box (1920x1080 scaled), HUD, QR, controls | orchestrator |
-| `app/deck/`, `app/notes/`, `public/deck/` | Every scene's slide or overlay, speaker notes, `/notes` | deck |
-| `app/` (rest), `components/` (rest), `lib/map/`, `lib/data/` | Stage, globe, phone page `/j`, query panel, filters, inspector | app |
+| `app/deck/`, `public/deck/` | Every scene's slide or overlay, and the script each scene follows | deck |
+| `app/` (rest), `components/` (rest), `lib/map/`, `lib/data/` | `/map` (globe, query panel, filters, inspector), `/slides`, phone page `/scan`, presenter login | app |
 | `writer/` | Cloudflare Worker + one Durable Object: queue, limits, batches, read proxy | chain |
 | `scripts/` | `check:network`, seed, load test | chain |
 
@@ -23,10 +23,10 @@ Change a contract only through the orchestrator. Every user-facing string is Eng
 
 ## Rules
 
-- The RPC access key never reaches a browser, a `NEXT_PUBLIC_*` variable or this repo. Phones never call an RPC: they poll their ticket on the Worker (a room shares one IP and the public RPC limits each IP). The presenter screen reads through the Worker's keyed read proxy: /notes holds the presenter token, and the projected stage tab, which holds none, relays its reads through /notes. No browser falls back to the public RPC.
+- The RPC access key never reaches a browser, a `NEXT_PUBLIC_*` variable or this repo. Phones never call an RPC: they poll their ticket on the Worker (a room shares one IP and the public RPC limits each IP). The presenter pages (/map and /slides) open with the presenter password; the Worker answers with a signed 12-hour login that both windows share, and every presenter read goes through the Worker's keyed read proxy with it. Without a login, reads fail. No browser falls back to the public RPC.
 - Never claim on screen what didn't happen on-chain. App-side steps are labeled *app-side*.
 - Vocabulary: "Arkiv entities", "Entity Expiration", "Lifetime Extension", "DB-Chain", "Ethereum-aligned", "your agent", "the Web3 database". Never "TTL", "records", "on Ethereum", or unqualified "decentralized", "trustless", "permanent". The mascot is BLOK. No hardcoded counts in copy.
-- Palette for UI chrome: Arkiv Blue `#181EA9`, Arkiv Orange `#FE7446`, Ink `#111111`, Sand `#F6F4EF`, Stone `#E9E6DE`. Official logo SVGs only (`public/brand/`). Dot colors are participant data and free.
+- Palette for UI chrome: Arkiv Blue `#181EA9`, Arkiv Orange `#FE7446`, Ink `#111111`, Sand `#F6F4EF`, Stone `#E9E6DE`. Official logo SVGs only (`public/brand/`). Dot colors are the seven in `DOT_PALETTE` (`shared/encoding.ts`); the writer accepts no other.
 - Text font IBM Plex Sans; code IBM Plex Mono.
 - Never `git add .`; scan staged changes for secrets before every commit.
 

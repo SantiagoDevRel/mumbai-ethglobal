@@ -8,11 +8,10 @@ import { stage, type StageState } from "../../lib/stage/store";
 import { darkStyle } from "../../lib/map/style";
 import { mapViewport } from "../../lib/map/viewport";
 import { remainingSeconds } from "../../lib/data/entity-state";
-import { StageBox, usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
+import { StageBox, stageGeometry, usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
 import countries from "../../shared/geo/countries.json";
 import { pointInPolygon, type LngLat } from "../../shared/geo/place";
 import { businessPresentation } from "../../lib/data/view-model";
-import { SCENES } from "../../shared/scenes";
 
 const CATEGORY_PATHS = {
   cafe: "M4 8h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4ZM16 8h2a3 3 0 0 1 0 6h-2M7 3v2M11 3v2",
@@ -114,7 +113,9 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
         const scale = Math.min(width / 1920, height / 1080);
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
-        if (surface.dataset.source !== source || SCENES[state.sceneIndex]?.kind === "slide") return;
+        // /map shows the dots in every scene: the room can write from the first slide.
+        if (surface.dataset.source !== source) return;
+        const box = stageGeometry(width, height, "fill");
         if (lastSource !== source) { born.clear(); leaving.clear(); lastEntities.clear(); lastSource = source; }
         const active = new Map(entities.map((entity) => [entity.key, entity]));
         for (const key of active.keys()) leaving.delete(key);
@@ -141,10 +142,10 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
           const seconds = remainingSeconds(entity, block, Date.now());
           const total = block ? Math.max(1, Number(entity.expiresAtBlock - entity.createdAtBlock) * block.blockTimeMs / 1000) : 1;
           if (state.map === "owner" && !state.transferred) {
-            ctx.strokeStyle = "rgba(246,244,239,0.42)"; ctx.lineWidth = 1.5 * scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo((width - 1920 * scale) / 2 + 180 * scale, (height - 1080 * scale) / 2 + 528 * scale); ctx.stroke();
+            ctx.strokeStyle = "rgba(246,244,239,0.42)"; ctx.lineWidth = 1.5 * scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo(box.x + 180 * scale, box.y + 528 * scale); ctx.stroke();
           }
           if (state.panels.inspector && state.inspected === entity.key) {
-            ctx.strokeStyle = "rgba(246,244,239,.42)"; ctx.lineWidth = scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo((width - 1920 * scale) / 2 + (state.map === "business" ? 1464 : 1032) * scale, (height - 1080 * scale) / 2 + 340 * scale); ctx.stroke();
+            ctx.strokeStyle = "rgba(246,244,239,.42)"; ctx.lineWidth = scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo(box.x + (state.map === "business" ? 1464 : 1032) * scale, box.y + 340 * scale); ctx.stroke();
           }
           const selected = state.selected.includes(entity.key);
           const business = businessPresentation(entity);
@@ -174,7 +175,7 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
           if (!exit) {
             const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.name;
             const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-            const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : `${Math.ceil(seconds)} s`;
+            const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : seconds >= 60 ? `${Math.floor(Math.ceil(seconds) / 60)}:${String(Math.ceil(seconds) % 60).padStart(2, "0")}` : `${Math.ceil(seconds)} s`;
             ctx.font = `600 16px ${fontFamily}`;
             const labelWidth = ctx.measureText(name).width + suffix.length * 8.5 + 36;
             const label = { x: point.x + (state.map === "business" ? 28 : 22) * scale, y: y - (state.map === "business" ? 52 : 15) * scale, width: labelWidth, name, suffix, hot: seconds < 5 || state.map === "business", appSide: state.map === "business" && business.appSide };
@@ -206,5 +207,5 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
     const view = cue === "india" ? { center: [82, 19.2] as [number, number], zoom: 4.5, pitch: 0 } : cue === "mumbai-street" ? { center: [72.8335, 18.9275] as [number, number], zoom: 15.9, pitch: 60 } : { center: [72, 19] as [number, number], zoom: 2.38, pitch: 0 };
     map.flyTo({ ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 200 * scale, bottom: (cue === "mumbai-street" ? 300 : 272) * scale }, bearing: cue === "mumbai-street" ? -22 : 0, duration: reduced ? 0 : 2400, easing: (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
   }, [ready, reduced, state.camera, stageScale]);
-  return <div className="globe-shell"><div ref={container} className="globe-map" aria-label="Interactive globe of Arkiv entities" />{SCENES[state.sceneIndex]?.kind === "live" && <canvas key={source} data-source={source} ref={canvas} className="globe-dots" aria-hidden="true" />}<StageBox><details className="map-attribution pointer-events-auto"><summary aria-label="Map attribution">i</summary><p><a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p></details></StageBox>{error && <p className="map-error" role="status">{error}</p>}</div>;
+  return <div className="globe-shell"><div ref={container} className="globe-map" aria-label="Interactive globe of Arkiv entities" /><canvas key={source} data-source={source} ref={canvas} className="globe-dots" aria-hidden="true" /><StageBox><details className="map-attribution pointer-events-auto"><summary aria-label="Map attribution">i</summary><p><a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p></details></StageBox>{error && <p className="map-error" role="status">{error}</p>}</div>;
 }

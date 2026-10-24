@@ -34,7 +34,6 @@ try {
     assert.equal(status.queued, 0);
     session = (await presenter("session/start", {})).code;
     ownedSession = true;
-    await presenter("doors", { open: true });
   }
   browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
@@ -50,11 +49,14 @@ try {
     } catch { await route.fulfill({ status: 404, body: "Not found" }); }
   });
   const stage = await context.newPage();
-  await stage.addInitScript((credential) => sessionStorage.setItem("arkiv-presenter-token", credential), process.env.WORKSHOP_PRESENTER_TOKEN);
+  // The static presenter credential stands in for the password login (the Worker accepts both).
+  await stage.addInitScript((credential) => localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token: credential, expiresAt: Date.now() + 3_600_000 })), process.env.WORKSHOP_PRESENTER_TOKEN);
   let proxyReads = 0;
   stage.on("request", (request) => { if (request.url() === WRITER + "/api/rpc") proxyReads++; });
   stage.on("pageerror", (error) => errors.push(error.message));
-  await stage.goto(ORIGIN, { waitUntil: "domcontentloaded" });
+  let publicRpcReads = 0;
+  stage.on("request", (request) => { if (/rpc\.[a-z0-9.-]*arkiv\.network/.test(new URL(request.url()).host)) publicRpcReads++; });
+  await stage.goto(`${ORIGIN}/map/`, { waitUntil: "domcontentloaded" });
   await expect(stage.locator(".qr-image img")).toBeVisible({ timeout: 20000 });
   await stage.evaluate((code) => {
     const channel = new BroadcastChannel("arkiv-mumbai-stage");
@@ -69,9 +71,9 @@ try {
   const phoneWriterRequests = [];
   phone.on("request", (request) => { if (request.url().startsWith(WRITER)) phoneWriterRequests.push({ at: Date.now(), path: new URL(request.url()).pathname }); });
   phone.on("pageerror", (error) => errors.push(error.message));
-  await phone.goto(`${ORIGIN}/j`, { waitUntil: "domcontentloaded" });
+  await phone.goto(`${ORIGIN}/scan/`, { waitUntil: "domcontentloaded" });
   await phone.getByPlaceholder("Name or nickname").fill("App smoke");
-  await phone.getByRole("button", { name: "Color #3ddc97", exact: true }).click();
+  await phone.getByRole("button", { name: "Green", exact: true }).click();
   await phone.getByRole("combobox", { name: "Your country" }).click();
   await phone.getByRole("option", { name: "India", exact: true }).click();
   await phone.locator('input[type="range"]').focus();
@@ -90,7 +92,7 @@ try {
   await expect.poll(() => stage.locator(".globe-dots").evaluate((canvas) => {
     const pixels = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
     let colored = 0;
-    for (let i = 0; i < pixels.length; i += 4) if (pixels[i] === 61 && pixels[i + 1] === 220 && pixels[i + 2] === 151 && pixels[i + 3] > 100) colored++;
+    for (let i = 0; i < pixels.length; i += 4) if (pixels[i] === 20 && pixels[i + 1] === 241 && pixels[i + 2] === 149 && pixels[i + 3] > 100) colored++;
     return colored;
   }), { timeout: 15000 }).toBeGreaterThan(0);
   await stage.locator(".event-log").getByRole("button", { name: /App smoke/ }).first().click();
@@ -103,8 +105,9 @@ try {
   assert.deepEqual(unexpected, [], "The included phone must read the public RPC, not poll the writer.");
   assert.deepEqual(errors, []);
   assert.ok(proxyReads > 0, "The presenter must use its authenticated Worker read proxy.");
+  assert.equal(publicRpcReads, 0, "The presenter map must never read the public RPC.");
   assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  process.stdout.write(JSON.stringify({ session, entityKey: key, written, expired, phoneToInclusionMs: includedAt - submittedAt, liveDotRendered: true, inspectorConfirmed: true, presenterProxyReads: proxyReads, noWriterPollingWhileIncluded: true, viewport: "390x844", pageErrors: errors.length }) + "\n");
+  process.stdout.write(JSON.stringify({ session, entityKey: key, written, expired, phoneToInclusionMs: includedAt - submittedAt, liveDotRendered: true, inspectorConfirmed: true, presenterProxyReads: proxyReads, presenterPublicRpcReads: publicRpcReads, noWriterPollingWhileIncluded: true, viewport: "390x844", pageErrors: errors.length }) + "\n");
 } finally {
   await browser?.close();
   if (ownedSession) {

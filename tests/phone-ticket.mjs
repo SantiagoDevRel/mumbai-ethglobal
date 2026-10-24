@@ -74,7 +74,7 @@ try {
       });
       assert.ok(geometry.size <= 22 && geometry.line >= geometry.size * 1.3 && geometry.fits, JSON.stringify(geometry));
     }
-    await page.goto(`${origin}/j/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("SE test");
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();

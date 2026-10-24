@@ -9,7 +9,7 @@ import { dotToCreate } from "../../shared/arkiv/sdk-0.8.ts";
 import { getProfile, WRITER_ADDRESS, NetworkNotConfiguredError } from "../../shared/arkiv/profiles.ts";
 import type { DotCreate } from "../../shared/arkiv/adapter.ts";
 import { APP_ID, MAX_ENTITIES_PER_SESSION, type Hex } from "../../shared/types.ts";
-import { DEVICE_HEADER, DoorsRequest, PhaseRequest, ReplayRequest, RPC_READ_ALLOWLIST, SubmitRequest, type ErrorCode, type PresenterStatus, type TicketResponse } from "../../shared/writer-api.ts";
+import { DEVICE_HEADER, DoorsRequest, LoginRequest, PhaseRequest, ReplayRequest, RPC_READ_ALLOWLIST, SubmitRequest, WRITER_ROUTES, type ErrorCode, type PresenterStatus, type TicketResponse } from "../../shared/writer-api.ts";
 import { admissionError, deviceToken, nameBlocked, placeDot } from "./policy.ts";
 import { REJECTION_MESSAGE } from "../../shared/data/blocklist.ts";
 
@@ -21,7 +21,33 @@ export interface Env {
   RPC: string;
   ACCESS_KEY: string;
   WORKSHOP_PRESENTER_TOKEN: string;
+  /** The presenter pages' password. /api/login trades it for a signed 12-hour presenter token. */
+  PRESENTER_PASSWORD?: string;
   MIN_WRITER_BALANCE_WEI?: string;
+}
+
+const LOGIN_TTL_MS = 12 * 60 * 60 * 1000;
+const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const LOGIN_MAX_FAILURES = 10;
+const bytes = (value: string) => new TextEncoder().encode(value);
+async function hmacKey(secret: string) {
+  return crypto.subtle.importKey("raw", bytes(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign", "verify"]);
+}
+const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, "0")).join("");
+/** `p.<expiry ms>.<HMAC of the expiry, keyed by the presenter secret>`. Rotating the secret ends every login. */
+async function signPresenter(secret: string, expiresAt: number): Promise<string> {
+  return `p.${expiresAt}.${toHex(await crypto.subtle.sign("HMAC", await hmacKey(secret), bytes(`presenter:${expiresAt}`)))}`;
+}
+async function verifyPresenter(secret: string, token: string): Promise<boolean> {
+  const match = /^p\.(\d{13})\.([a-f0-9]{64})$/.exec(token);
+  if (!match || Number(match[1]) <= Date.now()) return false;
+  const signature = new Uint8Array(match[2]!.match(/../g)!.map(pair => parseInt(pair, 16)));
+  return crypto.subtle.verify("HMAC", await hmacKey(secret), signature, bytes(`presenter:${match[1]}`));
+}
+/** Constant-time password check: both sides are hashed to the same length first. */
+async function samePassword(given: string, expected: string): Promise<boolean> {
+  const [a, b] = await Promise.all([given, expected].map(value => crypto.subtle.digest("SHA-256", bytes(value))));
+  return crypto.subtle.timingSafeEqual(a!, b!);
 }
 
 const REGISTRY = "0x4400000000000000000000000000000000000044";
@@ -155,8 +181,30 @@ export class WriterObject implements DurableObject {
     }
     return this.clients;
   }
-  private requirePresenter(request: Request) {
-    if (!this.env.WORKSHOP_PRESENTER_TOKEN || request.headers.get("authorization") !== `Bearer ${this.env.WORKSHOP_PRESENTER_TOKEN}`) fail("unauthorized", 401, "Presenter authorization required.");
+  /** Scripts send the presenter secret itself; the presenter pages send a token from /api/login. */
+  private async requirePresenter(request: Request) {
+    const secret = this.env.WORKSHOP_PRESENTER_TOKEN;
+    const header = request.headers.get("authorization") ?? "";
+    const bearer = header.startsWith("Bearer ") ? header.slice(7) : "";
+    if (!secret || !bearer || (bearer !== secret && !(await verifyPresenter(secret, bearer)))) fail("unauthorized", 401, "Enter the presenter password.");
+  }
+  private loginFailures = new Map<string, { count: number; resetAt: number }>();
+  private async login(request: Request): Promise<Response> {
+    if (!this.env.PRESENTER_PASSWORD || !this.env.WORKSHOP_PRESENTER_TOKEN) fail("unauthorized", 401, "Presenter login is not configured.");
+    const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+    const now = Date.now();
+    const record = this.loginFailures.get(ip);
+    if (record && record.resetAt > now && record.count >= LOGIN_MAX_FAILURES) fail("too_many_attempts", 429, "Too many attempts. Wait a few minutes.");
+    const data = LoginRequest.safeParse(await jsonBody(request));
+    if (!data.success || !(await samePassword(data.data.password, this.env.PRESENTER_PASSWORD))) {
+      const current = record && record.resetAt > now ? record : { count: 0, resetAt: now + LOGIN_WINDOW_MS };
+      current.count++;
+      this.loginFailures.set(ip, current);
+      fail("unauthorized", 401, "Wrong password.");
+    }
+    this.loginFailures.delete(ip);
+    const expiresAt = now + LOGIN_TTL_MS;
+    return Response.json({ token: await signPresenter(this.env.WORKSHOP_PRESENTER_TOKEN, expiresAt), expiresAt });
   }
   private held() { return this.meta.heldUntil > Date.now(); }
   private async schedule(delay = this.blockTimeMs) {
@@ -241,7 +289,8 @@ export class WriterObject implements DurableObject {
   private async route(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
-    if (path.startsWith("/api/presenter/") || path === "/api/rpc") this.requirePresenter(request);
+    if (path === WRITER_ROUTES.login && request.method === "POST") return this.login(request);
+    if (path.startsWith("/api/presenter/") || path === "/api/rpc") await this.requirePresenter(request);
     if (path === "/api/session" && request.method === "GET") {
       let network: string | null = null;
       try { await this.network(); network = getProfile(this.env.ARKIV_PROFILE).name; } catch { /* Fail closed in the public state. */ }
@@ -284,7 +333,8 @@ export class WriterObject implements DurableObject {
       if (this.meta.inFlight) fail("internal", 409, "An uncertain transaction needs reconciliation first.");
       await this.cancelQueued();
       this.meta.session = crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase();
-      this.meta.doors = "closed"; this.meta.phase = "talk"; this.meta.replay = false;
+      // A new session takes writes at once: the presenter's Reset is this call.
+      this.meta.doors = "open"; this.meta.phase = "talk"; this.meta.replay = false; this.meta.heldUntil = 0;
       this.meta.accepted = 0; this.meta.written = 0; this.meta.failed = 0; this.meta.lastBatch = null;
       await this.save();
       return Response.json({ code: this.meta.session });
@@ -326,7 +376,7 @@ export class WriterObject implements DurableObject {
     if (!parsed.success) fail("invalid", 400, "Check your name, color, country and lifetime.");
     const data = parsed.data;
     if (data.session !== this.meta.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");
-    if (this.meta.doors !== "open" || this.meta.phase !== "talk" || this.meta.replay) fail("doors_closed", 409, "Hang tight. Santiago opens the doors in a moment.");
+    if (this.meta.doors !== "open" || this.meta.phase !== "talk" || this.meta.replay) fail("doors_closed", 409, "Writing is paused. Try again in a moment.");
     if (nameBlocked(data.name)) fail("name_blocked", 422, REJECTION_MESSAGE);
     const token = deviceToken(request.headers.get(DEVICE_HEADER), request.headers.get("cookie"));
     if (!token) fail("invalid", 400, "A valid device token is required.");

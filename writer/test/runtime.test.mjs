@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { privateKeyToAccount } from "viem/accounts";
@@ -9,6 +10,7 @@ const testKey = `0x${"11".repeat(32)}`;
 const testAddress = privateKeyToAccount(testKey).address;
 const source = (await readFile(new URL("../dist/index.js", import.meta.url), "utf8")).replaceAll(writerAddress, testAddress);
 const presenter = "test-presenter-credential";
+const password = "test-presenter-password";
 const auth = { authorization: `Bearer ${presenter}`, "content-type": "application/json" };
 
 async function fixture(profile = "tiramisu", balance = "0x8ac7230489e80000", onRpc, seedable = false) {
@@ -26,7 +28,7 @@ async function fixture(profile = "tiramisu", balance = "0x8ac7230489e80000", onR
         }
       }` : ""), compatibilityDate: "2026-10-01", compatibilityFlags: ["nodejs_compat"],
     durableObjects: { WRITER: { className: seedable ? "TicketTestObject" : "WriterObject", useSQLite: true } },
-    bindings: { ARKIV_PROFILE: profile, MIN_WRITER_BALANCE_WEI: "8000000000000000000", ALLOWED_ORIGINS: "https://app.example", RPC: "https://rpc.example", ACCESS_KEY: "test-rpc-credential", WORKSHOP_PRESENTER_TOKEN: presenter, WORKSHOP_WRITER_PRIVATE_KEY: testKey },
+    bindings: { ARKIV_PROFILE: profile, MIN_WRITER_BALANCE_WEI: "8000000000000000000", ALLOWED_ORIGINS: "https://app.example", RPC: "https://rpc.example", ACCESS_KEY: "test-rpc-credential", WORKSHOP_PRESENTER_TOKEN: presenter, PRESENTER_PASSWORD: password, WORKSHOP_WRITER_PRIVATE_KEY: testKey },
     outboundService: async request => {
       const call = await request.json();
       calls.push(call);
@@ -59,8 +61,12 @@ test("workerd enforces presenter auth, CORS, session state and per-device queuin
     assert.equal(bare.valid, true);
     assert.equal(bare.code, code);
     assert.equal((await call("/api/session?s=WRONG123", undefined, {})).data.valid, false);
-    const draft = { session: code, name: "Asha", color: "#FE7446", country: "IN", lifetimeSec: 900 };
+    // A new session (the presenter's Reset) is open at once.
+    assert.equal(bare.doors, "open");
+    const draft = { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 900 };
     const device = { "x-device-token": "test-device-token-1234", "content-type": "application/json", origin: "https://app.example" };
+    assert.equal((await call("/api/submit", { ...draft, color: "#3ddc97" }, device)).data.error, "invalid", "Only the seven palette colors are accepted.");
+    await call("/api/presenter/doors", { open: false });
     assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed");
     await call("/api/presenter/hold", {});
     await call("/api/presenter/doors", { open: true });
@@ -88,6 +94,34 @@ test("workerd enforces presenter auth, CORS, session state and per-device queuin
     assert.equal(ended.code, null);
     assert.equal((await call(`/api/ticket/${accepted.data.ticket}`, undefined, {})).data.status, "failed");
     assert.equal(calls.some(call => call.method.startsWith("eth_send")), false);
+  } finally { await mf.dispose(); }
+});
+
+test("the presenter password returns a signed login that expires, and failed attempts are limited", async () => {
+  const { mf, call } = await fixture();
+  try {
+    const json = { "content-type": "application/json" };
+    const wrong = await call("/api/login", { password: "nope" }, json);
+    assert.equal(wrong.status, 401);
+    assert.equal(wrong.data.error, "unauthorized");
+    const login = await call("/api/login", { password }, json);
+    assert.equal(login.status, 200);
+    assert.match(login.data.token, /^p\.\d{13}\.[a-f0-9]{64}$/);
+    assert.ok(login.data.expiresAt > Date.now() + 11 * 3_600_000 && login.data.expiresAt <= Date.now() + 12 * 3_600_000);
+    assert.equal(login.data.token.includes(presenter), false);
+    const bearer = (token) => ({ authorization: `Bearer ${token}`, "content-type": "application/json" });
+    assert.equal((await call("/api/presenter/status", undefined, bearer(login.data.token))).status, 200);
+    assert.equal((await call("/api/rpc", { jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }, bearer(login.data.token))).data.result, "0x64");
+    const sign = (expiresAt, secret = presenter) => `p.${expiresAt}.${createHmac("sha256", secret).update(`presenter:${expiresAt}`).digest("hex")}`;
+    assert.equal((await call("/api/presenter/status", undefined, bearer(sign(Date.now() - 1000)))).status, 401, "An expired login is rejected.");
+    assert.equal((await call("/api/presenter/status", undefined, bearer(sign(Date.now() + 60_000, "other-secret")))).status, 401, "A login signed with another secret is rejected.");
+    assert.equal((await call("/api/presenter/status", undefined, bearer("p.garbage"))).status, 401);
+    assert.equal((await call("/api/presenter/status", undefined, bearer(sign(Date.now() + 60_000)))).status, 200);
+    // The successful login cleared the earlier failure; ten in a row reach the limit, then even the right password waits.
+    for (let i = 0; i < 10; i++) assert.equal((await call("/api/login", { password: `wrong-${i}` }, json)).status, 401);
+    const limited = await call("/api/login", { password }, json);
+    assert.equal(limited.status, 429);
+    assert.equal(limited.data.error, "too_many_attempts");
   } finally { await mf.dispose(); }
 });
 

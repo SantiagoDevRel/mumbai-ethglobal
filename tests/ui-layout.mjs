@@ -1,4 +1,5 @@
-// Isolated read-only layout checks. Session responses here are UI fixtures; no writes are sent.
+// Isolated read-only layout checks of the static build in out/. Writer responses here are UI
+// fixtures (login, status, session, RPC); nothing reaches the real writer or the DB-Chain.
 import assert from "node:assert/strict";
 import { mkdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
@@ -6,6 +7,8 @@ import { chromium, expect } from "@playwright/test";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
 const writer = "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
+const PASSWORD = "fixture-password";
+const PALETTE = ["#fe7446", "#f6f4ef", "#14f195", "#9945ff", "#dc1fff", "#627eea", "#00c2ff"];
 const root = path.resolve("out");
 const capture = process.argv[2];
 if (capture) await mkdir(capture, { recursive: true });
@@ -13,16 +16,30 @@ const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "t
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
 const errors = [];
 const evidence = [];
-async function setup(options) {
+const writerCalls = { start: 0, login: 0 };
+async function setup(options, { loggedIn = true } = {}) {
   const context = await browser.newContext(options);
-  await context.addInitScript(() => sessionStorage.setItem("arkiv-stage-source", "mock"));
+  await context.addInitScript(([signedIn]) => {
+    sessionStorage.setItem("arkiv-stage-source", "mock");
+    if (signedIn && !localStorage.getItem("arkiv-presenter-login")) localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token: "p.fixture", expiresAt: Date.now() + 3_600_000 }));
+  }, [loggedIn]);
   await context.route(`${origin}/**`, async (route) => {
     let file = path.resolve(root, "." + decodeURIComponent(new URL(route.request().url()).pathname));
     if (!file.startsWith(root + path.sep) && file !== root) return route.abort();
     try { if ((await stat(file)).isDirectory()) file = path.join(file, "index.html"); await route.fulfill({ status: 200, contentType: mime[path.extname(file)] ?? "application/octet-stream", body: await readFile(file) }); }
     catch { await route.fulfill({ status: 404, body: "Not found" }); }
   });
-  await context.route("https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev/api/session*", (route) => route.fulfill({ json: { valid: true, code: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, network: "Tiramisu" } }));
+  await context.route(`${writer}/**`, (route) => route.abort());
+  await context.route(`${writer}/api/session*`, (route) => route.fulfill({ json: { valid: true, code: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, network: "Tiramisu" } }));
+  await context.route(`${writer}/api/rpc`, (route) => route.fulfill({ json: { jsonrpc: "2.0", id: 1, error: { code: -32000, message: "UI fixture: no chain reads" } } }));
+  await context.route(`${writer}/api/login`, (route) => {
+    writerCalls.login++;
+    return route.request().postDataJSON().password === PASSWORD
+      ? route.fulfill({ json: { token: "p.fixture", expiresAt: Date.now() + 3_600_000 } })
+      : route.fulfill({ status: 401, json: { error: "unauthorized", message: "Wrong password." } });
+  });
+  await context.route(`${writer}/api/presenter/status`, (route) => route.fulfill({ json: { session: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, held: false, queued: 0, inFlight: false, written: 0, failed: 0, lastBatch: null, balanceWei: "0", network: "Tiramisu", requestsToday: 0 } }));
+  await context.route(`${writer}/api/presenter/session/start`, (route) => { writerCalls.start++; return route.fulfill({ json: { code: "RESET-01" } }); });
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
   return { context, page };
@@ -31,9 +48,38 @@ async function commands(page, list) {
   await page.evaluate((items) => { const channel = new BroadcastChannel("arkiv-mumbai-stage"); for (const cmd of items) channel.postMessage({ kind: "command", cmd }); channel.close(); }, list);
 }
 try {
+  // The presenter pages ask for the password; one login unlocks both windows of the split screen.
+  {
+    const { context, page } = await setup({ viewport: { width: 1280, height: 720 } }, { loggedIn: false });
+    await page.goto(`${origin}/map/`, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: "Presenter", exact: true })).toBeVisible();
+    await expect(page.locator(".globe-shell,.join-qr")).toHaveCount(0);
+    await page.getByLabel("Password").fill("wrong");
+    await page.getByRole("button", { name: "Enter", exact: true }).click();
+    await expect(page.locator('.gate-card [role="alert"]')).toHaveText("Wrong password.");
+    await page.getByLabel("Password").fill(PASSWORD);
+    await page.getByRole("button", { name: "Enter", exact: true }).click();
+    await expect(page.locator(".qr-image img")).toBeVisible();
+    const slides = await context.newPage();
+    slides.on("pageerror", (error) => errors.push(error.message));
+    await slides.goto(`${origin}/slides/`, { waitUntil: "domcontentloaded" });
+    await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
+    await expect(slides.getByRole("heading", { name: "Presenter", exact: true })).toHaveCount(0);
+    // The phone page has no gate.
+    const phone = await context.newPage();
+    await phone.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
+    await expect(phone.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
+    assert.equal(writerCalls.login, 2);
+    evidence.push({ surface: "gate", wrongPasswordRejected: true, sharedAcrossWindows: true, phoneUngated: true });
+    await context.close();
+  }
+
   const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
-  await page.goto(origin, { waitUntil: "domcontentloaded" });
+  await page.goto(`${origin}/map/`, { waitUntil: "domcontentloaded" });
   await expect(page.locator(".qr-image img")).toBeVisible();
+  // The map shows its HUD and dots from the first slide: phones can write before S7.
+  await expect(page.locator(".app-hud")).toHaveCount(1);
+  await expect(page.locator(".globe-dots")).toHaveCount(1);
   await commands(page, [{ type: "goto", index: 10 }, { type: "togglePanel", panel: "filters", open: true }]);
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
   await expect(page.locator(".filters-panel")).toBeVisible();
@@ -42,20 +88,19 @@ try {
   await expect(page.locator(".stage-toolbar")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Color · Orange", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".query-scope summary code")).not.toContainText(/,\s*(?:·|$)/);
-  await expect(page.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
-  // No room code: the QR is the bare /j link.
-  await expect(page.locator(".qr-code")).toHaveCount(0);
-  await expect(page.locator(".qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/j");
+  await expect(page.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(page.locator(".qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
   await page.evaluate(() => document.fonts.ready);
   await page.locator(".query-panel").evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+  const measure = () => page.evaluate(() => {
+    const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
+    const url = document.querySelector(".qr-url");
+    return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), event: rect(".event-log"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
+  });
   for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720]]) {
     await page.setViewportSize({ width, height });
-    await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().width))).toBe(Math.round(424 * width / 1920));
-    const layout = await page.evaluate(() => {
-      const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
-      const url = document.querySelector(".qr-url");
-      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), event: rect(".event-log"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
-    });
+    await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().width)), { timeout: 20000 }).toBe(Math.round(424 * width / 1920));
+    const layout = await measure();
     const scale = width / 1920;
     assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1);
     assert.ok(Math.abs(layout.qr.y - 32 * scale) < 1);
@@ -69,8 +114,21 @@ try {
     assert.ok(layout.url.y + layout.url.height <= layout.qr.y + layout.qr.height);
     assert.ok(layout.event.y >= layout.qr.y + layout.qr.height);
     assert.equal(layout.overflow, false);
-    evidence.push({ surface: "stage", viewport: `${width}x${height}`, layout });
+    evidence.push({ surface: "map", viewport: `${width}x${height}`, layout });
   }
+  // Half of a 1920x1080 screen: the HUD reaches the window's top and bottom instead of a letterbox.
+  {
+    await page.setViewportSize({ width: 960, height: 1080 });
+    await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().y)), { timeout: 20000 }).toBe(16);
+    const layout = await measure();
+    assert.ok(Math.abs(layout.query.y + layout.query.height - (1080 - 16)) < 1, "The query panel sits at the bottom edge.");
+    assert.ok(Math.abs(layout.qr.x - 1464 * 0.5) < 1);
+    assert.ok(layout.filters.y + layout.filters.height <= layout.query.y);
+    assert.equal(layout.overflow, false);
+    if (capture) await page.screenshot({ path: path.join(capture, "map-960x1080-L3.png") });
+    evidence.push({ surface: "map", viewport: "960x1080", layout });
+  }
+  await page.setViewportSize({ width: 1920, height: 1080 });
   await commands(page, [{ type: "togglePanel", panel: "filters", open: false }, { type: "goto", index: 8 }]);
   await expect(page.locator('.event-log li[data-event="created"] button').first()).toBeVisible({ timeout: 10000 });
   await page.locator('.event-log li[data-event="created"] button').first().click();
@@ -93,9 +151,9 @@ try {
         await expect.poll(() => page.locator(".inspector-panel").evaluate((element) => Math.round(element.getBoundingClientRect().width))).toBe(Math.round(856 * width / 1920));
         await page.locator(".inspector-panel:has(.inspector-columns)").screenshot({ path: path.join(capture, `${width}-L4-${field.slice(1)}.png`), timeout: 60000 });
       }
-      await page.setViewportSize({ width: 1280, height: 720 });
     }
   }
+  await page.setViewportSize({ width: 1280, height: 720 });
   await commands(page, [{ type: "goto", index: 12 }, { type: "next" }]);
   await expect(page.locator(".review-card")).toHaveCount(0);
   await commands(page, [{ type: "next" }]);
@@ -120,57 +178,89 @@ try {
   await expect(page.locator(".owner-panel")).toHaveCount(0);
   await page.keyboard.press("ArrowLeft");
   await expect(page.getByRole("button", { name: /Transfer ownership/ })).toBeVisible();
+  // S7 on the map: corner QR and the HUD; the big QR and the countdown belong to /slides.
   await commands(page, [{ type: "goto", index: 7 }]);
-  await expect(page.locator(".app-hud")).toHaveCount(0);
-  await expect(page.locator(".doors-countdown")).toHaveCount(0);
-  const centerQR = await page.locator(".join-qr-center").boundingBox();
-  assert.ok(Math.abs(centerQR.x + centerQR.width / 2 - 660 * 1280 / 1920) < 1);
-  evidence.push({ surface: "S7", centerX: centerQR.x + centerQR.width / 2, hudHidden: true, appCountdownHidden: true });
-  await expect(page.locator(".globe-dots")).toHaveCount(0);
-  await expect(page.locator(".join-qr-center .qr-code")).toHaveCount(0);
+  await expect(page.locator(".join-qr-center")).toHaveCount(0);
+  await expect(page.locator(".join-qr-corner")).toBeVisible();
   await commands(page, [{ type: "goto", index: 15 }]);
   await expect(page.locator(".join-qr-build .qr-image img")).toHaveAttribute("width", "320");
-  await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
-  await expect(page.locator(".join-qr-build .qr-code")).toHaveCount(0);
+  await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   assert.ok((await page.locator(".join-qr-build").boundingBox()).y + (await page.locator(".join-qr-build").boundingBox()).height <= 782 * 1280 / 1920, "The L8 card must stay above the mascot.");
   assert.equal(await page.locator(".join-qr-build .qr-url").evaluate((element) => getComputedStyle(element).whiteSpace === "nowrap" && element.scrollWidth <= element.clientWidth), true);
   await commands(page, [{ type: "goto", index: 16 }]);
   await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
-  const notes = await context.newPage();
-  notes.on("pageerror", (error) => errors.push(error.message));
-  await notes.goto(`${origin}/notes/`, { waitUntil: "domcontentloaded" });
-  await expect(notes.getByRole("combobox", { name: "Stage data source" })).toHaveValue("mock");
-  await expect(notes.locator("header")).toContainText(/#\d+/, { timeout: 10000 });
-  await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("live");
+  await expect(page.getByText("Thank you.")).toHaveCount(0);
+
+  // /slides follows the map, and its keys drive both windows.
+  const slides = await context.newPage();
+  slides.on("pageerror", (error) => errors.push(error.message));
+  await slides.setViewportSize({ width: 1280, height: 720 });
+  await slides.goto(`${origin}/slides/`, { waitUntil: "domcontentloaded" });
+  await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible({ timeout: 20000 });
+  await expect(slides.getByText("Thank you.")).toBeVisible();
+  await commands(page, [{ type: "goto", index: 7 }]);
+  await expect(slides.locator('[data-scene="S7"]')).toBeVisible();
+  // The big QR sits in the slide's left column (x 660 of 1920).
+  await expect.poll(async () => { const box = await slides.locator(".join-qr-center").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(660 * 1280 / 1920));
+  await expect(slides.locator(".join-qr-center .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await slides.keyboard.press("d");
+  await expect(slides.locator(".join-qr-center")).toHaveCount(0);
+  await expect(slides.getByText("Every phone unlocks at once.")).toBeVisible();
+  await slides.keyboard.press("d");
+  await expect(slides.locator(".join-qr-center")).toBeVisible();
+  await slides.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
+  await expect(slides.getByText("[ LIVE ON THE MAP ]")).toBeVisible();
+  await expect(slides.getByRole("heading", { name: "Write it", exact: true })).toBeVisible();
+  await expect(page.getByText("The map is a query.")).toBeVisible();
+  // Half a screen: the slide keeps 16:9 inside its window, nothing scrolls.
+  await slides.setViewportSize({ width: 960, height: 1080 });
+  assert.equal(await slides.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+  if (capture) await slides.screenshot({ path: path.join(capture, "slides-960x1080-L1.png") });
+  // Reset: two clicks start a new writer session and take both windows back to S0.
+  await slides.getByRole("button", { name: "Reset", exact: true }).click();
+  assert.equal(writerCalls.start, 0, "One click only arms Reset.");
+  await slides.getByRole("button", { name: "Click again to reset", exact: true }).click();
+  await expect.poll(() => writerCalls.start).toBe(1);
+  await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible();
+  await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible();
+  // /map keeps Reset in the "?" presenter card, out of the projected picture.
+  await expect(page.getByRole("button", { name: "Reset", exact: true })).toHaveCount(0);
+  await page.keyboard.press("?");
+  await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeVisible();
+  if (capture) await page.screenshot({ path: path.join(capture, "map-controls-reset.png") });
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await page.getByRole("button", { name: "Click again to reset", exact: true }).click();
+  await expect.poll(() => writerCalls.start).toBe(2);
+  // The reset closes the card (and its "Resetting…" button) along with everything else.
+  await expect(page.getByRole("heading", { name: "Presenter controls", exact: true })).toHaveCount(0);
+  await expect(page.locator(".presenter-bar")).toHaveCount(0);
+  // The data source still switches from the map's "?" toolbar.
+  await page.keyboard.press("?");
+  await page.getByRole("combobox", { name: "Data source" }).selectOption("live");
   await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
-  await expect(page.locator(".qr-code")).toHaveCount(0);
-  await commands(page, [{ type: "session", code: "ABCD1234" }]);
-  await expect(page.locator(".qr-code")).toHaveCount(0);
-  await expect(page.locator(".qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/j");
-  await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("mock");
+  await page.getByRole("combobox", { name: "Data source" }).selectOption("mock");
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
-  await expect(page.locator(".qr-code")).toHaveCount(0);
-  await commands(page, [{ type: "session", code: null }]);
-  await commands(page, [{ type: "goto", index: 13 }, { type: "next" }]);
-  await expect(page.locator(".owner-panel")).toHaveCount(0);
-  await notes.getByRole("button", { name: "· Undo transfer", exact: true }).click();
-  await expect(page.getByRole("button", { name: /Transfer ownership/ })).toBeVisible();
-  evidence.push({ surface: "notes", blockSynchronized: true, sourceSynchronized: true, transferUndoSynchronized: true });
+  evidence.push({ surface: "slides", follows: true, keysDriveMap: true, countdownToggles: true, resetStartsSession: true });
   await context.close();
 
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
-    const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme });
-    await page.goto(`${origin}/j`, { waitUntil: "domcontentloaded" });
+    const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme }, { loggedIn: false });
+    await page.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await page.evaluate(() => document.fonts.ready);
-    const layout = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, swatches: document.querySelectorAll(".color-swatch").length, header: getComputedStyle(document.querySelector(".phone-header")).height, input: getComputedStyle(document.querySelector('input[name="name"]')).height, cta: getComputedStyle(document.querySelector(".phone-submit")).height, background: getComputedStyle(document.querySelector(".phone-surface")).backgroundColor }));
+    const layout = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, swatches: [...document.querySelectorAll(".color-swatch")].map((swatch) => getComputedStyle(swatch).backgroundColor), header: getComputedStyle(document.querySelector(".phone-header")).height, input: getComputedStyle(document.querySelector('input[name="name"]')).height, cta: getComputedStyle(document.querySelector(".phone-submit")).height, background: getComputedStyle(document.querySelector(".phone-surface")).backgroundColor, text: document.querySelector(".phone-main").innerText }));
     assert.equal(layout.overflow, false);
-    assert.equal(layout.swatches, 12);
+    assert.equal(layout.swatches.length, 7);
     assert.equal(layout.header, "60px");
     assert.equal(layout.input, "52px");
     assert.equal(layout.cta, "56px");
     // Dark only: a light system theme still gets the dark phone.
     assert.equal(layout.background, "rgb(17, 17, 17)");
+    await expect(page.locator(".phone-header")).toHaveText("Join the map");
+    await expect(page.getByText("Choose a country", { exact: true })).toBeVisible();
+    await expect(page.getByText("How long should this data (entity) live?")).toBeVisible();
+    for (const gone of [/hang tight/i, /doors/i, /testnet/i, /everything you write/i, /custom/i, /Where are you from/i]) assert.doesNotMatch(layout.text, gone);
     await page.getByRole("combobox", { name: "Your country" }).click();
     await expect(page.getByRole("option").first()).toHaveText("India");
     await page.getByRole("combobox", { name: "Search countries" }).fill("Colombia");
@@ -179,17 +269,16 @@ try {
     await page.getByRole("combobox", { name: "Your country" }).click();
     await page.keyboard.press("Escape");
     await expect(page.getByRole("combobox", { name: "Your country" })).toBeFocused();
-    await page.getByRole("button", { name: "Custom hex color", exact: true }).click();
-    await expect(page.getByRole("textbox", { name: "Custom hex color value" })).toBeVisible();
-    evidence.push({ surface: "phone", viewport: `${width}x844`, colorScheme, layout, countryKeyboard: true, customColor: true });
+    await page.getByRole("button", { name: "Green", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Green", exact: true })).toHaveAttribute("aria-pressed", "true");
+    evidence.push({ surface: "phone", viewport: `${width}x844`, colorScheme, layout: { ...layout, text: undefined }, countryKeyboard: true });
     await context.close();
   }
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
-    const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme });
+    const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme }, { loggedIn: false });
     let current = "ABCD1234";
     const sessionReads = [];
     const submissions = [];
-    await context.route(`${writer}/**`, (route) => route.abort());
     await context.route(`${writer}/api/session*`, (route) => {
       sessionReads.push({ code: new URL(route.request().url()).searchParams.get("s"), method: route.request().method() });
       return route.fulfill({ json: { valid: current !== null, code: current, doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
@@ -204,17 +293,20 @@ try {
       if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-${state}.png`), fullPage: true });
     };
     // No code to type: the bare link joins the running session.
-    await page.goto(`${origin}/j/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await expect(page.getByRole("textbox", { name: "Workshop code" })).toHaveCount(0);
     await snapshot("joined");
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Codeless join");
+    await page.getByRole("button", { name: "Purple", exact: true }).click();
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
     await expect.poll(() => submissions.length).toBe(1);
     assert.equal(submissions[0].body.session, "ABCD1234");
     assert.equal(submissions[0].body.lifetimeSec, 900, "The slider starts at the 15-minute default.");
+    assert.equal(submissions[0].body.color, "#9945ff");
+    assert.ok(PALETTE.includes(submissions[0].body.color));
     assert.match(submissions[0].device, /^[a-f0-9-]{36}$/i);
-    await expect(page.getByRole("button", { name: "Doors closed", exact: true })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Not live yet", exact: true })).toBeDisabled();
     await snapshot("ended");
     await page.evaluate(() => localStorage.setItem(`arkiv-workshop-count:ZXCV5678:${localStorage.getItem("arkiv-workshop-device")}`, "3"));
     current = "ZXCV5678";
@@ -223,7 +315,7 @@ try {
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     assert.ok(sessionReads.every((request) => request.code === null && request.method === "GET"));
-    evidence.push({ surface: "codeless-phone", width, colorScheme, joinedWithoutCode: true, defaultLifetimeSec: 900, endedSessionClosed: true, nextSessionJoined: true, interceptedSubmissions: submissions.length });
+    evidence.push({ surface: "codeless-phone", width, colorScheme, joinedWithoutCode: true, defaultLifetimeSec: 900, presetColor: true, endedSessionClosed: true, nextSessionJoined: true, interceptedSubmissions: submissions.length });
     await context.close();
   }
   assert.deepEqual(errors, []);

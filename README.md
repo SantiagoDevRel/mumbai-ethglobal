@@ -9,16 +9,23 @@ countdown. The map is just a query, and the panel under it shows the query that 
 
 | Route | Who | What |
 |---|---|---|
-| `/` | Projector | The slides and the live map in one stage |
-| `/notes` | Presenter laptop | Speaker notes, timer, scene list and controls |
-| `/j` | Phones | Join the map, then follow your entity |
+| `/map` | Projector, left half | The live globe, the query panel and the QR. Presenter password. |
+| `/slides` | Projector, right half | The slides, in step with `/map`. Presenter password. |
+| `/scan` | Phones | Join the map, then follow your entity |
+
+`/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
+
+Present with the screen split in two: `/map` in one window, `/slides` in the other. The arrow keys
+work in either window and move both. Reset (bottom right on /slides; on /map press ? to show it; click twice) starts a new session: an empty
+map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
+the QR slide.
 
 ## How it works
 
 ```
-phone /j ──POST──► writer (Cloudflare Worker + Durable Object) ──► Arkiv DB-Chain (Tiramisu)
+phone /scan ──POST──► writer (Cloudflare Worker + Durable Object) ──► Arkiv DB-Chain (Tiramisu)
                                                                          ▲
-projector / and /notes (static Next.js) ── query every block ────────────┘
+/map and /slides (static Next.js) ── query every block, via the writer ──┘
 ```
 
 - Every entity is written by one writer wallet, with permissionless extension on, so anyone can extend it.

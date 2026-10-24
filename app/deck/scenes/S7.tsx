@@ -1,8 +1,8 @@
 "use client";
 
-// S7 · Doors open (handoff boards "S7 · Doors open (QR)" and "S7 · 3 · 2 · 1 · write!"). The app
+// S7 · Join the map (handoff boards "S7 · Doors open (QR)" and "S7 · 3 · 2 · 1 · write!"). /slides
 // draws the big QR in the left column; this slide adds the form line under it and the lifespan
-// select card on the right. When D opens the doors (`state.doorsCountdownAt`), 3 · 2 · 1 · write!
+// select card on the right. When D starts the countdown (`state.countdownAt`), 3 · 2 · 1 · write!
 // plays over the map column from that time: 1 s per step, an Orange ring draining each step.
 
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
@@ -98,7 +98,7 @@ function Countdown({ elapsed }: { elapsed: number }) {
 }
 
 export function S7(_props: SceneContentProps) {
-  const startedAt = useStage((s) => s.doorsCountdownAt);
+  const startedAt = useStage((s) => s.countdownAt);
   const elapsed = useCountdownElapsed(startedAt);
   const lifespans = [LIFETIME_MIN_SEC, (LIFETIME_MIN_SEC + LIFETIME_MAX_SEC) / 2, LIFETIME_MAX_SEC].map((sec) => ({ sec, label: formatLifetime(sec) }));
   return (
@@ -107,7 +107,7 @@ export function S7(_props: SceneContentProps) {
         <div className="absolute inset-0 bg-[rgba(8,9,31,0.65)]" />
         <AnimatePresence>
           {elapsed === null ? (
-            <motion.div key="doors" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+            <motion.div key="card" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
               <Logo height={28} className="absolute left-[96px] top-[72px]" />
               {/* The app's centered QR fills the left column above this line. */}
               <Rise delay={0.2} className="absolute left-[140px] top-[880px] w-[1040px]">

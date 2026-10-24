@@ -31,7 +31,7 @@ export type CameraCue = "globe-idle" | "globe" | "india" | "mumbai-street" | "ke
 /** Which data layer the map shows. */
 export type MapMode = "dots" | "business" | "owner";
 
-export type QrLabel = "Scan now" | "Doors open" | "Start building";
+export type QrLabel = "Scan now" | "Join the map" | "Start building";
 
 export interface SceneDef {
   id: SceneId;
@@ -44,14 +44,8 @@ export interface SceneDef {
   qr: { label: QrLabel; placement: "corner" | "center" };
   camera: CameraCue;
   map: MapMode;
-  /** Shown in /notes when the presenter is behind schedule. */
+  /** Where to cut when the presenter is behind schedule (WORKSHOP.md). */
   cutLine?: string;
-}
-
-/** What the QR card says right now: "Doors open" only once the doors really are open. */
-export function qrLabel(scene: SceneDef, doors: "closed" | "open"): string {
-  if (scene.qr.label === "Doors open" && doors === "closed") return "Doors open in a moment";
-  return scene.qr.label;
 }
 
 export const TALK_LENGTH_SEC = 20 * 60;
@@ -64,14 +58,14 @@ export const SCENES: readonly SceneDef[] = [
   { id: "S4", title: "Queries like a database. Lives on a chain.", at: 170, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "corner" }, camera: "globe-idle", map: "dots" },
   { id: "S5", title: "A chain built to be a database", at: 220, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "corner" }, camera: "globe-idle", map: "dots" },
   { id: "S6", title: "That's the whole talk", at: 260, kind: "slide", steps: 4, qr: { label: "Scan now", placement: "corner" }, camera: "globe-idle", map: "dots" },
-  { id: "S7", title: "Doors open", at: 290, kind: "slide", steps: 1, qr: { label: "Doors open", placement: "center" }, camera: "globe", map: "dots" },
-  { id: "L1", title: "Write it", at: 330, kind: "live", steps: 1, qr: { label: "Doors open", placement: "corner" }, camera: "globe", map: "dots" },
-  { id: "L2", title: "Expire it", at: 420, kind: "live", steps: 2, qr: { label: "Doors open", placement: "corner" }, camera: "keep", map: "dots" },
-  { id: "L3", title: "Query it", at: 510, kind: "live", steps: 5, qr: { label: "Doors open", placement: "corner" }, camera: "india", map: "dots" },
-  { id: "L4", title: "Inside one entity", at: 660, kind: "live", steps: 5, qr: { label: "Doors open", placement: "corner" }, camera: "keep", map: "dots", cutLine: "At 11:00, skip the badge-by-badge walk." },
-  { id: "L5", title: "Make it a business", at: 780, kind: "live", steps: 3, qr: { label: "Doors open", placement: "corner" }, camera: "keep", map: "dots", cutLine: "At 15:00, skip the reviews." },
-  { id: "L6", title: "Own it", at: 960, kind: "live", steps: 2, qr: { label: "Doors open", placement: "corner" }, camera: "globe", map: "owner" },
-  { id: "L7", title: "Everything you saw, in a few lines", at: 1080, kind: "slide", steps: 1, qr: { label: "Doors open", placement: "corner" }, camera: "keep", map: "owner", cutLine: "At 17:30, skip this scene." },
+  { id: "S7", title: "Join the map", at: 290, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "center" }, camera: "globe", map: "dots" },
+  { id: "L1", title: "Write it", at: 330, kind: "live", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "dots" },
+  { id: "L2", title: "Expire it", at: 420, kind: "live", steps: 2, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots" },
+  { id: "L3", title: "Query it", at: 510, kind: "live", steps: 5, qr: { label: "Join the map", placement: "corner" }, camera: "india", map: "dots" },
+  { id: "L4", title: "Inside one entity", at: 660, kind: "live", steps: 5, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots", cutLine: "At 11:00, skip the badge-by-badge walk." },
+  { id: "L5", title: "Make it a business", at: 780, kind: "live", steps: 3, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots", cutLine: "At 15:00, skip the reviews." },
+  { id: "L6", title: "Own it", at: 960, kind: "live", steps: 2, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "owner" },
+  { id: "L7", title: "Everything you saw, in a few lines", at: 1080, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "owner", cutLine: "At 17:30, skip this scene." },
   { id: "L8", title: "Your turn: build it this weekend", at: 1125, kind: "slide", steps: 1, qr: { label: "Start building", placement: "corner" }, camera: "keep", map: "dots" },
   { id: "L9", title: "Close", at: 1170, kind: "live", steps: 1, qr: { label: "Start building", placement: "corner" }, camera: "globe", map: "dots" },
 ];

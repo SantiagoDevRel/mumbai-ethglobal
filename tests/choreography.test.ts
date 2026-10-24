@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { SCENES, qrLabel, sceneIndex } from "../shared/scenes.ts";
+import { SCENES, sceneIndex } from "../shared/scenes.ts";
 import { WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { initialState, reduce, type StageState } from "../lib/stage/store.ts";
 import { INDIA_VIEW } from "../lib/stage/choreography.ts";
@@ -63,11 +63,29 @@ test("L6 step 2 runs the demo transfer; panels close", () => {
   assert.equal(state.transferred, false);
 });
 
-test("the QR only says the doors are open once they are", () => {
-  const l1 = SCENES[sceneIndex("L1")]!;
-  assert.equal(qrLabel(l1, "closed"), "Doors open in a moment");
-  assert.equal(qrLabel(l1, "open"), "Doors open");
-  assert.equal(qrLabel(SCENES[0]!, "closed"), "Scan now");
+test("the QR invites the room from the first slide; no scene waits for doors", () => {
+  assert.equal(SCENES[0]!.qr.label, "Scan now");
+  assert.equal(SCENES[sceneIndex("L1")]!.qr.label, "Join the map");
+  assert.ok(SCENES.every((scene) => !/door/i.test(scene.title + scene.qr.label)));
+});
+
+test("D runs the 3 · 2 · 1 countdown and a second D brings the card back", () => {
+  let state = at("S7");
+  assert.equal(state.countdownAt, null);
+  state = reduce(state, { type: "countdown" }, 1000);
+  assert.equal(state.countdownAt, 1000);
+  state = reduce(state, { type: "countdown" }, 2000);
+  assert.equal(state.countdownAt, null);
+});
+
+test("Reset starts over at S0 on the new session and clears what the presenter did", () => {
+  let state = reduce(at("L4"), { type: "hideSelected" });
+  state = reduce(state, { type: "setOverlay", key: "0x01", name: "vegan", value: "yes" });
+  state = reduce(state, { type: "reset", session: "NEWCODE1" });
+  assert.equal(state.sceneIndex, 0);
+  assert.equal(state.session, "NEWCODE1");
+  assert.deepEqual([state.hidden, state.overlays, state.selected, state.inspected], [[], {}, [], null]);
+  assert.equal(state.countdownAt, null);
 });
 
 test("closing scenes close every panel", () => {
