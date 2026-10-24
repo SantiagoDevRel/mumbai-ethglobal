@@ -12,7 +12,7 @@ import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { createLiveAdapter } from "./adapter-loader";
 import { queryStage } from "./query-stage";
 import { SEED_BUSINESSES } from "../../shared/data/seed-businesses";
-import { useSourceMode } from "./source-mode";
+import { isMockSource, useSourceMode } from "./source-mode";
 
 export interface LiveData {
   adapter: ArkivAdapter | null;
@@ -34,7 +34,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       if (stopped) return;
       try {
         const profile = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
-        const live = mode === "live" || (mode === "auto" && !!WRITER_URL);
+        const live = !isMockSource(mode, WRITER_URL);
         const mock = live ? null : createMockAdapter({ autoSpawnMs: 1500 });
         const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: token ? { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } : { kind: "public" } });
         stopMock = mock?.stop;
