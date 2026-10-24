@@ -1,17 +1,27 @@
 "use client";
 
 // S5 · A chain built to be a database. The stack (Ethereum, the Arkiv DB-Chain, your app) with a
-// live block counter read from the chain; the block time is measured, never hardcoded.
+// live block counter read from the chain; the block time is measured, never hardcoded. With the
+// mock source the line says "mock data" instead of "measured live".
 
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
+import { useSourceMode } from "../../../lib/data/source-mode";
 import { useLiveBlock } from "../../../lib/data/useLiveBlock";
+import { WRITER_URL } from "../../../lib/data/writer-client";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { NobodyMeme } from "../memes";
 import { Chip, EASE, Reveal, Rise, Slide } from "../ui";
 
+/** The stage's resolved source: the same rule as useLiveData (live when chosen, or auto with a writer). */
+function useIsMock(): boolean {
+  const mode = useSourceMode();
+  return !(mode === "live" || (mode === "auto" && !!WRITER_URL));
+}
+
 function LiveBlock() {
   const block = useLiveBlock();
+  const mock = useIsMock();
   if (!block) return <span className="text-[rgba(246,244,239,0.64)]">Reading the chain…</span>;
   return (
     <span className="flex items-baseline gap-5">
@@ -35,7 +45,7 @@ function LiveBlock() {
         </AnimatePresence>
       </span>
       <span className="text-[26px] text-[rgba(246,244,239,0.64)]">
-        one every {(block.blockTimeMs / 1000).toFixed(1)} s, measured live
+        one every {(block.blockTimeMs / 1000).toFixed(1)} s, {mock ? "mock data" : "measured live"}
       </span>
     </span>
   );
