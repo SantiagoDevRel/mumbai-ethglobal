@@ -59,7 +59,11 @@ export type ErrorCode = z.infer<typeof ErrorCode>;
 export const ErrorResponse = z.object({ error: ErrorCode, message: z.string() });
 export type ErrorResponse = z.infer<typeof ErrorResponse>;
 
-/** GET /api/ticket/:ticket. Phones stop polling once `entityKey` is set (then read the RPC). */
+/**
+ * GET /api/ticket/:ticket. Phones keep polling this after `written` for their countdown and never
+ * call the public RPC: a room shares one IP, and the public RPC limits each IP (600 requests a minute).
+ * After `written`, the Worker answers from one session read per block, shared by every ticket.
+ */
 export const TicketResponse = z.object({
   ticket: z.string(),
   status: z.enum(["queued", "sending", "written", "failed"]),
@@ -67,7 +71,11 @@ export const TicketResponse = z.object({
   txHash: hex.optional(),
   /** Block that included the create. */
   block: z.string().optional(),
+  /** Current expiration block; it moves when the entity gets a Lifetime Extension. */
   expiresAtBlock: z.string().optional(),
+  /** After `written`: the latest block the Worker read, and whether the entity was still there. */
+  currentBlock: z.string().optional(),
+  live: z.boolean().optional(),
   lat: z.number(),
   lng: z.number(),
   error: z.string().optional(),

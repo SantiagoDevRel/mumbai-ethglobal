@@ -23,7 +23,7 @@ Change a contract only through the orchestrator. Every user-facing string is Eng
 
 ## Rules
 
-- The RPC access key never reaches a browser, a `NEXT_PUBLIC_*` variable or this repo. Phones read the public RPC; the presenter screen reads through the Worker's read proxy.
+- The RPC access key never reaches a browser, a `NEXT_PUBLIC_*` variable or this repo. Phones never call an RPC: they poll their ticket on the Worker (a room shares one IP and the public RPC limits each IP). The presenter screen reads through the Worker's read proxy.
 - Never claim on screen what didn't happen on-chain. App-side steps are labeled *app-side*.
 - Vocabulary: "Arkiv entities", "Entity Expiration", "Lifetime Extension", "DB-Chain", "Ethereum-aligned", "your agent", "the Web3 database". Never "TTL", "records", "on Ethereum", or unqualified "decentralized", "trustless", "permanent". The mascot is BLOK. No hardcoded counts in copy.
 - Palette for UI chrome: Arkiv Blue `#181EA9`, Arkiv Orange `#FE7446`, Ink `#111111`, Sand `#F6F4EF`, Stone `#E9E6DE`. Official logo SVGs only (`public/brand/`). Dot colors are participant data and free.
