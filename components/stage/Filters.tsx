@@ -18,7 +18,7 @@ export function Filters({ state }: { state: StageState }) {
   const chip = (label: string, on: boolean, action: () => void, local = false) => <button key={`${label}:${on}`} className={`filter-chip${local ? " local-chip" : ""}`} aria-pressed={on} onClick={action}>{on ? <Check size={20} /> : <Plus size={20} />}<span>{label}</span>{local && <small>app-side</small>}</button>;
   return <section className="filters-panel panel pointer-events-auto"><div className="panel-heading"><h2>Filter the map</h2><button aria-label="Close filters" onClick={() => stage.dispatch({ type: "togglePanel", panel: "filters", open: false })}>×</button></div>
     <div className="filter-chips" aria-label="On-chain filters">
-      {chip(`Color · ${chain.color ?? "Orange"}`, !!chain.color, () => setChain({ color: chain.color ? undefined : "#fe7446" }))}
+      {chip(`Color · ${!chain.color || chain.color.toLowerCase() === "#fe7446" ? "Orange" : chain.color}`, !!chain.color, () => setChain({ color: chain.color ? undefined : "#fe7446" }))}
       {chip(`Country · ${countries.find((country) => country.code === (chain.country ?? "IN"))?.name ?? chain.country}`, !!chain.country, () => setChain({ country: chain.country ? undefined : "IN" }))}
       {chip("Inside this map view", !!chain.viewport, () => setChain({ viewport: chain.viewport ? undefined : mapViewport.get() }))}
       {chip("Owner · santiago", !!chain.owner, () => setChain({ owner: chain.owner ? undefined : WRITER_ADDRESS }))}

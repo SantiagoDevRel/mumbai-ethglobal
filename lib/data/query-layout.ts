@@ -5,5 +5,5 @@ export function queryLayout(text: string, kind: "code" | "query") {
   const scope = pieces.filter((line) => !isChanging(line));
   const changing = pieces.filter(isChanging);
   const fixed = scope.filter((line) => /(?:eq\("(?:app|kind|session)"|(?:^|\s)(?:app|kind|session)\s*=)/.test(line));
-  return { scope: fixed.join(" · ").replace(/\s+/g, " ").trim(), changing: !fixed.length && !changing.length ? text : changing.join("\n") };
+  return { scope: fixed.map((line) => line.trim().replace(/,$/, "")).join(" · ").replace(/\s+/g, " "), changing: !fixed.length && !changing.length ? text : changing.join("\n") };
 }
