@@ -7,8 +7,9 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "lint": "eslint src test",
     "typecheck": "tsc --noEmit",
-    "test": "node --test --experimental-strip-types \"test/**/*.test.ts\""
+    "test": "node --test --experimental-strip-types \"../tests/**/*.test.ts\" \"test/**/*.test.mjs\""
   },
   "dependencies": {
     "@arkiv-network/sdk": "0.8.1",

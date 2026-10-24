@@ -1,0 +1,28 @@
+{
+  "network": "Tiramisu",
+  "sdkVersion": "0.8.1",
+  "workerUrl": "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev",
+  "deployedVersion": "00dafaab-334e-4050-8fb7-eeb1a71f5e5e",
+  "buildJob": "j-64e3845a12154dd7935b8b822334f842",
+  "writerLintJob": "j-b5dddd59e5f44073a156cf3ce799f162",
+  "checks": {
+    "appTypecheck": "passed",
+    "writerTypecheck": "passed",
+    "appLint": "passed",
+    "writerLint": "passed; Next.js plugin emits a missing-pages-directory notice in the Worker package",
+    "appBuild": "passed with three workers",
+    "workerBundle": "passed and deployed from the verified artifact",
+    "sharedTests": 20,
+    "appAdapterWriterTests": 20,
+    "liveWriteRead": "passed",
+    "seedReadback": "42 businesses and 126 linked reviews",
+    "seedIdempotency": "same-day rerun skipped all sends",
+    "countdownErrorBlocks": 0,
+    "productionCorsAuthAndProxy": "passed"
+  },
+  "loadTest": {
+    "status": "not run",
+    "reason": "Awaiting explicit gas authorization",
+    "script": "scripts/loadtest.ts"
+  }
+}

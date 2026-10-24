@@ -41,3 +41,48 @@ npx wrangler deploy --dry-run --outdir dist
 Deploy the resulting `dist/index.js` with `wrangler deploy dist/index.js --no-bundle`.
 Configure `RPC`, `ACCESS_KEY`, `WORKSHOP_WRITER_PRIVATE_KEY`, and
 `WORKSHOP_PRESENTER_TOKEN` as Worker secrets, never as committed files.
+
+## Public and presenter API
+
+`GET /api/session?s=<code>`, `POST /api/submit`, and `GET /api/ticket/<ticket>`
+implement the phone contract. Submit sends `x-device-token` (a random identifier
+persisted by the phone); the writer also sets `workshop_device`, a Secure, HttpOnly,
+SameSite=None cookie. Send requests with credentials enabled when cookies are available.
+The header continues to work when a browser blocks third-party cookies. A conflicting
+header and cookie is rejected. Limits never use the venue's shared IP address.
+
+Presenter routes and `POST /api/rpc` require `Authorization: Bearer <token>`.
+The proxy accepts only `RPC_READ_ALLOWLIST`; neither the key nor upstream error
+details appear in responses. CORS permits only `ALLOWED_ORIGINS` and all responses
+use `Cache-Control: no-store`.
+
+The single SQLite-backed Durable Object serializes requests and batches. Accepted
+tickets and their alarm are checkpointed together. Each block admits at most one
+batch, with up to twenty creates and a fresh pending transaction nonce. Signed bytes
+and their hash are persisted before forwarding. An uncertain outcome stops new
+batches until that same hash is reconciled against its transaction and receipt.
+Canonical create events supply keys and exact expiry blocks; no local timer marks
+an entity written or expired.
+
+Holds finish an in-flight batch before returning idle. They expire after a minute;
+seed scripts renew a hold while signing. Replay mode pauses queued writes. Ending
+a session cancels only its unsent queue. Previously included entities stay on-chain.
+
+Run the shared checks from the repository root, then the writer checks here:
+
+```sh
+npm run typecheck
+npm run lint
+npx wrangler deploy --dry-run --outdir dist
+npm test
+```
+
+The writer tests use workerd through Wrangler's existing Miniflare dependency.
+They cover actual routing, authorization, CORS, device admission, network failure
+and the read-only RPC boundary. Additional adapter tests cover immutable pagination,
+exact query descriptions, typed decoding and pre-send checkpoint failures.
+
+`seed-evidence.json` preserves the first verified business/review seed. Its signed
+transaction journal lives in operator-provided private storage, outside this repo.
+`smoke-evidence.json` follows a public submission through actual inclusion and
+disappearance, including the exact query and the observed expiry block.

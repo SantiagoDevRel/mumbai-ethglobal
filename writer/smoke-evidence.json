@@ -1,0 +1,22 @@
+{
+  "session": "E13F56C6",
+  "ticket": "b8d88ee1-44bc-47f0-b0f9-5b2561bc66ed",
+  "txHash": "0x463f7cf68a7e432426e74b02ce0dd8fb2d672f743f2fcd369b3e9d88efa3734e",
+  "entityKey": "0xa8450f819d8c92c509d13f070322edb9a4d95cc7b9f38336c17ade2b54c870ef",
+  "block": "992007",
+  "expiresAtBlock": "992017",
+  "lat": -0.9828,
+  "lng": -72.19907,
+  "lastPresentBlock": "992016",
+  "firstMissingBlock": "992017",
+  "expiryErrorBlocks": "0",
+  "gasUsed": "120384",
+  "balanceWeiAfter": "9979324719958649440",
+  "query": "app = str('arkiv-mumbai-2026') AND kind = str('dot') AND session = str('E13F56C6') AND lat >= i32(-90000000) AND lat <= i32(90000000) AND lng >= i32(-180000000) AND lng <= i32(180000000) AND $creator = addr(0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690)",
+  "productionCorsAccepted": true,
+  "localhostCorsAccepted": true,
+  "foreignOriginRejected": true,
+  "presenterAuthorizationEnforced": true,
+  "proxyWriteMethodRejected": true,
+  "privateFilesReturn404": true
+}
