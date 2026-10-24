@@ -22,3 +22,10 @@ test("projection separates actual scope and changing predicates without replacin
 test("an unfamiliar adapter description remains visible instead of being silently hidden", () => {
   assert.equal(queryLayout("future adapter syntax", "query").changing, "future adapter syntax");
 });
+
+test("scope uses a single separator for comma-terminated builder predicates", () => {
+  const text = '  eq("app", "mumbai-workshop"),\n  eq("kind", "dot"),\n  eq("session", "MOCK"),\n  eq("color", "#fe7446"),';
+  const result = queryLayout(text, "code");
+  assert.equal(result.scope, 'eq("app", "mumbai-workshop") · eq("kind", "dot") · eq("session", "MOCK")');
+  assert.equal(result.changing, '  eq("color", "#fe7446"),');
+});

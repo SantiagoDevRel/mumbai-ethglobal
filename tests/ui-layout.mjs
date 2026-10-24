@@ -39,7 +39,9 @@ try {
   await commands(page, [{ type: "next" }]);
   await expect(page.locator('pre[aria-label="Executed query text"]')).toContainText('"color"');
   await expect(page.locator(".stage-toolbar")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /Color ·/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Color · Orange", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".query-scope summary code")).not.toContainText(/,\s*(?:·|$)/);
+  await expect(page.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
   await page.evaluate(() => document.fonts.ready);
   await page.locator(".query-panel").evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720]]) {
@@ -47,7 +49,8 @@ try {
     await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().width))).toBe(Math.round(424 * width / 1920));
     const layout = await page.evaluate(() => {
       const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
-      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
+      const url = document.querySelector(".qr-url");
+      return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
     });
     const scale = width / 1920;
     assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1);
@@ -58,6 +61,7 @@ try {
     assert.equal(layout.counter.fontSize, "64px");
     assert.equal(layout.url.whiteSpace, "nowrap");
     assert.equal(layout.url.fontSize, "20px");
+    assert.equal(layout.urlFits, true);
     assert.ok(layout.url.y + layout.url.height <= layout.qr.y + layout.qr.height);
     assert.equal(layout.overflow, false);
     evidence.push({ surface: "stage", viewport: `${width}x${height}`, layout });
@@ -92,10 +96,25 @@ try {
   await commands(page, [{ type: "next" }]);
   await expect(page.locator(".review-card").first()).toBeVisible({ timeout: 15000 });
   await expect(page.locator(".business-card")).toContainText("photo · bundled with the app");
+  for (const [width, height] of [[1280, 720], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    const footerFits = await page.locator(".business-card").evaluate((element) => {
+      const body = element.getBoundingClientRect();
+      const footer = element.querySelector(".photo-callback").getBoundingClientRect();
+      return footer.top >= body.top && footer.bottom <= body.bottom + 1 && element.scrollHeight <= element.clientHeight + 1;
+    });
+    assert.equal(footerFits, true, "The entire callback footer must fit without scrolling the card.");
+  }
+  await page.setViewportSize({ width: 1280, height: 720 });
   await commands(page, [{ type: "goto", index: 13 }]);
   await expect(page.locator(".owner-small-print")).toContainText("Demo view");
   await expect(page.locator(".stage-counter small")).toHaveText("owner");
   await expect(page.locator(".owner-count,.owner-statement")).toHaveCount(0);
+  await commands(page, [{ type: "next" }]);
+  await expect(page.getByRole("button", { name: "Undo", exact: true })).toHaveCount(0);
+  await expect(page.locator(".owner-panel")).toHaveCount(0);
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.getByRole("button", { name: /Transfer ownership/ })).toBeVisible();
   await commands(page, [{ type: "goto", index: 7 }]);
   await expect(page.locator(".app-hud")).toHaveCount(0);
   await expect(page.locator(".doors-countdown")).toHaveCount(0);
@@ -105,6 +124,8 @@ try {
   await expect(page.locator(".globe-dots")).toHaveCount(0);
   await commands(page, [{ type: "goto", index: 15 }]);
   await expect(page.locator(".join-qr-build .qr-image img")).toHaveAttribute("width", "320");
+  await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/j");
+  assert.equal(await page.locator(".join-qr-build .qr-url").evaluate((element) => getComputedStyle(element).whiteSpace === "nowrap" && element.scrollWidth <= element.clientWidth), true);
   await commands(page, [{ type: "goto", index: 16 }]);
   await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
   const notes = await context.newPage();
@@ -116,7 +137,11 @@ try {
   await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
   await notes.getByRole("combobox", { name: "Stage data source" }).selectOption("mock");
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
-  evidence.push({ surface: "notes", blockSynchronized: true, sourceSynchronized: true });
+  await commands(page, [{ type: "goto", index: 13 }, { type: "next" }]);
+  await expect(page.locator(".owner-panel")).toHaveCount(0);
+  await notes.getByRole("button", { name: "· Undo transfer", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Transfer ownership/ })).toBeVisible();
+  evidence.push({ surface: "notes", blockSynchronized: true, sourceSynchronized: true, transferUndoSynchronized: true });
   await context.close();
 
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
