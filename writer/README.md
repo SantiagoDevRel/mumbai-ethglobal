@@ -31,6 +31,14 @@ SDK 0.8.1 source and deployed behavior confirmed:
   writes remain blocked until their known transaction outcome is reconciled.
 - Receipt polling is explicitly 500 ms. This is a polling cadence, not a claimed
   block duration; the unconfigured viem client default was four seconds.
+- A query snapshot does not reserve an entity's remaining lifetime. An entity
+  close to expiration can disappear before a later `getEntity` or transaction
+  simulation. The first timed rehearsal stopped before broadcasting its all-entity
+  extension after querying targets with roughly two seconds left. Its evidence
+  remains in `rehearsal-primary.json`; a later read returned `NoEntityFoundError`.
+  The rehearsal now uses two arrival cohorts so late entities have preparation
+  time after the selected extension. Participant lifetimes and scene times stay
+  unchanged. Failed presenter actions also capture the UI notice in the report.
 
 ## Checks and deployment
 
@@ -99,3 +107,33 @@ exact query descriptions, typed decoding and pre-send checkpoint failures.
 transaction journal lives in operator-provided private storage, outside this repo.
 `smoke-evidence.json` follows a public submission through actual inclusion and
 disappearance, including the exact query and the observed expiry block.
+
+## Timed rehearsal
+
+`../scripts/rehearse.mjs` serves the static export under the production origin in
+headless Chromium and signs the presenter's real extension/patch transactions in
+Node. It follows every scene and reveal in the twenty-minute run of show. See
+`../scripts/README.md` for the credential names, private journal and safety checks.
+
+`rehearsal-final.json` is the passing Tiramisu run: all seventeen scenes and thirty-two
+reveals, twenty synthetic phones and one real `/j` page, two extensions, one patch,
+and zero ownership transactions. The demo leaves owner and creator unchanged.
+Talk time was 1,200,001 ms; setup through cleanup was 1,208,483 ms. Every scene
+started within 28 ms of its planned time. No scene-start delay exceeded the
+documented one-second overrun threshold; the talk clock exceeded its target by
+one millisecond. There were no page errors, the owned session ended, and the
+minimum observed balance was 9.922778615845557232 test GLM, above the eight-GLM floor.
+Receipt-derived gas was 2,739,024. Selected extension, all-entity extension and
+business patch took 8,360, 10,844 and 6,185 ms end to end, respectively.
+
+The deployed Worker is version `c221c14e-fd84-481d-b625-b62d6e42a231`, the verified
+`e1732fb` bundle. The passing report's SHA-256 is
+`d1e9765e64e483ad07dd43bca16baa293ab7131712e3717a56ed1642e0f531cf`.
+Its script hash matches the implementation published in `c266bfa`.
+`rehearsal-primary.json` preserves the early expiration/preparation failure;
+`rehearsal-cohorts.json` preserves a complete run that exposed two exact-label
+selector failures in L3. Those selectors were corrected and verified against real
+query UI before the passing run. Earlier failures were neither overwritten nor
+reclassified. The passing workload uses the documented two arrival cohorts; it
+does not establish that an all-entity extension can safely include an entity
+immediately before its expiration.

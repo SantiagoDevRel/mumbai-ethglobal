@@ -1,0 +1,1218 @@
+{
+  "schema": 1,
+  "network": "tiramisu",
+  "origin": "https://mumbai-ethglobal.vercel.app",
+  "writerUrl": "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev",
+  "sourceSnapshot": "fa83294982b1f98e21a86f4fa927908018ec5778",
+  "scriptSha256": "d0c2d6676b9baa5f70b8e17795d5c9299a0329a148fed5abfce2d7a1ee16a03e",
+  "staticIndexSha256": "ea51004cc3790f33a1cfddbe794a095e7e5fa889a327654f982262b52fe7aaed",
+  "startedAt": "2026-10-24T10:37:04.696Z",
+  "plannedTalkMs": 1200000,
+  "timingPolicy": "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits 20 synthetic phones across 32 s and a real phone at +33 s; lifetimes stay at 120 s. L2 selected then all run promptly, before late arrivals expire. Scene starts more than 1000 ms late count as overruns.",
+  "deployedWorker": {
+    "version": "c221c14e-fd84-481d-b625-b62d6e42a231",
+    "sourceCommit": "e1732fb",
+    "bundleSha256": "e2c0893aacfb1896895cbf0adeccf88779e682c4efdd4f07b3f43390d0e05d1a",
+    "verification": "Cloudflare deployments list, 100% active, checked before this campaign"
+  },
+  "scenes": [
+    {
+      "id": "S0",
+      "plannedStartMs": 0,
+      "dispatchAtMs": 8,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 0,
+          "actualStartMs": 15
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 13,
+      "latenessMs": 13,
+      "actionsFinishedAtMs": 16
+    },
+    {
+      "id": "S1",
+      "plannedStartMs": 20000,
+      "dispatchAtMs": 20001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 20000,
+          "actualStartMs": 20014
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 20750,
+          "actualStartMs": 20774
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 20012,
+      "latenessMs": 12,
+      "actionsFinishedAtMs": 20775
+    },
+    {
+      "id": "S2",
+      "plannedStartMs": 70000,
+      "dispatchAtMs": 70000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 70000,
+          "actualStartMs": 70015
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 70750,
+          "actualStartMs": 70771
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 70014,
+      "latenessMs": 14,
+      "actionsFinishedAtMs": 70771
+    },
+    {
+      "id": "S3",
+      "plannedStartMs": 120000,
+      "dispatchAtMs": 120000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 120000,
+          "actualStartMs": 120031
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 120750,
+          "actualStartMs": 120790
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 120029,
+      "latenessMs": 29,
+      "actionsFinishedAtMs": 120790
+    },
+    {
+      "id": "S4",
+      "plannedStartMs": 170000,
+      "dispatchAtMs": 170001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 170000,
+          "actualStartMs": 170013
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 170750,
+          "actualStartMs": 170885
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 170012,
+      "latenessMs": 12,
+      "actionsFinishedAtMs": 170885
+    },
+    {
+      "id": "S5",
+      "plannedStartMs": 220000,
+      "dispatchAtMs": 220000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 220000,
+          "actualStartMs": 220014
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 220750,
+          "actualStartMs": 220772
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 220012,
+      "latenessMs": 12,
+      "actionsFinishedAtMs": 220772
+    },
+    {
+      "id": "S6",
+      "plannedStartMs": 260000,
+      "dispatchAtMs": 260001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 260000,
+          "actualStartMs": 260008
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 260750,
+          "actualStartMs": 260767
+        },
+        {
+          "step": 2,
+          "plannedEarliestStartMs": 261500,
+          "actualStartMs": 261523
+        },
+        {
+          "step": 3,
+          "plannedEarliestStartMs": 262250,
+          "actualStartMs": 262344
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 260007,
+      "latenessMs": 7,
+      "actionsFinishedAtMs": 262344
+    },
+    {
+      "id": "S7",
+      "plannedStartMs": 290000,
+      "dispatchAtMs": 290001,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 290000,
+          "actualStartMs": 290016
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 290015,
+      "latenessMs": 15,
+      "actionsFinishedAtMs": 290017
+    },
+    {
+      "id": "L1",
+      "plannedStartMs": 330000,
+      "dispatchAtMs": 330000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 330000,
+          "actualStartMs": 330019
+        }
+      ],
+      "status": "passed",
+      "actualStartMs": 330017,
+      "latenessMs": 17,
+      "actionsFinishedAtMs": 331925
+    },
+    {
+      "id": "L2",
+      "plannedStartMs": 420000,
+      "dispatchAtMs": 420000,
+      "steps": [
+        {
+          "step": 0,
+          "plannedEarliestStartMs": 420000,
+          "actualStartMs": 420010
+        },
+        {
+          "step": 1,
+          "plannedEarliestStartMs": 420750,
+          "actualStartMs": 430784
+        }
+      ],
+      "status": "running",
+      "actualStartMs": 420008,
+      "latenessMs": 8
+    }
+  ],
+  "operations": [
+    {
+      "scene": "S7",
+      "name": "open doors",
+      "startedAtMs": 290017,
+      "status": "passed",
+      "latencyMs": 490,
+      "finishedAtMs": 290507
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 1",
+      "startedAtMs": 290511,
+      "status": "passed",
+      "latencyMs": 6256,
+      "finishedAtMs": 296767
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 2",
+      "startedAtMs": 291685,
+      "status": "passed",
+      "latencyMs": 5275,
+      "finishedAtMs": 296960
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 3",
+      "startedAtMs": 293369,
+      "status": "passed",
+      "latencyMs": 5683,
+      "finishedAtMs": 299053
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 4",
+      "startedAtMs": 295053,
+      "status": "passed",
+      "latencyMs": 3962,
+      "finishedAtMs": 299015
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 5",
+      "startedAtMs": 296737,
+      "status": "passed",
+      "latencyMs": 6252,
+      "finishedAtMs": 302989
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 6",
+      "startedAtMs": 298422,
+      "status": "passed",
+      "latencyMs": 4608,
+      "finishedAtMs": 303030
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 7",
+      "startedAtMs": 300106,
+      "status": "passed",
+      "latencyMs": 4839,
+      "finishedAtMs": 304944
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 8",
+      "startedAtMs": 301790,
+      "status": "passed",
+      "latencyMs": 3155,
+      "finishedAtMs": 304945
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 9",
+      "startedAtMs": 303474,
+      "status": "passed",
+      "latencyMs": 3731,
+      "finishedAtMs": 307205
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 10",
+      "startedAtMs": 305158,
+      "status": "passed",
+      "latencyMs": 5688,
+      "finishedAtMs": 310845
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 11",
+      "startedAtMs": 306843,
+      "status": "passed",
+      "latencyMs": 5829,
+      "finishedAtMs": 312672
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 12",
+      "startedAtMs": 308527,
+      "status": "passed",
+      "latencyMs": 4551,
+      "finishedAtMs": 313079
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 13",
+      "startedAtMs": 310211,
+      "status": "passed",
+      "latencyMs": 4629,
+      "finishedAtMs": 314841
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 14",
+      "startedAtMs": 311895,
+      "status": "passed",
+      "latencyMs": 2942,
+      "finishedAtMs": 314837
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 15",
+      "startedAtMs": 313579,
+      "status": "passed",
+      "latencyMs": 3451,
+      "finishedAtMs": 317030
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 16",
+      "startedAtMs": 315264,
+      "status": "passed",
+      "latencyMs": 3870,
+      "finishedAtMs": 319133
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 17",
+      "startedAtMs": 316948,
+      "status": "passed",
+      "latencyMs": 5899,
+      "finishedAtMs": 322847
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 18",
+      "startedAtMs": 318632,
+      "status": "passed",
+      "latencyMs": 4785,
+      "finishedAtMs": 323417
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 19",
+      "startedAtMs": 320316,
+      "status": "passed",
+      "latencyMs": 4388,
+      "finishedAtMs": 324704
+    },
+    {
+      "scene": "S7",
+      "name": "synthetic phone 20",
+      "startedAtMs": 322000,
+      "status": "passed",
+      "latencyMs": 2691,
+      "finishedAtMs": 324691
+    },
+    {
+      "scene": "S7",
+      "name": "real /j submit to stage visibility",
+      "startedAtMs": 323001,
+      "status": "passed",
+      "latencyMs": 8529,
+      "finishedAtMs": 331530
+    },
+    {
+      "scene": "L1",
+      "name": "all phones confirmed and rendered",
+      "startedAtMs": 330019,
+      "status": "passed",
+      "latencyMs": 1901,
+      "finishedAtMs": 331920
+    },
+    {
+      "scene": "L2",
+      "name": "extend selected",
+      "startedAtMs": 420010,
+      "status": "passed",
+      "latencyMs": 10013,
+      "finishedAtMs": 430022
+    },
+    {
+      "scene": "L2",
+      "name": "extend all",
+      "startedAtMs": 431424,
+      "status": "failed",
+      "error": "expect(received).toBe(expected) // Object.is equality\n\nExpected: 2\nReceived: 1\n\nCall Log:\n- Timeout 20000ms exceeded while waiting on the predicate",
+      "latencyMs": 19865,
+      "finishedAtMs": 451289
+    }
+  ],
+  "transactions": [
+    {
+      "scene": "L2",
+      "operationTags": [
+        3
+      ],
+      "operationCount": 1,
+      "startedAtMs": 423515,
+      "status": "success",
+      "hash": "0x97efa4cc1705404c2e92217a150c4485a72eb929a1aa5bcf12972627534ddea9",
+      "url": "https://tiramisu.explorer.arkiv.network/tx/0x97efa4cc1705404c2e92217a150c4485a72eb929a1aa5bcf12972627534ddea9",
+      "block": "994402",
+      "gasUsed": "25240",
+      "confirmedAtMs": 426196,
+      "latencyMs": 2681
+    }
+  ],
+  "phones": [
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 01",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 290511,
+      "acceptedAtMs": 290779,
+      "ticket": "0af0eb66-5f15-45d5-8203-4a5f66503a0a",
+      "entityKey": "0x416fc79069a4e6f08eaaeb29d4b2d76efbdf6837c15a4fbf87501afe87473c80",
+      "txHash": "0x9ca93b80c262c9079ad725e72d09732c92f1528ddf0c24edd375c40bd32064c3",
+      "block": "994337",
+      "expiresAtBlock": "994397",
+      "confirmedAtMs": 296767,
+      "latencyMs": 6256
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 02",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 291685,
+      "acceptedAtMs": 291909,
+      "ticket": "9c10e6be-c1fe-46d5-9b70-e70ea35d0b7d",
+      "entityKey": "0x27ab91f2467de1f6e50d103a4b53ed9a3e6461b01dd3eefa8ad6fe2bfd25366b",
+      "txHash": "0x9ca93b80c262c9079ad725e72d09732c92f1528ddf0c24edd375c40bd32064c3",
+      "block": "994337",
+      "expiresAtBlock": "994397",
+      "confirmedAtMs": 296960,
+      "latencyMs": 5275
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 03",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 293369,
+      "acceptedAtMs": 293891,
+      "ticket": "0a87e555-1c23-4dc7-bd6e-9711d8c8ece0",
+      "entityKey": "0x83ef40254b8f42b5e884234529a4a1513864b95e96268505be98d7e20fa2c76b",
+      "txHash": "0xf0aee8092699b6b5c46c5eedf6d04b764c147b82358a877616e3a6e4510c7716",
+      "block": "994338",
+      "expiresAtBlock": "994398",
+      "confirmedAtMs": 299053,
+      "latencyMs": 5684
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 04",
+      "country": "CO",
+      "color": "#3ddc97",
+      "submittedAtMs": 295053,
+      "acceptedAtMs": 295273,
+      "ticket": "5b6f6436-1788-4c2d-b4f5-fc77c40e645c",
+      "entityKey": "0x5f66520873495e3a7b371bd27bff0af561683250831275fc8ec2fc98bde3abc0",
+      "txHash": "0xf0aee8092699b6b5c46c5eedf6d04b764c147b82358a877616e3a6e4510c7716",
+      "block": "994338",
+      "expiresAtBlock": "994398",
+      "confirmedAtMs": 299015,
+      "latencyMs": 3962
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 05",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 296737,
+      "acceptedAtMs": 296960,
+      "ticket": "c0af2ece-35a1-4f26-bb3e-4da7ab8c823c",
+      "entityKey": "0xb3809a70bfeaa166a16ac9dbe46499a4f2062b2e2538346f0824b7f331006a9a",
+      "txHash": "0x18dc473eac916159c1cbe10dd6d3be541962914d867130d19d63dc24331f6e12",
+      "block": "994340",
+      "expiresAtBlock": "994400",
+      "confirmedAtMs": 302989,
+      "latencyMs": 6252
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 06",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 298422,
+      "acceptedAtMs": 299053,
+      "ticket": "b5f2b10b-c1bf-492a-a1f5-a878e2dbeb84",
+      "entityKey": "0xf32132afb8028b377a803399be5ea29582cde4b6bec69ae1814cca85502218b2",
+      "txHash": "0x18dc473eac916159c1cbe10dd6d3be541962914d867130d19d63dc24331f6e12",
+      "block": "994340",
+      "expiresAtBlock": "994400",
+      "confirmedAtMs": 303030,
+      "latencyMs": 4608
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 07",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 300106,
+      "acceptedAtMs": 300325,
+      "ticket": "e51a482a-3852-4e2b-ada9-d713a72c5a95",
+      "entityKey": "0x896d60d6df52e3efd55592eb7b548d376d23494e9f35b0b10f1c4e0858c5310f",
+      "txHash": "0xaa3084f183b42504cb0de6c826b42c45da4be5eb53e0f94adc356003e3f7123f",
+      "block": "994341",
+      "expiresAtBlock": "994401",
+      "confirmedAtMs": 304944,
+      "latencyMs": 4838
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 08",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 301790,
+      "acceptedAtMs": 302020,
+      "ticket": "98b695d8-dbf7-4cd5-851d-5ebdc9c4cfb6",
+      "entityKey": "0x282631b52b4242407befcf867b53f0fcfd25d9069824d9255e38cf98c2043bea",
+      "txHash": "0xaa3084f183b42504cb0de6c826b42c45da4be5eb53e0f94adc356003e3f7123f",
+      "block": "994341",
+      "expiresAtBlock": "994401",
+      "confirmedAtMs": 304945,
+      "latencyMs": 3155
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 09",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 303474,
+      "acceptedAtMs": 304036,
+      "ticket": "0462e6d6-1aca-437f-8cff-1571c9f139db",
+      "entityKey": "0x93da409fe34ed5e1d3f98ffea0c072e63a39b30ad55f5a0da78319aebacef131",
+      "txHash": "0x1aa8d22b86551b7752c65bb4a1456954f7e5a59d20e0ceebc1ca09eba89a4bea",
+      "block": "994342",
+      "expiresAtBlock": "994402",
+      "confirmedAtMs": 307205,
+      "latencyMs": 3731
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 10",
+      "country": "CO",
+      "color": "#3ddc97",
+      "submittedAtMs": 305158,
+      "acceptedAtMs": 305400,
+      "ticket": "10d921f9-ffe1-4ee8-95c6-98020621c98d",
+      "entityKey": "0x723743bcbd29bb4a74608e1d77a0317f433bbf045bc5b7f497188ae0c66a57f4",
+      "txHash": "0x40cd1d364a05dc839879d44fb7b1796f2a9c30fe8d14dee947c5572d2141c9fe",
+      "block": "994344",
+      "expiresAtBlock": "994404",
+      "confirmedAtMs": 310845,
+      "latencyMs": 5687
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 11",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 306843,
+      "acceptedAtMs": 307123,
+      "ticket": "62eb53bf-e0c1-438c-b7c2-80f13924ffc2",
+      "entityKey": "0x37348b032d2a21a54cee6dfa51ff1369133e94f6afd8197f0cf532e71b01ccdd",
+      "txHash": "0x3d2a2183e10650791c1b156e8b8df11865d0b28b8c2e6f068390cc1a1ff5d7f3",
+      "block": "994345",
+      "expiresAtBlock": "994405",
+      "confirmedAtMs": 312672,
+      "latencyMs": 5829
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 12",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 308527,
+      "acceptedAtMs": 309000,
+      "ticket": "1dc0acb0-56cb-4664-93ec-197ac5270933",
+      "entityKey": "0x2da1ccc8c77e3d6fc56ab14964bef9257098b9d4030a983be0f7f2426e565c15",
+      "txHash": "0x3d2a2183e10650791c1b156e8b8df11865d0b28b8c2e6f068390cc1a1ff5d7f3",
+      "block": "994345",
+      "expiresAtBlock": "994405",
+      "confirmedAtMs": 313079,
+      "latencyMs": 4552
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 13",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 310211,
+      "acceptedAtMs": 310496,
+      "ticket": "add6095d-b3e4-4d73-825b-ed6f06f92881",
+      "entityKey": "0xe051aaada06adb5bd8ff6a9bfb785654302eaa0148900a9a95901a269c0cbf4f",
+      "txHash": "0x28b5f5da7fd08b3eebe5ec32f8017d7cbffb407bb96bf545b1f8bbdbce97c219",
+      "block": "994346",
+      "expiresAtBlock": "994406",
+      "confirmedAtMs": 314841,
+      "latencyMs": 4630
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 14",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 311895,
+      "acceptedAtMs": 312114,
+      "ticket": "7195f5fc-76cb-47d3-ad29-7d06a342e933",
+      "entityKey": "0x2e22e98942e8d556e97f8bbcd2c2a5ee47994c613354cdef86367175ffe1c75b",
+      "txHash": "0x28b5f5da7fd08b3eebe5ec32f8017d7cbffb407bb96bf545b1f8bbdbce97c219",
+      "block": "994346",
+      "expiresAtBlock": "994406",
+      "confirmedAtMs": 314837,
+      "latencyMs": 2942
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 15",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 313579,
+      "acceptedAtMs": 313900,
+      "ticket": "6ae2e5a9-1f8c-4909-9a52-e90c9dcbbaa3",
+      "entityKey": "0x56f2fde2bbb00214aa6f01ddb12fb6b18d83645a9656eea4681908959edf76b6",
+      "txHash": "0xdfeb9060f18ba795f8d2f8ee27b41c8e069443a8e11f3789ba20e16ec2974fb1",
+      "block": "994347",
+      "expiresAtBlock": "994407",
+      "confirmedAtMs": 317030,
+      "latencyMs": 3451
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 16",
+      "country": "CO",
+      "color": "#3ddc97",
+      "submittedAtMs": 315264,
+      "acceptedAtMs": 315507,
+      "ticket": "11652f00-5ea9-4d5c-af88-2769480bd8d8",
+      "entityKey": "0xaea3d0997fa348f21874a1dacb2e3a7e49ef79b8d4f6597855df94374ec9c58e",
+      "txHash": "0xf1dd3b8e8a270a373584f838675a0ec20a6de9a94bff156d238308371fd6b3f0",
+      "block": "994348",
+      "expiresAtBlock": "994408",
+      "confirmedAtMs": 319133,
+      "latencyMs": 3869
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 17",
+      "country": "IN",
+      "color": "#ff8c42",
+      "submittedAtMs": 316948,
+      "acceptedAtMs": 317180,
+      "ticket": "118c1118-ef91-4af5-8693-77d44797bd49",
+      "entityKey": "0x1a8ccec5a338f41c795ba8b851cfe02713a24c1b4e372a122d45ed76959ee60d",
+      "txHash": "0x758805860856781481ddd0ad2900f6b582a1ef892ddbe08fa2a28478f43ae6a8",
+      "block": "994350",
+      "expiresAtBlock": "994410",
+      "confirmedAtMs": 322847,
+      "latencyMs": 5899
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 18",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 318632,
+      "acceptedAtMs": 319134,
+      "ticket": "5af2f337-2861-4616-b542-abc8a8caece6",
+      "entityKey": "0xf26916f7fd550d959bde138242a5db2f41d563a1b79f3c75189a7640eca4ee02",
+      "txHash": "0x758805860856781481ddd0ad2900f6b582a1ef892ddbe08fa2a28478f43ae6a8",
+      "block": "994350",
+      "expiresAtBlock": "994410",
+      "confirmedAtMs": 323417,
+      "latencyMs": 4785
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 19",
+      "country": "CO",
+      "color": "#ff8c42",
+      "submittedAtMs": 320316,
+      "acceptedAtMs": 320548,
+      "ticket": "98b5afc2-3f08-49aa-b7a4-b633167f7d68",
+      "entityKey": "0x5bced31db5b825d5636d93385a4fba5e51958fc42beebbdc1fd045e5c8bfb67b",
+      "txHash": "0xb5bea7b093a58b1a7559a7dc750cdda1c11cbb789c744bcc298394bc368f8069",
+      "block": "994351",
+      "expiresAtBlock": "994411",
+      "confirmedAtMs": 324704,
+      "latencyMs": 4388
+    },
+    {
+      "kind": "synthetic",
+      "name": "Rehearsal 20",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 322000,
+      "acceptedAtMs": 322388,
+      "ticket": "518af6b7-017e-4bbe-a890-72e8848dd263",
+      "entityKey": "0x9f6acc323f749ac91a809575b77968bc55584bbdb60c9ee142fa72c6e0fd0b23",
+      "txHash": "0xb5bea7b093a58b1a7559a7dc750cdda1c11cbb789c744bcc298394bc368f8069",
+      "block": "994351",
+      "expiresAtBlock": "994411",
+      "confirmedAtMs": 324691,
+      "latencyMs": 2691
+    },
+    {
+      "kind": "browser",
+      "name": "Rehearsal phone",
+      "country": "IN",
+      "color": "#3ddc97",
+      "submittedAtMs": 323001,
+      "confirmedAtMs": 327713,
+      "entityKey": "0x08a4c89db64662ea97a5c7cfe94d9fe66e076fb7889e97e65f8722637790b0b2",
+      "block": "994352",
+      "expiresAtBlock": "994412",
+      "visibleAtMs": 330031,
+      "submitToVisibleMs": 7030,
+      "paintedAtMs": 331530
+    }
+  ],
+  "balances": [
+    {
+      "atMs": null,
+      "reason": "preflight",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 10653,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 20362,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 30375,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 40336,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 50452,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 60360,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 70424,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 80381,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 90684,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 100731,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 110382,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 120350,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 130395,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 140391,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 150401,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 160429,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 170343,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 180426,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 190434,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 200378,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 210331,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 220660,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 230426,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 240651,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 250378,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 260422,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 270407,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 280369,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 290380,
+      "reason": "10 s monitor",
+      "wei": "9930809967861619936"
+    },
+    {
+      "atMs": 300672,
+      "reason": "10 s monitor",
+      "wei": "9930328431860656864"
+    },
+    {
+      "atMs": 310422,
+      "reason": "10 s monitor",
+      "wei": "9929606127859212256"
+    },
+    {
+      "atMs": 320377,
+      "reason": "10 s monitor",
+      "wei": "9928883823857767648"
+    },
+    {
+      "atMs": 330250,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 340428,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 350618,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 360547,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 370441,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 380398,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 390446,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 400445,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 410377,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 420434,
+      "reason": "10 s monitor",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 423016,
+      "reason": "before presenter signature",
+      "wei": "9928281903856563808"
+    },
+    {
+      "atMs": 430022,
+      "reason": "after extend selected",
+      "wei": "9928256663856513328"
+    },
+    {
+      "atMs": 430238,
+      "reason": "10 s monitor",
+      "wei": "9928256663856513328"
+    },
+    {
+      "atMs": 440722,
+      "reason": "10 s monitor",
+      "wei": "9928256663856513328"
+    },
+    {
+      "atMs": 450346,
+      "reason": "10 s monitor",
+      "wei": "9928256663856513328"
+    },
+    {
+      "atMs": 453059,
+      "reason": "final",
+      "wei": "9928256663856513328"
+    }
+  ],
+  "pageErrors": [],
+  "requestFailures": [
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3030,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/1/0.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3030,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/0/1.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3030,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/1/1.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3030,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/0/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S0",
+      "atMs": 3030,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/3/1/5.png",
+      "reason": "net::ERR_ABORTED"
+    },
+    {
+      "page": "stage",
+      "scene": "S2",
+      "atMs": 70363,
+      "origin": "https://tiles.openfreemap.org",
+      "path": "/natural_earth/ne2sr/2/0/3.png",
+      "reason": "net::ERR_ABORTED"
+    }
+  ],
+  "dataErrors": [],
+  "ownership": {
+    "mode": "demo view",
+    "allowedWalletOperationTags": [
+      2,
+      3
+    ],
+    "onChainTransfers": 0
+  },
+  "sessionEnded": true,
+  "status": "failed",
+  "session": "D6230FE7",
+  "clockStartedAt": "2026-10-24T10:37:10.194Z",
+  "realPhoneTicket": {
+    "ticket": "b6f2f543-c477-46af-9ea3-9c61c751198f",
+    "status": "written",
+    "lng": 73.60906,
+    "lat": 19.36025,
+    "entityKey": "0x08a4c89db64662ea97a5c7cfe94d9fe66e076fb7889e97e65f8722637790b0b2",
+    "expiresAtBlock": "994412",
+    "txHash": "0x74d897611d10fd9ce9f0188f2dd2333512ac5b2299c6905b40d468093d326898",
+    "block": "994352"
+  },
+  "selectedExpiryBefore": "994412",
+  "selectedExpiryAfter": "995012",
+  "extendAllBefore": [
+    {
+      "key": "0x08a4c89db64662ea97a5c7cfe94d9fe66e076fb7889e97e65f8722637790b0b2",
+      "expiresAtBlock": "995012"
+    },
+    {
+      "key": "0x9f6acc323f749ac91a809575b77968bc55584bbdb60c9ee142fa72c6e0fd0b23",
+      "expiresAtBlock": "994411"
+    },
+    {
+      "key": "0x5bced31db5b825d5636d93385a4fba5e51958fc42beebbdc1fd045e5c8bfb67b",
+      "expiresAtBlock": "994411"
+    },
+    {
+      "key": "0xf26916f7fd550d959bde138242a5db2f41d563a1b79f3c75189a7640eca4ee02",
+      "expiresAtBlock": "994410"
+    },
+    {
+      "key": "0x1a8ccec5a338f41c795ba8b851cfe02713a24c1b4e372a122d45ed76959ee60d",
+      "expiresAtBlock": "994410"
+    },
+    {
+      "key": "0xaea3d0997fa348f21874a1dacb2e3a7e49ef79b8d4f6597855df94374ec9c58e",
+      "expiresAtBlock": "994408"
+    },
+    {
+      "key": "0x56f2fde2bbb00214aa6f01ddb12fb6b18d83645a9656eea4681908959edf76b6",
+      "expiresAtBlock": "994407"
+    },
+    {
+      "key": "0xe051aaada06adb5bd8ff6a9bfb785654302eaa0148900a9a95901a269c0cbf4f",
+      "expiresAtBlock": "994406"
+    },
+    {
+      "key": "0x2e22e98942e8d556e97f8bbcd2c2a5ee47994c613354cdef86367175ffe1c75b",
+      "expiresAtBlock": "994406"
+    },
+    {
+      "key": "0x37348b032d2a21a54cee6dfa51ff1369133e94f6afd8197f0cf532e71b01ccdd",
+      "expiresAtBlock": "994405"
+    },
+    {
+      "key": "0x2da1ccc8c77e3d6fc56ab14964bef9257098b9d4030a983be0f7f2426e565c15",
+      "expiresAtBlock": "994405"
+    }
+  ],
+  "error": "expect(received).toBe(expected) // Object.is equality\n\nExpected: 2\nReceived: 1\n\nCall Log:\n- Timeout 20000ms exceeded while waiting on the predicate",
+  "createTransactions": [
+    {
+      "hash": "0x9ca93b80c262c9079ad725e72d09732c92f1528ddf0c24edd375c40bd32064c3",
+      "block": "994337",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0xf0aee8092699b6b5c46c5eedf6d04b764c147b82358a877616e3a6e4510c7716",
+      "block": "994338",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0x18dc473eac916159c1cbe10dd6d3be541962914d867130d19d63dc24331f6e12",
+      "block": "994340",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0xaa3084f183b42504cb0de6c826b42c45da4be5eb53e0f94adc356003e3f7123f",
+      "block": "994341",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0x1aa8d22b86551b7752c65bb4a1456954f7e5a59d20e0ceebc1ca09eba89a4bea",
+      "block": "994342",
+      "gasUsed": "120384",
+      "status": "success"
+    },
+    {
+      "hash": "0x40cd1d364a05dc839879d44fb7b1796f2a9c30fe8d14dee947c5572d2141c9fe",
+      "block": "994344",
+      "gasUsed": "120384",
+      "status": "success"
+    },
+    {
+      "hash": "0x3d2a2183e10650791c1b156e8b8df11865d0b28b8c2e6f068390cc1a1ff5d7f3",
+      "block": "994345",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0x28b5f5da7fd08b3eebe5ec32f8017d7cbffb407bb96bf545b1f8bbdbce97c219",
+      "block": "994346",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0xdfeb9060f18ba795f8d2f8ee27b41c8e069443a8e11f3789ba20e16ec2974fb1",
+      "block": "994347",
+      "gasUsed": "120384",
+      "status": "success"
+    },
+    {
+      "hash": "0xf1dd3b8e8a270a373584f838675a0ec20a6de9a94bff156d238308371fd6b3f0",
+      "block": "994348",
+      "gasUsed": "120384",
+      "status": "success"
+    },
+    {
+      "hash": "0x758805860856781481ddd0ad2900f6b582a1ef892ddbe08fa2a28478f43ae6a8",
+      "block": "994350",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0xb5bea7b093a58b1a7559a7dc750cdda1c11cbb789c744bcc298394bc368f8069",
+      "block": "994351",
+      "gasUsed": "240768",
+      "status": "success"
+    },
+    {
+      "hash": "0x74d897611d10fd9ce9f0188f2dd2333512ac5b2299c6905b40d468093d326898",
+      "block": "994352",
+      "gasUsed": "120384",
+      "status": "success"
+    }
+  ],
+  "proxyReads": 1188,
+  "finishedAt": "2026-10-24T10:44:46.336Z",
+  "elapsedAtCleanupMs": 456143,
+  "totalWallMs": 461640,
+  "overruns": [],
+  "maxSceneLatenessMs": 29,
+  "minimumBalanceWei": "9928256663856513328",
+  "gasUsed": "2553304"
+}
