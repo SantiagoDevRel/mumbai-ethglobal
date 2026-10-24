@@ -10,6 +10,7 @@ import { OwnerView } from "./OwnerView";
 import type { LiveEntity } from "../../shared/types";
 import { DoorsCountdown } from "./DoorsCountdown";
 import { setSourceMode, useSourceMode, type SourceMode } from "../../lib/data/source-mode";
+import { QueryText } from "./QueryText";
 
 export function StageHud({ data, block, state, entities, appSteps, reviews }: { data: LiveData; block: BlockInfo | null; state: StageState; entities: LiveEntity[]; appSteps: string[]; reviews: LiveEntity[] }) {
   const [tab, setTab] = useState<"code" | "query">("code");
@@ -23,6 +24,6 @@ export function StageHud({ data, block, state, entities, appSteps, reviews }: { 
     {state.panels.filters && <Filters state={state} />}
     {state.panels.inspector && <Inspector entity={data.run?.entities.find((entity) => entity.key === state.inspected) ?? null} block={block} businessMode={state.map === "business"} reviews={reviews} />}
     {state.map === "owner" && <OwnerView transferred={state.transferred} count={entities.length} />}
-    {state.panels.query && <section className="query-panel panel pointer-events-auto" aria-label="Query that ran"><div className="query-toolbar"><div role="tablist" aria-label="Query format">{(["code", "query"] as const).map((name) => <button key={name} role="tab" aria-selected={tab === name} onClick={() => setTab(name)}>{name === "code" ? "Code" : "Query"}</button>)}</div><span>Block #{data.run?.block.toString() ?? "—"} · {data.run?.rows ?? 0} rows · {Math.round(data.run?.latencyMs ?? 0)} ms</span></div><pre key={text} className="query-changed"><code>{text}</code></pre>{[...(data.run?.description.appSide ?? []), ...appSteps].map((line) => <p className="app-side" key={line}>app-side · {line}</p>)}</section>}
+    {state.panels.query && <section className={`query-panel panel pointer-events-auto ${state.panels.inspector ? "query-with-inspector" : ""} ${state.camera.cue === "mumbai-street" ? "query-shift-qr" : ""}`} aria-label="Query that ran"><div className="query-toolbar"><div role="tablist" aria-label="Query format">{(["code", "query"] as const).map((name) => <button key={name} role="tab" aria-selected={tab === name} onClick={() => setTab(name)}>{name === "code" ? "Code" : "Query"}</button>)}</div><span>Block #{data.run?.block.toString() ?? "—"} · {data.run?.rows ?? 0} rows · {Math.round(data.run?.latencyMs ?? 0)} ms</span></div><QueryText text={text} />{[...(data.run?.description.appSide ?? []), ...appSteps].map((line) => <p className="app-side" key={line}>app-side · {line}</p>)}</section>}
   </>;
 }

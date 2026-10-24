@@ -9,6 +9,7 @@ export function JoinQR() {
   const { scene } = useScene();
   const session = useStage((s) => s.session);
   const doors = useStage((s) => s.doors);
+  const camera = useStage((s) => s.camera.cue);
   const [qr, setQr] = useState<{ image: string; label: string; url: string } | null>(null);
   useEffect(() => {
     let stale = false;
@@ -18,5 +19,5 @@ export function JoinQR() {
     return () => { stale = true; };
   }, [session]);
   const center = scene.qr.placement === "center" && doors === "closed";
-  return <aside className={`join-qr ${center ? "join-qr-center" : "join-qr-corner"}`}><p>{scene.qr.label}</p>{qr && <a href={qr.url} target="_blank" rel="noreferrer"><Image unoptimized src={qr.image} width={center ? 320 : 140} height={center ? 320 : 140} alt="Scan to join the map" /><span>{qr.label}</span></a>}{!session && <small>Session not started</small>}</aside>;
+  return <aside className={`join-qr ${center ? "join-qr-center" : `join-qr-corner ${camera === "mumbai-street" ? "join-qr-left" : ""}`}`}><p>{scene.qr.label}</p>{qr && <a href={qr.url} target="_blank" rel="noreferrer"><Image unoptimized src={qr.image} width={center ? 320 : 140} height={center ? 320 : 140} alt="Scan to join the map" /><span>{qr.label}</span></a>}{!session && <small>Session not started</small>}</aside>;
 }

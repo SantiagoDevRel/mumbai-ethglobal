@@ -25,7 +25,10 @@ export function diffEntities(previous: LiveEntity[], run: QueryRun, sameQuery: b
     }
   }
   if (sameQuery) for (const entity of previous) {
-    if (!after.has(entity.key) && entity.expiresAtBlock <= run.block) add(entity, "expired", `expired at block #${run.block}`);
+    if (!after.has(entity.key) && entity.expiresAtBlock <= run.block) {
+      add(entity, "expired", `expired at block #${entity.expiresAtBlock}`);
+      events[events.length - 1]!.block = entity.expiresAtBlock;
+    }
   }
   return events;
 }

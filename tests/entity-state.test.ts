@@ -17,6 +17,11 @@ test("filter changes never produce expiration events", () => {
   assert.deepEqual(diffEntities([entity], run([]), false), []);
   assert.deepEqual(diffEntities([entity], run([], 19n), true), []);
 });
+test("a late query reports the authoritative expiration block, not the polling block", () => {
+  const event = diffEntities([entity], run([], 23n), true)[0]!;
+  assert.equal(event.block, 20n);
+  assert.equal(event.detail, "expired at block #20");
+});
 test("extension and patch are detected even when an adapter mutates its entity", () => {
   const current = snapshotEntities([entity])[0]!;
   const before = snapshotEntities([current]);

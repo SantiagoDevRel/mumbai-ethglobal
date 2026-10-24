@@ -11,6 +11,18 @@ import { remainingSeconds } from "../../lib/data/entity-state";
 import { usePrefersReducedMotion } from "../stage/StageFrame";
 import countries from "../../shared/geo/countries.json";
 import { pointInPolygon, type LngLat } from "../../shared/geo/place";
+import { businessPresentation } from "../../lib/data/view-model";
+
+const CATEGORY_PATHS = {
+  cafe: "M4 8h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4ZM16 8h2a3 3 0 0 1 0 6h-2M7 3v2M11 3v2",
+  restaurant: "M4 3v6a3 3 0 0 0 6 0V3M7 3v19M20 22V3c-5 4-5 10 0 10",
+  "street-food": "M3 12h18l-3 8H6ZM7 3l3 6M13 3l3 6",
+  bakery: "M4 11V9a8 6 0 0 1 16 0v2h-2v10H6V11ZM9 6l2 3M14 6l2 3",
+  bookstore: "M3 4h7a3 3 0 0 1 2 2 3 3 0 0 1 2-2h7v16h-7a3 3 0 0 0-2 2 3 3 0 0 0-2-2H3ZM12 6v16",
+  gym: "M6 5v14M3 8v8M18 5v14M21 8v8M6 12h12",
+  market: "M3 8h18l-2 13H5ZM7 8l3-6M17 8l-3-6M9 12v5M15 12v5",
+  bar: "M5 3h14v4a7 7 0 0 1-14 0ZM12 14v8M7 22h10",
+};
 
 export function Globe({ entities, block, state }: { entities: LiveEntity[]; block: BlockInfo | null; state: StageState }) {
   const container = useRef<HTMLDivElement>(null);
@@ -29,6 +41,7 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
     let frame = 0;
     let resize: ResizeObserver | undefined;
     const born = new Map<Hex, number>();
+    const categoryIcons = Object.fromEntries(Object.entries(CATEGORY_PATHS).map(([name, path]) => [name, new Path2D(path)]));
     const leaving = new Map<Hex, { entity: LiveEntity; at: number }>();
     let lastEntities = new Map<Hex, LiveEntity>();
     let hasLanded = false;
@@ -126,7 +139,13 @@ export function Globe({ entities, block, state }: { entities: LiveEntity[]; bloc
             const phase = age < 1000 ? age / 1000 : (now % 1300) / 1300;
             ctx.globalAlpha *= 1 - phase; ctx.beginPath(); ctx.arc(point.x, y, radius + phase * 26, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = exit ? Math.max(0, 1 - (now - exit.at) / 600) : 1;
           }
-          if (state.map === "business") { ctx.fillStyle = "#111111"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText(a.kind === "business" ? a.category.slice(0, 1).toUpperCase() : "C", point.x, y + 4); }
+          if (state.map === "business") {
+            const business = businessPresentation(entity);
+            const rgb = color.slice(1).match(/.{2}/g)?.map((value) => parseInt(value, 16)) ?? [0, 0, 0];
+            ctx.save(); ctx.translate(point.x - 7, y - 7); ctx.scale(14 / 24, 14 / 24); ctx.lineWidth = 2;
+            ctx.strokeStyle = (rgb[0]! * 0.299 + rgb[1]! * 0.587 + rgb[2]! * 0.114) > 150 ? "#111111" : "#f6f4ef";
+            ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke(categoryIcons[business.category]!); ctx.restore();
+          }
           ctx.fillStyle = "#f6f4ef"; ctx.font = `500 13px ${fontFamily}`; ctx.textAlign = "center"; ctx.shadowColor = "#111111"; ctx.shadowBlur = 5;
           ctx.fillText(state.map === "owner" && state.transferred ? `${a.name} · owner` : a.name, point.x, y + radius + 23); ctx.shadowBlur = 0;
         }

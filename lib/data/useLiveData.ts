@@ -6,7 +6,7 @@ import { createMockAdapter } from "../../shared/arkiv/mock";
 import type { ChainFilters, LiveEntity, QueryRun, StageEvent } from "../../shared/types";
 import { blockFeed } from "./block-feed";
 import { diffEntities, snapshotEntities } from "./entity-state";
-import { usePresenterReady, usePresenterToken } from "./presenter-auth";
+import { usePresenterToken } from "./presenter-auth";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { createLiveAdapter } from "./adapter-loader";
@@ -24,7 +24,6 @@ export interface LiveData {
 
 export function useLiveData(filters: ChainFilters, session: string | null): LiveData {
   const token = usePresenterToken();
-  const ready = usePresenterReady();
   const mode = useSourceMode();
   const previous = useRef<{ adapter: ArkivAdapter; queryKey: string; entities: LiveEntity[] } | null>(null);
   const [data, setData] = useState<LiveData>({ adapter: null, source: "mock", run: null, events: [], error: null });
@@ -35,7 +34,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       if (stopped) return;
       try {
         const profile = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
-        const live = mode === "live" || (mode === "auto" && !!WRITER_URL && ready);
+        const live = mode === "live" || (mode === "auto" && !!WRITER_URL);
         const mock = live ? null : createMockAdapter({ autoSpawnMs: 1500 });
         const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: token ? { kind: "proxy", url: WRITER_URL + WRITER_ROUTES.rpc, presenterToken: token } : { kind: "public" } });
         stopMock = mock?.stop;
@@ -48,7 +47,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       } catch (error) { if (!stopped) setData({ adapter: null, source: "live", run: null, events: [], error: error instanceof Error ? error.message : "Network not configured" }); }
     });
     return () => { stopped = true; stopMock?.(); blockFeed.publish(null); };
-  }, [token, ready, mode]);
+  }, [token, mode]);
   const effective = { ...filters, session: data.source === "mock" ? "MOCK" : session ?? "__no_session__" };
   const queryKey = JSON.stringify(effective);
   useEffect(() => {
@@ -62,7 +61,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       try {
         const block = await adapter.getBlock();
         if (stopped) return;
-        blockFeed.publish(block);
+        if (blockFeed.get()?.number !== block.number) blockFeed.publish(block);
         if (block.number !== lastBlock) {
           const run = await queryStage(adapter, parsed);
           if (stopped) return;
