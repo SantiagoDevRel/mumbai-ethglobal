@@ -44,7 +44,7 @@ export function S0(_props: SceneContentProps) {
           </Rise>
         </div>
         <Rise delay={0.5} className="absolute left-[1280px] top-[250px]">
-          <Mascot pose="wave" variant="3d" unit={84} />
+          <Mascot pose="wave" height={720} />
         </Rise>
       </div>
     </MotionConfig>

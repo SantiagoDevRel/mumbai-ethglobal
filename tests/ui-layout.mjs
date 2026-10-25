@@ -210,13 +210,24 @@ try {
   await expect(slides.locator(".join-qr-center")).toBeVisible();
   await slides.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
-  await expect(slides.getByText("[ LIVE ON THE MAP ]")).toBeVisible();
+  await expect(slides.getByText("ON THE MAP →")).toBeVisible();
   await expect(slides.getByRole("heading", { name: "Write it", exact: true })).toBeVisible();
+  // The live card explains the map in plain words, with the 3D mascot.
+  await expect(slides.getByText("Your phone sent one transaction.")).toBeVisible();
+  await expect(slides.getByRole("img", { name: "Arkiv mascot typing on a laptop" })).toBeVisible();
   await expect(page.getByText("The map is a query.")).toBeVisible();
   // Half a screen: the slide keeps 16:9 inside its window, nothing scrolls.
   await slides.setViewportSize({ width: 960, height: 1080 });
   assert.equal(await slides.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   if (capture) await slides.screenshot({ path: path.join(capture, "slides-960x1080-L1.png") });
+  // L8: slides take clicks, and Prizes opens and closes.
+  await commands(page, [{ type: "goto", index: 15 }]);
+  const prizes = slides.getByRole("button", { name: "Prizes" });
+  await expect(prizes).toHaveAttribute("aria-expanded", "false");
+  await prizes.click();
+  await expect(prizes).toHaveAttribute("aria-expanded", "true");
+  await prizes.click();
+  await expect(prizes).toHaveAttribute("aria-expanded", "false");
   // Reset: two clicks start a new writer session and take both windows back to S0.
   await slides.getByRole("button", { name: "Reset", exact: true }).click();
   assert.equal(writerCalls.start, 0, "One click only arms Reset.");

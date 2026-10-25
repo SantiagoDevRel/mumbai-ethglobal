@@ -18,6 +18,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
 import { KEY_HELP } from "../../lib/stage/keyboard";
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
+import type { SceneDef } from "../../shared/scenes";
 import { useScene, useStage } from "../../lib/stage/store";
 
 export const STAGE_W = 1920;
@@ -89,7 +90,7 @@ export function MapFrame({ map, overlay, hud, qr, bar }: { map: ReactNode; overl
   );
 }
 
-export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; liveCard: (props: { title: string }) => ReactNode; qr?: ReactNode; bar?: ReactNode }) {
+export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; liveCard: (props: { scene: SceneDef; step: number }) => ReactNode; qr?: ReactNode; bar?: ReactNode }) {
   const { scene, step } = useScene();
   const reduced = usePrefersReducedMotion();
   const entry = deck[scene.id];
@@ -107,7 +108,7 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
             exit={{ opacity: 0 }}
             transition={{ duration: reduced ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
-            <StageBox>{Content ? <Content scene={scene} step={step} /> : liveCard({ title: scene.title })}</StageBox>
+            <StageBox interactive>{Content ? <Content scene={scene} step={step} /> : liveCard({ scene, step })}</StageBox>
           </motion.div>
         </AnimatePresence>
       </div>

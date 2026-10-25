@@ -1,37 +1,101 @@
 "use client";
 
-// S2 · Open Google Maps (handoff board "S2 · Slide template: the pin, taken apart"). One pin card
-// on top of its heavy photos and videos; → pulls them apart: indexing data (Arkiv) on top,
-// storage (Swarm) underneath.
+// S2 · Open Google Maps. A map with pins and one place card open on it, the way a maps app shows
+// a place: photos and a video on top, name, rating and hours under them. → pulls the card apart:
+// the small fields fly to an Arkiv tray (indexing data), the heavy media to a Swarm tray
+// (storage). The street map is a drawing, not a real map.
 
-import { FileText, Image as ImageIcon, MapPin, Video } from "lucide-react";
+import { Clock, Image as ImageIcon, MapPin, Play, Star } from "lucide-react";
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { EASE, Reveal, Rise, Slide } from "../ui";
+import { EASE, Reveal, Slide, T } from "../ui";
 
-const FIELDS: { key: string; value: string; span?: boolean }[] = [
-  { key: "name", value: "Chai Corner" },
-  { key: "category", value: "cafe" },
-  { key: "rating", value: "4.6" },
-  { key: "hours", value: "7:00–22:00" },
-  { key: "location", value: "18.93, 72.83", span: true },
+const PINS: [x: number, y: number][] = [
+  [150, 120], [330, 80], [520, 150], [700, 90], [250, 300], [610, 330], [770, 260], [420, 250], [120, 420], [760, 430],
 ];
+/** The open place: its pin sits at (470, 150) on the map, above its card. */
+const PICKED = { x: 470, y: 150 };
 
-type Tile = { kind: "photo" | "video" | "file"; cls: string; tone: "stone" | "sand" | "ink"; size: number };
+function StreetMap({ dim }: { dim: boolean }) {
+  return (
+    <motion.div
+      className="absolute left-[96px] top-[390px] h-[640px] w-[880px] overflow-hidden rounded-[24px] border border-[rgba(246,244,239,0.14)] bg-[#141833]"
+      initial={false}
+      animate={{ opacity: dim ? 0.45 : 1 }}
+      transition={{ duration: 0.6, ease: EASE }}
+    >
+      <svg width="880" height="640" viewBox="0 0 880 640" aria-hidden className="absolute inset-0">
+        <path d="M0 520 C 180 470 260 600 520 560 C 700 532 790 600 880 590 L880 640 L0 640 Z" fill="#1d2a5c" />
+        <g stroke="rgba(246,244,239,0.16)" strokeWidth="14" fill="none" strokeLinecap="round">
+          <path d="M-20 200 C 200 180 420 240 900 170" />
+          <path d="M300 -20 C 280 200 360 380 330 660" />
+          <path d="M640 -20 C 600 160 690 330 610 520" />
+        </g>
+        <g stroke="rgba(246,244,239,0.08)" strokeWidth="6" fill="none">
+          <path d="M-20 360 L 900 380" />
+          <path d="M120 -20 L 160 520" />
+          <path d="M480 -20 L 470 560" />
+          <path d="M-20 80 L 900 60" />
+          <path d="M780 -20 L 820 560" />
+        </g>
+      </svg>
+      {PINS.map(([x, y], i) => (
+        <motion.div
+          key={i}
+          className="absolute"
+          style={{ left: x - 18, top: y - 40 }}
+          initial={{ opacity: 0, y: -14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 + i * 0.05, ease: EASE }}
+        >
+          <MapPin size={36} strokeWidth={1.75} fill="#627EEA" className="text-[var(--arkiv-sand)]" />
+        </motion.div>
+      ))}
+      <motion.div className="absolute" style={{ left: PICKED.x - 30, top: PICKED.y - 66 }} animate={{ y: [0, -8, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}>
+        <MapPin size={60} strokeWidth={1.5} fill="#FE7446" className="text-[var(--arkiv-sand)]" />
+      </motion.div>
+    </motion.div>
+  );
+}
 
-const TILES: Tile[] = [
-  { kind: "photo", cls: "col-span-2 row-span-2", tone: "stone", size: 96 },
-  { kind: "video", cls: "col-span-2", tone: "ink", size: 72 },
-  { kind: "photo", cls: "", tone: "stone", size: 56 },
-  { kind: "photo", cls: "", tone: "sand", size: 56 },
-  { kind: "photo", cls: "", tone: "sand", size: 56 },
-  { kind: "video", cls: "col-span-2", tone: "ink", size: 72 },
-  { kind: "file", cls: "", tone: "stone", size: 56 },
-];
+const MEDIA = [
+  { kind: "photo", tint: "linear-gradient(135deg,#fe7446,#7a2d14)" },
+  { kind: "video", tint: "linear-gradient(135deg,#181ea9,#08091f)" },
+  { kind: "photo", tint: "linear-gradient(135deg,#627eea,#1c1f4a)" },
+] as const;
 
-function TileIcon({ kind, size, ink }: { kind: Tile["kind"]; size: number; ink: boolean }) {
-  const Icon = kind === "video" ? Video : kind === "file" ? FileText : ImageIcon;
-  return <Icon size={size} strokeWidth={1.25} className={ink ? "text-[var(--arkiv-sand)]" : "text-[var(--arkiv-ink)]"} aria-hidden />;
+/** The heavy part of the place card: two photos and a video. */
+function Media() {
+  return (
+    <div className="flex gap-3">
+      {MEDIA.map((m, i) => (
+        <div key={i} className="relative flex h-[140px] w-[210px] items-center justify-center rounded-[12px]" style={{ background: m.tint }}>
+          {m.kind === "video" ? (
+            <span className="flex h-[60px] w-[60px] items-center justify-center rounded-full bg-[rgba(246,244,239,0.9)]">
+              <Play size={28} fill="#111111" className="ml-0.5 text-[var(--arkiv-ink)]" aria-hidden />
+            </span>
+          ) : (
+            <ImageIcon size={44} strokeWidth={1.4} className="text-[rgba(246,244,239,0.8)]" aria-hidden />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The light part of the place card: what you search and filter on. */
+function Fields() {
+  return (
+    <div className="flex flex-col gap-2 text-[var(--arkiv-ink)]">
+      <p className="text-[40px] font-bold leading-none">Chai Corner</p>
+      <p className="flex items-center gap-2 text-[26px]">
+        4.6 <Star size={24} fill="#FE7446" className="text-[var(--arkiv-orange)]" aria-hidden /> · Cafe · Colaba
+      </p>
+      <p className="flex items-center gap-2 text-[24px] text-[rgba(17,17,17,0.64)]">
+        <Clock size={22} aria-hidden /> Open until 22:00
+      </p>
+    </div>
+  );
 }
 
 export function S2({ step }: SceneContentProps) {
@@ -47,56 +111,51 @@ export function S2({ step }: SceneContentProps) {
         </>
       }
       under="The pin is tiny. The photos are huge. They live in different places."
-      wash={0.8}
+      wash={0.82}
     >
-      {/* Storage: the heavy layer */}
+      <StreetMap dim={apart} />
+
+      {/* Trays, revealed on → */}
+      <Reveal step={step} at={1} className="absolute left-[1040px] top-[390px] h-[300px] w-[784px] rounded-[24px] border-[3px] border-[var(--arkiv-blue)] bg-[rgba(24,30,169,0.28)]">
+        <span className="absolute -top-[22px] left-[28px] rounded-full bg-[var(--arkiv-blue)] px-5 py-1.5 text-[26px] font-bold tracking-[0.04em] text-[var(--arkiv-sand)]">INDEXING DATA → Arkiv</span>
+        <span className="absolute bottom-[22px] left-[32px] text-[24px]" style={{ color: T.t84 }}>
+          Small. What you search and filter on.
+        </span>
+      </Reveal>
+      <Reveal step={step} at={1} className="absolute left-[1040px] top-[730px] h-[300px] w-[784px] rounded-[24px] border-[3px] border-[rgba(233,230,222,0.6)] bg-[rgba(233,230,222,0.1)]">
+        <span className="absolute -top-[22px] left-[28px] rounded-full bg-[var(--arkiv-stone)] px-5 py-1.5 text-[26px] font-bold tracking-[0.04em] text-[var(--arkiv-ink)]">STORAGE → Swarm</span>
+        <span className="absolute bottom-[22px] left-[32px] text-[24px]" style={{ color: T.t84 }}>
+          Heavy. Photos and videos, about 1.4 GB.
+        </span>
+      </Reveal>
+
+      {/* The place card: one card on the map, two pieces after → */}
       <motion.div
-        className="absolute left-[224px] top-[656px] grid h-[360px] w-[1320px] grid-cols-6 grid-rows-2 gap-4 rounded-[24px] border p-6"
-        style={{ background: "rgba(233,230,222,0.10)", borderColor: "rgba(246,244,239,0.18)" }}
-        initial={false}
-        animate={{ y: apart ? 0 : -150, opacity: apart ? 1 : 0.7 }}
+        className="absolute z-10 rounded-[20px] bg-[var(--arkiv-sand)] px-7 py-6 shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
+        initial={{ opacity: 0, left: 250, top: 812 }}
+        animate={apart ? { opacity: 1, left: 1080, top: 430 } : { opacity: 1, left: 250, top: 812 }}
         transition={{ duration: 0.8, ease: EASE }}
       >
-        {TILES.map((t, i) => (
-          <div
-            key={i}
-            className={`flex items-center justify-center rounded-[12px] border ${t.cls} ${t.tone === "ink" ? "bg-[var(--arkiv-ink)] border-[rgba(246,244,239,0.2)]" : t.tone === "sand" ? "bg-[var(--arkiv-sand)] border-[rgba(17,17,17,0.12)]" : "bg-[var(--arkiv-stone)] border-[rgba(17,17,17,0.12)]"}`}
+        <div className="flex items-center gap-6">
+          <Fields />
+          <motion.span
+            className="ml-4 rounded-[10px] bg-[rgba(24,30,169,0.1)] px-3 py-2 font-mono text-[20px] text-[var(--arkiv-blue)]"
+            initial={false}
+            animate={{ opacity: apart ? 1 : 0, width: apart ? "auto" : 0 }}
+            transition={{ duration: 0.5, delay: apart ? 0.6 : 0, ease: EASE }}
           >
-            <TileIcon kind={t.kind} size={t.size} ink={t.tone === "ink"} />
-          </div>
-        ))}
-      </motion.div>
-
-      {/* The dashed link from the pin to its photos */}
-      <Reveal step={step} at={1} y={0} className="absolute left-[899px] top-[600px] h-[56px] border-l-[3px] border-dashed border-[rgba(246,244,239,0.5)]">
-        <span />
-      </Reveal>
-
-      {/* Indexing data: the tiny pin card */}
-      <Rise delay={0.2} className="absolute left-[520px] top-[424px] z-10">
-        <div className="flex h-[176px] w-[760px] items-center gap-7 rounded-[20px] bg-[var(--arkiv-sand)] px-8 py-6 shadow-[0_24px_60px_rgba(0,0,0,0.5)]">
-          <MapPin size={72} strokeWidth={1.5} fill="#FE7446" className="shrink-0 text-[var(--arkiv-ink)]" aria-hidden />
-          <div className="grid flex-1 grid-cols-3 gap-x-7 gap-y-3">
-            {FIELDS.map((f) => (
-              <div key={f.key} className={`flex flex-col gap-0.5 ${f.span ? "col-span-2" : ""}`}>
-                <span className="font-mono text-[16px] text-[rgba(17,17,17,0.56)]">{f.key}</span>
-                <span className="text-[26px] font-semibold text-[var(--arkiv-ink)]">{f.value}</span>
-              </div>
-            ))}
-          </div>
+            photos: swarm://3f…a1
+          </motion.span>
         </div>
-      </Rise>
-
-      <Reveal step={step} at={1} className="absolute left-[1312px] top-[482px]">
-        <span className="inline-flex items-center gap-3 rounded-full bg-[var(--arkiv-blue)] px-5 py-2.5 text-[26px] font-bold tracking-[0.04em] text-[var(--arkiv-sand)]">
-          INDEXING DATA <span aria-hidden>→</span> Arkiv
-        </span>
-      </Reveal>
-      <Reveal step={step} at={1} className="absolute right-[32px] top-[800px]">
-        <span className="inline-flex items-center gap-3 whitespace-nowrap rounded-full bg-[var(--arkiv-stone)] px-5 py-2.5 text-[26px] font-bold tracking-[0.04em] text-[var(--arkiv-ink)]">
-          STORAGE <span aria-hidden>→</span> Swarm
-        </span>
-      </Reveal>
+      </motion.div>
+      <motion.div
+        className="absolute z-10 rounded-[20px] bg-[rgba(17,17,17,0.85)] p-4 shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
+        initial={{ opacity: 0, left: 250, top: 630 }}
+        animate={apart ? { opacity: 1, left: 1080, top: 770 } : { opacity: 1, left: 250, top: 630 }}
+        transition={{ duration: 0.8, delay: apart ? 0.15 : 0, ease: EASE }}
+      >
+        <Media />
+      </motion.div>
     </Slide>
   );
 }

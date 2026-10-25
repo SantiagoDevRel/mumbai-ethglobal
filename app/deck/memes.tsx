@@ -1,152 +1,98 @@
 "use client";
 
 // Original illustrations that borrow only the layout idea of known meme formats, starring the
-// Arkiv mascot (app/deck/Mascot.tsx). No third-party meme images, no original artwork
-// traced, no format names on screen. Palette only; props sit beside the mascot, never on it.
+// 3D Arkiv mascot (app/deck/Mascot.tsx). No third-party meme images, no format names on screen.
 
-import { Lock, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useStage } from "../../lib/stage/store";
 import { Mascot, type MascotPose } from "./Mascot";
 import { EASE, T } from "./ui";
 
+type MemeCell = { text: string; visual: ReactNode };
+
 /**
- * Reject / approve on a 2x2 grid (handoff board "S1 · Meme style"): the mascot saying nope on
- * Stone, then pointing on Sand, each beside its line of text. Ink rules between the cells.
+ * Thumbs down / thumbs up on a 2x2 grid: the 3D mascot on the left of each row, the line and its
+ * little animation on the right. Stone for the bad way, Sand for the good one; Ink rules between.
  */
-export function RejectApproveMeme({ no, yes }: { no: string; yes: string }) {
-  const cell = (good: boolean) => (
-    <>
-      <motion.div
-        className={`flex items-center justify-center border-r-[3px] border-[var(--arkiv-ink)] ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] bg-[var(--arkiv-stone)]"}`}
-        initial={{ opacity: 0, x: -24 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5, delay: good ? 0.5 : 0, ease: EASE }}
-      >
-        <Mascot pose={good ? "point" : "nope"} unit={34} on="light" />
-      </motion.div>
-      <motion.div
-        className={`flex flex-col justify-center gap-5 p-10 ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] border-[var(--arkiv-ink)] bg-[var(--arkiv-stone)]"}`}
-        initial={{ opacity: 0, x: 24 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.5, delay: good ? 0.6 : 0.1, ease: EASE }}
-      >
-        {good ? (
-          <ThumbsUp size={48} strokeWidth={2} className="text-[var(--arkiv-orange)]" aria-label="Yes" role="img" />
-        ) : (
-          <ThumbsDown size={48} strokeWidth={2} className="text-[var(--arkiv-ink)]" aria-label="No" role="img" />
-        )}
-        <p className="text-[44px] font-semibold leading-[1.15] text-[var(--arkiv-ink)]">{good ? yes : no}</p>
-      </motion.div>
-    </>
-  );
-  return (
-    <div className="grid h-[772px] w-[912px] grid-cols-2 grid-rows-2 overflow-hidden rounded-[20px] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
-      {cell(false)}
-      {cell(true)}
-    </div>
-  );
-}
-
-/** One original three-lobed flame, Orange with a Sand inner tongue. Only the flame moves. */
-function Flame({ x, h, delay }: { x: number; h: number; delay: number }) {
-  const w = h * 0.62;
-  return (
-    <motion.svg
-      className="absolute bottom-0"
-      style={{ left: x, transformOrigin: "50% 100%" }}
-      width={w}
-      height={h}
-      viewBox="0 0 62 100"
-      animate={{ scaleY: [1, 1.06, 0.92, 1.04, 1], skewX: [0, 2, -2, 1, 0] }}
-      transition={{ duration: 1.2, delay, repeat: Infinity, ease: "easeInOut" }}
-      aria-hidden
-    >
-      <path d="M31 0 C 40 22 62 38 58 66 C 56 86 44 100 31 100 C 18 100 6 86 4 66 C 2 50 14 44 18 28 C 22 40 26 42 28 36 C 30 26 26 12 31 0 Z" fill="#FE7446" />
-      <path d="M31 42 C 37 56 46 64 44 78 C 43 90 37 96 31 96 C 25 96 19 90 18 80 C 17 70 24 64 31 42 Z" fill="#F6F4EF" opacity={0.85} />
-    </motion.svg>
-  );
-}
-
-/** Calm in a burning room: the mascot stands next to the company server while it burns. */
-export function CalmRoom() {
-  const flames: [number, number][] = [
-    [-10, 150], [40, 200], [100, 140], [560, 170], [610, 210], [650, 150],
-  ];
-  return (
-    <div className="relative h-[470px] w-[720px] overflow-hidden rounded-[20px] border border-[rgba(246,244,239,0.12)] bg-[var(--arkiv-ink)]">
-      {/* smoke */}
-      {[[90, 30, 70], [230, 10, 90], [420, 24, 80], [580, 8, 100]].map(([x, y, r], i) => (
+export function ThumbsMeme({ no, yes }: { no: MemeCell; yes: MemeCell }) {
+  const row = (good: boolean) => {
+    const cell = good ? yes : no;
+    return (
+      <>
         <motion.div
-          key={i}
-          className="absolute rounded-full bg-[var(--arkiv-stone)]"
-          style={{ left: x, top: y, width: r, height: r, opacity: 0.08 }}
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 4, delay: i * 0.5, repeat: Infinity, ease: "easeInOut" }}
-        />
-      ))}
-      {/* floor */}
-      <div className="absolute bottom-[56px] left-0 right-0 h-[2px] bg-[var(--arkiv-stone)]/40" />
-      {/* server rack with the company padlock */}
-      <div className="absolute bottom-[58px] left-[130px] flex h-[260px] w-[150px] flex-col gap-3 rounded-[12px] bg-[var(--arkiv-stone)] p-3">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="flex h-[44px] items-center gap-2 rounded-[6px] bg-[var(--arkiv-ink)] px-3">
-            <motion.span
-              className="h-[9px] w-[9px] rounded-full bg-[var(--arkiv-orange)]"
-              animate={{ opacity: [1, 0.2, 1] }}
-              transition={{ duration: 0.7, delay: i * 0.2, repeat: Infinity }}
-            />
-            <span className="h-[4px] flex-1 rounded bg-[var(--arkiv-stone)]/30" />
-          </div>
-        ))}
-        <div className="absolute -right-[26px] top-[90px] flex h-[56px] w-[56px] items-center justify-center rounded-[12px] bg-[var(--arkiv-sand)] text-[var(--arkiv-blue)] shadow-lg">
-          <Lock size={32} strokeWidth={2.4} />
-        </div>
-      </div>
-      {/* the mascot, calm, with a mug on a side table beside it */}
-      <div className="absolute bottom-[56px] left-[292px]">
-        <Mascot pose="stand" unit={28} />
-      </div>
-      <div className="absolute bottom-[56px] left-[545px] h-[90px] w-[8px] bg-[var(--arkiv-stone)]/70" />
-      <div className="absolute bottom-[146px] left-[515px] h-[8px] w-[70px] rounded bg-[var(--arkiv-stone)]/70" />
-      <div className="absolute bottom-[154px] left-[535px] h-[30px] w-[26px] rounded-b-[6px] bg-[var(--arkiv-sand)]" />
-      {/* speech bubble */}
-      <div className="absolute left-[420px] top-[56px] rounded-[16px] bg-[var(--arkiv-sand)] px-6 py-3 text-[30px] font-semibold text-[var(--arkiv-ink)]">
-        This is fine.
-        <span className="absolute -bottom-[12px] left-[30px] h-0 w-0 border-l-[12px] border-r-[12px] border-t-[14px] border-l-transparent border-r-transparent border-t-[var(--arkiv-sand)]" />
-      </div>
-      {flames.map(([x, h], i) => (
-        <Flame key={i} x={x} h={h} delay={i * 0.17} />
-      ))}
-    </div>
-  );
-}
-
-/** "Nobody: / Arkiv:" post, the mascot deadpan next to an EVM box that fades away. */
-export function NobodyMeme() {
-  return (
-    <div className="relative w-[640px] rounded-[20px] bg-[var(--arkiv-sand)] p-9 text-[var(--arkiv-ink)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
-      <p className="text-[34px]">Nobody:</p>
-      <p className="mt-4 text-[34px] leading-tight">
-        <span className="font-semibold">Arkiv:</span> removes the EVM on purpose
-      </p>
-      <div className="relative mt-5 flex h-[260px] items-end gap-10 rounded-[12px] bg-[var(--arkiv-ink)] px-8 pb-4">
-        <Mascot pose="stand" unit={24} />
-        <motion.div
-          className="mb-6 flex h-[100px] w-[180px] items-center justify-center gap-3 rounded-[12px] border-2 border-[rgba(246,244,239,0.64)] font-mono text-[40px] font-semibold text-[rgba(246,244,239,0.64)]"
-          initial={{ opacity: 1, y: 0 }}
-          animate={{ opacity: [1, 1, 0.5], y: [0, 0, 16] }}
-          transition={{ duration: 2.6, times: [0, 0.45, 1], repeat: Infinity, repeatDelay: 1.4, ease: EASE }}
+          className={`flex items-end justify-center overflow-hidden border-r-[3px] border-[var(--arkiv-ink)] pt-4 ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] bg-[var(--arkiv-stone)]"}`}
+          initial={{ opacity: 0, x: -24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: good ? 0.5 : 0, ease: EASE }}
         >
-          EVM <X size={34} strokeWidth={3} className="text-[var(--arkiv-orange)]" />
+          <Mascot pose={good ? "thumbsUp" : "thumbsDown"} height={360} />
         </motion.div>
+        <motion.div
+          className={`flex flex-col justify-center gap-5 px-9 py-8 ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] border-[var(--arkiv-ink)] bg-[var(--arkiv-stone)]"}`}
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: good ? 0.6 : 0.1, ease: EASE }}
+        >
+          <span className="flex items-center gap-4">
+            {good ? (
+              <ThumbsUp size={44} strokeWidth={2} className="shrink-0 text-[var(--arkiv-orange)]" aria-label="Yes" role="img" />
+            ) : (
+              <ThumbsDown size={44} strokeWidth={2} className="shrink-0 text-[var(--arkiv-ink)]" aria-label="No" role="img" />
+            )}
+            <span className="text-[36px] font-semibold leading-[1.12] text-[var(--arkiv-ink)]">{cell.text}</span>
+          </span>
+          {cell.visual}
+        </motion.div>
+      </>
+    );
+  };
+  return (
+    <div className="grid h-[800px] w-[912px] grid-cols-[340px_1fr] grid-rows-2 overflow-hidden rounded-[20px] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+      {row(false)}
+      {row(true)}
+    </div>
+  );
+}
+
+/** "Disaster" composition: the mascot scared in front of the company server on fire. */
+export function ServerOnFire() {
+  return (
+    <div className="relative h-[700px] w-[1728px] overflow-hidden rounded-[24px] border border-[rgba(246,244,239,0.12)] bg-[var(--arkiv-ink)]">
+      {/* eslint-disable-next-line @next/next/no-img-element -- fixed illustration, cropped by the frame */}
+      <img src="/deck/mascot/arkiv-mascot-server-fire.webp" alt="The mascot, scared, in front of a burning server building" className="absolute inset-0 h-full w-full object-cover object-[50%_40%]" draggable={false} />
+      <div className="absolute inset-x-0 bottom-0 h-[260px] bg-[linear-gradient(0deg,rgba(8,9,31,0.92)_0%,rgba(8,9,31,0)_100%)]" />
+      <motion.div
+        className="absolute left-[56px] top-[48px] flex items-center gap-4"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.6, ease: EASE }}
+      >
+        <span className="rounded-full bg-[var(--arkiv-sand)] px-6 py-2.5 text-[34px] font-bold text-[var(--arkiv-ink)] shadow-[0_8px_24px_rgba(0,0,0,0.5)]">your centralized server</span>
+        <svg width="120" height="80" viewBox="0 0 120 80" aria-hidden>
+          <path d="M4 10 C 60 6 96 26 108 66" fill="none" stroke="#F6F4EF" strokeWidth="5" strokeLinecap="round" />
+          <path d="M94 58 L108 70 L114 52" fill="none" stroke="#F6F4EF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </motion.div>
+      <div className="absolute bottom-[40px] left-[56px] flex gap-4">
+        {["Server down.", "Rules changed.", "Data gone."].map((line, i) => (
+          <motion.span
+            key={line}
+            className="rounded-[12px] bg-[var(--arkiv-orange)] px-6 py-3 text-[40px] font-bold text-[var(--arkiv-ink)]"
+            initial={{ opacity: 0, y: 16, rotate: 0 }}
+            animate={{ opacity: 1, y: 0, rotate: i === 1 ? 1.5 : -1.5 }}
+            transition={{ duration: 0.4, delay: 1 + i * 0.35, ease: EASE }}
+          >
+            {line}
+          </motion.span>
+        ))}
       </div>
     </div>
   );
 }
 
-const SLOT_POSES: MascotPose[] = ["stand", "wave", "point"];
+const SLOT_POSES: MascotPose[] = ["stand", "wave", "thumbsUp"];
 
 /**
  * Game-style select panel (handoff board "S7 · Doors open"): "Choose your lifespan." The Orange
@@ -183,7 +129,7 @@ export function CharacterSelect({ lifespans, maxSec }: { lifespans: { label: str
                   transition={{ type: "spring", stiffness: 500, damping: 34 }}
                 />
               ) : null}
-              <Mascot pose={SLOT_POSES[i % SLOT_POSES.length]} unit={15} />
+              <Mascot pose={SLOT_POSES[i % SLOT_POSES.length]!} height={150} />
               <p className={`font-mono text-[24px] font-semibold ${isSel ? "text-[var(--arkiv-orange)]" : ""}`}>{label}</p>
             </div>
           );

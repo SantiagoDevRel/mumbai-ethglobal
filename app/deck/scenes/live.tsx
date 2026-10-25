@@ -129,7 +129,7 @@ export function L9(_props: SceneContentProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.7, ease: EASE }}
       >
-        <Mascot pose="wave" variant="3d" unit={25} />
+        <Mascot pose="wave" height={240} />
       </motion.div>
     </OverlayShell>
   );

@@ -57,4 +57,4 @@ Arkiv testnet: everything written here is public.
 
 The MIT license covers the code. The Arkiv logos and brand assets in `public/brand/` belong to Golem Factory and are not covered by it.
 
-The mascot art in `public/deck/mascot/` is a proposal pending brand review and is not covered by the MIT license.
+The mascot art in `public/deck/mascot/` (3D renders made with ChatGPT image generation from the team's reference art) is a proposal pending brand review and is not covered by the MIT license.

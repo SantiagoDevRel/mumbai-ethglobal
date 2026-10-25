@@ -10,28 +10,28 @@ export const NOTES: Record<SceneId, string[]> = {
     "Start the session first (Workshop writer). The phone shows a waiting room. → starts the timer.",
   ],
   S1: [
-    "Storage keeps the bytes. Indexing data helps you find them: a photo album vs one index card.",
-    "Step 2 · the mascot meme: scroll through gigabytes of videos vs search a tiny card.",
+    "Storage keeps the heavy files: videos scroll past one by one. Indexing is the tiny cards, sorted so you can find things.",
+    "Step 2 · the thumbs meme on Google Maps: scroll a thousand places vs ask once, \"cafe, open now, 4.5 stars or more\", one answer.",
   ],
   S2: [
-    "When you filter 'cafés, open now, 4 stars or more', you search the pins, never the photos.",
-    "Step 2 · the pin pulls apart: indexing data on top (Arkiv), storage underneath (Swarm).",
+    "Open a place on Google Maps: photos and a video on top, name, rating and hours under them. When you filter, you search the small part, never the photos.",
+    "Step 2 · the card pulls apart: the small fields fly to Arkiv (indexing data), the photos and video to Swarm (storage).",
   ],
   S3: [
-    "Keep this picture. In three minutes you'll be one of these.",
-    "Step 2 · Arkiv's fields underneath and the milk carton: best before block #…",
+    "Every entity starts with Arkiv's fields: its key, its owner and creator (both wallets) and when it expires.",
+    "Step 2 · then your attributes underneath: whatever your app needs. Keep this picture: in three minutes you'll be one of these.",
   ],
   S4: [
-    "Same idea you know: tables and queries. The difference is where it lives and who controls it.",
-    "Step 2 · the DB-Chain side: every write is a transaction, anyone can query, owners are wallets.",
+    "The problem first: your data sits on one company's server. Server down, rules changed, data gone.",
+    "Step 2 · the answer, on its own: you query Arkiv like a database, and the table lives on a DB-Chain. Every write is a transaction, anyone can query, owners are wallets.",
   ],
   S5: [
-    "You don't write Solidity. You write entities and query them.",
-    "The block counter is live from the chain; the block time is measured, not typed in.",
-    "Step 2 · the meme: Nobody: / Arkiv: removes the EVM on purpose.",
+    "You don't write Solidity. You write entities, query them, and decide who owns them.",
+    "The green dot blinks with the real latest block.",
+    "Step 2 · own it, or give it to every user: the same four entities owned by your app's wallet, then each by its own user.",
   ],
   S6: [
-    "Four tiles, one per →: Write it, Query it, Own it, Expire it.",
+    "Four tiles, one per →, each with a tiny example under it: writing an entity, a simple query, the owner changing hands, an entity expiring.",
     "Let's do all four. Live. With you.",
   ],
   S7: [
@@ -57,7 +57,7 @@ export const NOTES: Record<SceneId, string[]> = {
     "Honest limit, on the query panel's app-side line: No ORDER BY. Your app sorts.",
   ],
   L4: [
-    "Step 1 · Pick a dot and extend it first: \"let's keep this one alive while we look.\" Your columns vs Arkiv fields.",
+    "Step 1 · Pick a dot and extend it first: \"let's keep this one alive while we look.\" Your attributes vs Arkiv fields. The slides half explains each field as you step.",
     "Step 2 · $key: its address, forever.",
     "Step 3 · $creator: who wrote it, never changes.",
     "Step 4 · $owner: who controls it, can change.",
@@ -76,11 +76,10 @@ export const NOTES: Record<SceneId, string[]> = {
     "Demo view: nothing on-chain changes. In your app: changeOwnership for each entity, or one executeBatch.",
   ],
   L7: [
-    "This is the code that ran today. Copy it.",
-    "Write, extend and query are the calls that ran (the create shows sample values; the query is today's session). Own it is marked not run today: today's finale was a demo view, this is the call for your app.",
+    "Everything you just did, in plain words: you wrote an entity, the map queried it, owners are wallets, and it expires on time.",
   ],
   L8: [
-    "Docs, the Arkiv AI plugin (your agent already knows Arkiv), the Arkiv MCP.",
+    "Docs, the Hub, AI tools (your agent already knows Arkiv) and Prizes. Click Prizes to open it (empty until the prizes are final).",
     "The QR now says Start building: the same URL opens the resources on their phones.",
   ],
   L9: [
@@ -92,11 +91,11 @@ export const NOTES: Record<SceneId, string[]> = {
 /** What → reveals from each step, for every step but the last (the last → goes to the next scene). */
 export const REVEALS: Record<SceneId, string[]> = {
   S0: [],
-  S1: ["the meme: gigabytes of videos vs a tiny card"],
-  S2: ["the pin pulled apart: indexing data (Arkiv) on top, storage (Swarm) underneath"],
-  S3: ["Arkiv's fields under your columns and the milk carton"],
-  S4: ["the DB-Chain side: the same table held by blocks"],
-  S5: ["the meme: Nobody: / Arkiv: removes the EVM on purpose"],
+  S1: ["the thumbs meme: scroll a thousand places vs one query"],
+  S2: ["the place card pulled apart: indexing data to Arkiv, storage to Swarm"],
+  S3: ["your attributes under Arkiv's fields"],
+  S4: ["the answer: query like a database, the table on a DB-Chain"],
+  S5: ["own it, or give it to every user"],
   S6: ["tile 2 · Query it", "tile 3 · Own it", "tile 4 · Expire it, and \"Let's do all four\""],
   S7: [],
   L1: [],
