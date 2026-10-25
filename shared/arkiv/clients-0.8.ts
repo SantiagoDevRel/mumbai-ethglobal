@@ -9,7 +9,30 @@ export interface SendJournal {
   beforeSend(raw: Hex, hash: Hex): Promise<void>;
 }
 
-export type RpcObserver = (event: { method: string; phase: "request" | "response" | "error"; httpStatus?: number; rpcCode?: number }) => void;
+export type RpcObserver = (event: { method: string; phase: "request" | "response" | "error"; httpStatus?: number; rpcCode?: number; viaPublic?: boolean }) => void;
+
+// The access key has a monthly quota. Once it is used up, every keyed call answers 429
+// QUOTA_EXCEEDED until the quota resets, so the server retries on the profile's public RPC and
+// stays there for ten minutes before trying the key again. A plain burst limit (429 without
+// QUOTA_EXCEEDED) is not retried: the public RPC's own limit is lower.
+const KEY_RETRY_MS = 10 * 60_000;
+let keyRetryAt = 0;
+/** True while keyed calls go to the public RPC because the key's quota is used up. */
+export function keyQuotaExhausted(): boolean { return Date.now() < keyRetryAt; }
+async function quotaExhausted(response: Response): Promise<boolean> {
+  if (response.headers.get("arkiv-quota-used-percent") === "100") return true;
+  try { return (await response.json() as { error?: unknown }).error === "QUOTA_EXCEEDED"; } catch { return false; }
+}
+/** POSTs one JSON-RPC body with the access key, or on the public RPC while the key's quota is used up. */
+export async function postKeyed(url: string, accessKey: string, publicUrl: string, body: string, signal: AbortSignal): Promise<{ response: Response; viaPublic: boolean }> {
+  const init = (headers: Record<string, string>): RequestInit => ({ method: "POST", headers: { "content-type": "application/json", ...headers }, body, signal });
+  if (!keyQuotaExhausted()) {
+    const response = await fetch(url, init({ "X-API-KEY": accessKey }));
+    if (response.status !== 429 || !await quotaExhausted(response.clone())) return { response, viaPublic: false };
+    keyRetryAt = Date.now() + KEY_RETRY_MS;
+  }
+  return { response: await fetch(publicUrl, init({})), viaPublic: true };
+}
 
 export function createSdkClients(options: AdapterOptions, journal?: SendJournal, observe?: RpcObserver) {
   const { profile, read } = options;
@@ -36,21 +59,20 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal,
         try { return await read.send(method, params ?? []); } catch (error) { observe?.({ method, phase: "error" }); throw error; }
       }
       const headers: Record<string, string> = { "content-type": "application/json" };
-      if (read.kind === "keyed") headers["X-API-KEY"] = read.accessKey;
       if (read.kind === "proxy") headers.authorization = `Bearer ${read.presenterToken}`;
       observe?.({ method, phase: "request" });
       try {
-      const response = await fetch(url, {
-        method: "POST", headers,
-        body: JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params: params ?? [] }),
-        signal: AbortSignal.timeout(20_000),
-      });
+      const payload = JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params: params ?? [] });
+      const signal = AbortSignal.timeout(20_000);
+      const { response, viaPublic } = read.kind === "keyed"
+        ? await postKeyed(url, read.accessKey, profile.rpcHttp, payload, signal)
+        : { response: await fetch(url, { method: "POST", headers, body: payload, signal }), viaPublic: false };
       if (!response.ok) {
-        observe?.({ method, phase: "response", httpStatus: response.status });
+        observe?.({ method, phase: "response", httpStatus: response.status, viaPublic });
         throw new Error(`RPC request rejected (${response.status}).`);
       }
       const body = await response.json() as { result?: unknown; error?: { code: number; message: string; data?: unknown } };
-      observe?.({ method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code });
+      observe?.({ method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code, viaPublic });
       if (body.error) {
         const error = new Error(body.error.message) as Error & { code: number; data?: unknown };
         error.code = body.error.code;
@@ -70,8 +92,13 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal,
     cacheTime: 0,
     pollingInterval: 500,
   }) : undefined;
+  // A matching chain ID is trusted for a minute: the stage polls every block, and asking again on
+  // every read tripled its RPC calls.
+  let networkCheckedAt = 0;
   async function checkNetwork() {
+    if (Date.now() - networkCheckedAt < 60_000) return;
     if (await reader.getChainId() !== profile.chainId) throw new NetworkNotConfiguredError("chain ID mismatch");
+    networkCheckedAt = Date.now();
   }
   return { reader, writer, checkNetwork };
 }

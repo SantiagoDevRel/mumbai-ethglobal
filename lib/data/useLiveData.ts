@@ -13,6 +13,7 @@ import { createLiveAdapter } from "./adapter-loader";
 import { queryStage } from "./query-stage";
 import { SEED_BUSINESSES } from "../../shared/data/seed-businesses";
 import { isMockSource, useSourceMode } from "./source-mode";
+import { stage } from "../stage/store";
 
 export interface LiveData {
   adapter: ArkivAdapter | null;
@@ -20,6 +21,32 @@ export interface LiveData {
   run: QueryRun | null;
   events: VisualStageEvent[];
   error: string | null;
+  /** Reads are paused to save the access key's quota (see useReadsAwake). */
+  paused: boolean;
+}
+
+// Every query spends the access key's monthly quota (100 units each), and a /map left open for a
+// day used all of it. Reads pause while this window is hidden or after 20 minutes without a scene
+// change, key, click or touch, and resume on the next one.
+const IDLE_MS = 20 * 60_000;
+function useReadsAwake(): boolean {
+  const [awake, setAwake] = useState(true);
+  useEffect(() => {
+    let last = Date.now();
+    const check = () => setAwake(document.visibilityState === "visible" && Date.now() - last < IDLE_MS);
+    const touch = () => { last = Date.now(); check(); };
+    const inputs = ["keydown", "pointerdown", "wheel", "touchstart"] as const;
+    for (const input of inputs) window.addEventListener(input, touch, { passive: true });
+    document.addEventListener("visibilitychange", check);
+    const unsubscribe = stage.subscribe(touch);
+    const timer = setInterval(check, 30_000);
+    return () => {
+      for (const input of inputs) window.removeEventListener(input, touch);
+      document.removeEventListener("visibilitychange", check);
+      unsubscribe(); clearInterval(timer);
+    };
+  }, []);
+  return awake;
 }
 
 /** viem wraps transport errors ("An unknown RPC error occurred. Details: …"); the projector shows only the cause. */
@@ -32,7 +59,8 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
   const token = usePresenterToken() ?? "";
   const mode = useSourceMode();
   const previous = useRef<{ adapter: ArkivAdapter; queryKey: string; entities: LiveEntity[] } | null>(null);
-  const [data, setData] = useState<LiveData>({ adapter: null, source: "mock", run: null, events: [], error: null });
+  const awake = useReadsAwake();
+  const [data, setData] = useState<Omit<LiveData, "paused">>({ adapter: null, source: "mock", run: null, events: [], error: null });
   useEffect(() => {
     let stopped = false;
     let stopMock: (() => void) | undefined;
@@ -58,7 +86,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
   const queryKey = JSON.stringify(effective);
   useEffect(() => {
     const adapter = data.adapter;
-    if (!adapter) return;
+    if (!adapter || !awake) return;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     let lastBlock: bigint | null = null;
@@ -80,10 +108,11 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       } catch (error) {
         if (!stopped) setData((old) => ({ ...old, error: readError(error) }));
       }
-      if (!stopped) timer = setTimeout(tick, 1000);
+      // Tiramisu makes a block every 2 s; polling faster only spent the access key's quota.
+      if (!stopped) timer = setTimeout(tick, 2000);
     };
     void tick();
     return () => { stopped = true; clearTimeout(timer); };
-  }, [data.adapter, queryKey]);
-  return data;
+  }, [data.adapter, queryKey, awake]);
+  return { ...data, paused: !awake };
 }

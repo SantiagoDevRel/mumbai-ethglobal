@@ -33,6 +33,7 @@ function MapStage() {
   usePresenterKeys();
   usePresenterSession();
   const state = useSyncExternalStore(stage.subscribe, stage.getState, serverSnapshot);
+  const leader = useSyncExternalStore(stage.subscribe, stage.isLeader, () => true);
   const data = useLiveData({ ...state.chainFilters, kinds: state.map !== "dots" ? ["dot", "business"] : state.chainFilters.kinds }, state.session);
   const scene = SCENES[state.sceneIndex]!;
   const reviewScene = scene.id === "L5" && state.step === 2;
@@ -59,7 +60,7 @@ function MapStage() {
   return <MapFrame
     map={<Globe source={data.source} entities={view.entities} block={block} state={state} />}
     overlay={Overlay ? <StageBox><Overlay scene={scene} step={state.step} /></StageBox> : undefined}
-    hud={<StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} />{notice && <p className="presenter-notice" role="status">{notice}</p>}</div></StageBox>}
+    hud={<StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} />{!leader ? <p className="presenter-notice" role="status">Another map window is running the talk. This one follows it.</p> : notice ? <p className="presenter-notice" role="status">{notice}</p> : data.paused ? <p className="presenter-notice" role="status">Live reads paused to save the access key’s quota. Press any key to resume.</p> : null}</div></StageBox>}
     qr={<StageBox><JoinQR screen="map" /></StageBox>}
     bar={<PresenterBar inline />}
   />;

@@ -9,8 +9,6 @@ import { darkStyle } from "../../lib/map/style";
 import { mapViewport } from "../../lib/map/viewport";
 import { remainingSeconds } from "../../lib/data/entity-state";
 import { StageBox, stageGeometry, usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
-import countries from "../../shared/geo/countries.json";
-import { pointInPolygon, type LngLat } from "../../shared/geo/place";
 import { businessPresentation } from "../../lib/data/view-model";
 
 const CATEGORY_PATHS = {
@@ -50,7 +48,14 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     void Promise.all([import("maplibre-gl"), darkStyle()]).then(([gl, style]) => {
       if (stopped || !container.current) return;
-      const map = new gl.Map({ container: container.current, style, center: [72, 19], zoom: 2.38, attributionControl: false, canvasContextAttributes: { antialias: true } });
+      // Two gestures only: drag to turn the globe, pinch or scroll to zoom. No tilt, no twist, no
+      // keyboard (the arrows move the slides), no double-click zoom, and a short glide after a drag.
+      const map = new gl.Map({
+        container: container.current, style, center: [72, 19], zoom: 2.38, minZoom: 1, attributionControl: false, canvasContextAttributes: { antialias: true },
+        dragRotate: false, pitchWithRotate: false, touchPitch: false, keyboard: false, doubleClickZoom: false,
+        dragPan: { linearity: 0.2, maxSpeed: 700, deceleration: 4000 },
+      });
+      map.touchZoomRotate.disableRotation();
       instance = map;
       mapRef.current = map;
       map.on("error", () => { if (!stopped) setError("Map tiles unavailable. Retrying as you move the map."); });
@@ -60,7 +65,9 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
         setReady(true);
         setError(null);
       });
-      for (const gesture of ["mousedown", "touchstart", "wheel"] as const) map.getCanvas().addEventListener(gesture, () => map.stop(), { passive: true });
+      // The first touch stops the idle spin for good and cancels any camera flight in progress.
+      let touched = false;
+      for (const gesture of ["mousedown", "touchstart", "wheel"] as const) map.getCanvas().addEventListener(gesture, () => { touched = true; map.stop(); }, { passive: true });
       map.on("click", (event) => {
         const hit = current.current.entities.map((entity) => {
           if (entity.attrs.kind === "review") return { entity, distance: Infinity };
@@ -72,13 +79,6 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
         if (hit && hit.distance < 26) {
           stage.dispatch({ type: "select", keys: [hit.entity.key], mode: event.originalEvent.shiftKey ? "toggle" : "set" });
           stage.dispatch({ type: "inspect", key: hit.entity.key });
-        } else {
-          const point: LngLat = [event.lngLat.wrap().lng, event.lngLat.lat];
-          const country = countries.find((item) => point[0] >= item.bbox[0]! && point[0] <= item.bbox[2]! && point[1] >= item.bbox[1]! && point[1] <= item.bbox[3]! && pointInPolygon(point, item.polygon as LngLat[]));
-          if (country) {
-            const scale = Math.min(map.getCanvas().clientWidth / 1920, map.getCanvas().clientHeight / 1080);
-            map.fitBounds([[country.bbox[0]!, country.bbox[1]!], [country.bbox[2]!, country.bbox[3]!]], { padding: { top: 120 * scale, bottom: 272 * scale, left: 100 * scale, right: 456 * scale }, duration: reducedMotion ? 0 : 2400, maxZoom: 10 });
-          }
         }
       });
       resize = new ResizeObserver(() => map.resize());
@@ -100,7 +100,7 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
         last = now;
         const { entities, block, state, source } = current.current;
         if (entities.length) hasLanded = true;
-        if (!hasLanded && !reducedMotion && state.camera.cue === "globe-idle" && !map.isMoving()) map.jumpTo({ center: [map.getCenter().lng + delta * 0.0018, map.getCenter().lat] });
+        if (!hasLanded && !touched && !reducedMotion && state.camera.cue === "globe-idle" && !map.isMoving()) map.jumpTo({ center: [map.getCenter().lng + delta * 0.0018, map.getCenter().lat] });
         const surface = canvas.current;
         const width = surface.clientWidth, height = surface.clientHeight;
         const ratio = Math.min(window.devicePixelRatio || 1, 2);

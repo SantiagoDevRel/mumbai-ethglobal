@@ -3,7 +3,7 @@ import { decodeEventLog, keccak256, parseTransaction, recoverTransactionAddress,
 import { ENTITY_EVENTS_ABI } from "@arkiv-network/sdk/entity";
 import { eq } from "@arkiv-network/sdk/query";
 import { key as keyValue } from "@arkiv-network/sdk/attr";
-import { createSdkClients, type RpcObserver } from "../../shared/arkiv/clients-0.8.ts";
+import { createSdkClients, keyQuotaExhausted, postKeyed, type RpcObserver } from "../../shared/arkiv/clients-0.8.ts";
 import { countdownTicket, TicketCache } from "./ticket-cache.ts";
 import { dotToCreate } from "../../shared/arkiv/sdk-0.8.ts";
 import { getProfile, WRITER_ADDRESS, NetworkNotConfiguredError } from "../../shared/arkiv/profiles.ts";
@@ -60,7 +60,7 @@ interface Meta {
   heldUntil: number; queue: string[]; inFlight: InFlight | null; accepted: number;
   written: number; failed: number; lastBatch: PresenterStatus["lastBatch"]; lastFlushBlock: string;
   requestDay: string; requestsToday: number;
-  rpcMetrics?: { calls: number; byMethod: Record<string, number>; http429: number; rpc429: number; errors: number; ticketQueries: number };
+  rpcMetrics?: { calls: number; byMethod: Record<string, number>; http429: number; rpc429: number; errors: number; ticketQueries: number; viaPublic?: number };
 }
 function initialMeta(): Meta {
   return { session: null, doors: "closed", phase: "talk", replay: false, heldUntil: 0, queue: [], inFlight: null,
@@ -143,6 +143,7 @@ export class WriterObject implements DurableObject {
     if (event.phase === "response" && event.httpStatus === 429) metrics.http429++;
     if (event.phase === "response" && event.rpcCode === 429) metrics.rpc429++;
     if (event.phase === "error") metrics.errors++;
+    if (event.phase === "response" && event.viaPublic) metrics.viaPublic = (metrics.viaPublic ?? 0) + 1;
   };
   private async countRequest() {
     const day = new Date().toISOString().slice(0, 10);
@@ -269,6 +270,8 @@ export class WriterObject implements DurableObject {
         const snapshot = await this.ticketCache.read(stored.dot.session);
         return Response.json(countdownTicket(ticket, snapshot), { headers: response.headers });
       } catch (error) {
+        // `wrangler tail` shows why phones see "Reconnecting…"; the phone gets fixed copy only.
+        console.error("ticket countdown unavailable:", error instanceof Error ? error.message : String(error));
         return Response.json({ error: error instanceof NetworkNotConfiguredError ? "network_not_configured" : "internal",
           message: "The countdown is temporarily unavailable. Please retry." },
         { status: 503, headers: { ...Object.fromEntries(response.headers), "retry-after": "2" } });
@@ -321,7 +324,7 @@ export class WriterObject implements DurableObject {
       const status: PresenterStatus = { session: this.meta.session, doors: this.meta.doors, phase: this.meta.phase,
         replay: this.meta.replay, held: this.held(), queued: this.meta.queue.length, inFlight: this.meta.inFlight !== null,
         written: this.meta.written, failed: this.meta.failed, lastBatch: this.meta.lastBatch,
-        balanceWei: this.balanceWei, network, requestsToday: this.meta.requestsToday };
+        balanceWei: this.balanceWei, network, requestsToday: this.meta.requestsToday, keyQuotaExhausted: keyQuotaExhausted() };
       return Response.json(status);
     }
     if (request.method !== "POST") fail("invalid", 404, "Route not found.");
@@ -425,11 +428,16 @@ export class WriterObject implements DurableObject {
       }
       try {
         this.observeRpc({ method: call.method, phase: "request" });
-        const response = await fetch(this.env.RPC, { method: "POST", headers: { "content-type": "application/json", "X-API-KEY": this.env.ACCESS_KEY },
-          body: JSON.stringify({ jsonrpc: "2.0", id: call.id ?? null, method: call.method, params: call.params ?? [] }), signal: AbortSignal.timeout(15_000) });
-        if (!response.ok) { this.observeRpc({ method: call.method, phase: "response", httpStatus: response.status }); throw new Error("RPC rejected."); }
+        const { response, viaPublic } = await postKeyed(this.env.RPC, this.env.ACCESS_KEY, getProfile(this.env.ARKIV_PROFILE).rpcHttp,
+          JSON.stringify({ jsonrpc: "2.0", id: call.id ?? null, method: call.method, params: call.params ?? [] }), AbortSignal.timeout(15_000));
+        if (!response.ok) {
+          this.observeRpc({ method: call.method, phase: "response", httpStatus: response.status, viaPublic });
+          // For `wrangler tail`: the upstream's reason and limit headers (never the key or the request).
+          console.error("rpc read rejected:", call.method, response.status, viaPublic ? "public" : "keyed", response.headers.get("ratelimit"), (await response.text()).slice(0, 200));
+          throw new Error("RPC rejected.");
+        }
         const body = await response.json() as { result?: unknown; error?: { code: number } };
-        this.observeRpc({ method: call.method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code });
+        this.observeRpc({ method: call.method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code, viaPublic });
         responses.push(body.error ? { jsonrpc: "2.0", id: call.id ?? null, error: { code: body.error.code, message: "RPC read failed." } } : { jsonrpc: "2.0", id: call.id ?? null, result: body.result });
       } catch { this.observeRpc({ method: call.method, phase: "error" }); responses.push({ jsonrpc: "2.0", id: call.id ?? null, error: { code: -32000, message: "RPC read unavailable." } }); }
     }

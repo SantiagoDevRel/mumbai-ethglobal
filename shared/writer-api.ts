@@ -145,6 +145,8 @@ export const PresenterStatus = z.object({
   network: z.string().nullable(),
   /** Worker requests counted today (free-plan budget). */
   requestsToday: z.number().int(),
+  /** The access key's monthly quota is used up: the writer reads and sends through the public RPC. */
+  keyQuotaExhausted: z.boolean().optional(),
 });
 export type PresenterStatus = z.infer<typeof PresenterStatus>;
 

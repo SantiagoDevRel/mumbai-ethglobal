@@ -208,6 +208,8 @@ type Message =
   | { kind: "bye" };
 
 const CHANNEL = "arkiv-mumbai-stage";
+/** Held by the one /map window that drives the stage; a second /map follows until it is free. */
+const LEADER_LOCK = "arkiv-mumbai-leader";
 
 type Listener = () => void;
 type CommandHandler = (cmd: Command, state: StageState) => void | Promise<void>;
@@ -224,6 +226,19 @@ class StageStore {
   connect(role: Role): () => void {
     this.role = role;
     if (typeof BroadcastChannel === "undefined") return () => {};
+    // Two leaders would apply every command twice (two Rabby prompts for one Extend). A /map window
+    // starts as a follower and leads only once it holds the lock, so a second /map just mirrors.
+    const locks = role === "leader" && typeof navigator !== "undefined" ? navigator.locks : undefined;
+    const release = new AbortController();
+    let unlock = () => {};
+    if (locks) {
+      this.setRole("follower");
+      locks.request(LEADER_LOCK, { signal: release.signal }, () => {
+        this.setRole("leader");
+        this.channel?.postMessage({ kind: "state", state: this.state } satisfies Message);
+        return new Promise<void>((resolve) => { unlock = resolve; });
+      }).catch(() => { /* Released before it was granted. */ });
+    }
     const channel = new BroadcastChannel(CHANNEL);
     this.channel = channel;
     channel.onmessage = (ev: MessageEvent<Message>) => {
@@ -236,13 +251,15 @@ class StageStore {
         this.set(msg.state);
       } else if (msg.kind === "bye") this.lastLeaderStateAt = 0;
     };
-    if (role === "follower") channel.postMessage({ kind: "hello" } satisfies Message);
+    if (this.role === "follower") channel.postMessage({ kind: "hello" } satisfies Message);
     else channel.postMessage({ kind: "state", state: this.state } satisfies Message);
     // A closing /map tells /slides to drive itself again.
     const bye = () => { if (this.role === "leader") channel.postMessage({ kind: "bye" } satisfies Message); };
     window.addEventListener("pagehide", bye);
     return () => {
       bye();
+      release.abort();
+      unlock();
       window.removeEventListener("pagehide", bye);
       channel.close();
       if (this.channel === channel) this.channel = null;
@@ -250,6 +267,16 @@ class StageStore {
   }
 
   getState = (): StageState => this.state;
+
+  /** True while this window drives the stage. */
+  isLeader = (): boolean => this.role === "leader";
+
+  private setRole(role: Role) {
+    if (role === this.role) return;
+    this.role = role;
+    if (role === "leader") this.lastLeaderStateAt = 0;
+    for (const l of this.listeners) l();
+  }
 
   subscribe = (listener: Listener): (() => void) => {
     this.listeners.add(listener);

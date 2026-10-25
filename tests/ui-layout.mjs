@@ -228,6 +228,18 @@ try {
   await expect(prizes).toHaveAttribute("aria-expanded", "true");
   await prizes.click();
   await expect(prizes).toHaveAttribute("aria-expanded", "false");
+  // A second /map window follows the first instead of running the talk twice (two Rabby prompts).
+  const secondMap = await context.newPage();
+  secondMap.on("pageerror", (error) => errors.push(error.message));
+  await secondMap.setViewportSize({ width: 1280, height: 720 });
+  await secondMap.goto(`${origin}/map/`, { waitUntil: "domcontentloaded" });
+  await expect(secondMap.getByText("Another map window is running the talk. This one follows it.")).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText("Another map window is running the talk.")).toHaveCount(0);
+  await expect(secondMap.locator('[data-screen="map"][data-scene="L8"]')).toBeVisible();
+  await secondMap.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-screen="map"][data-scene="L9"]')).toBeVisible();
+  await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible();
+  await secondMap.close();
   // Reset: two clicks start a new writer session and take both windows back to S0.
   await slides.getByRole("button", { name: "Reset", exact: true }).click();
   assert.equal(writerCalls.start, 0, "One click only arms Reset.");
@@ -250,6 +262,22 @@ try {
   await page.keyboard.press("?");
   await page.getByRole("combobox", { name: "Data source" }).selectOption("live");
   await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
+  // A hidden /map stops reading (every query spends the key's quota) and resumes on the next key.
+  let reads = 0;
+  const countRead = (request) => { if (request.url() === `${writer}/api/rpc`) reads++; };
+  page.on("request", countRead);
+  await expect.poll(() => reads, { timeout: 10000 }).toBeGreaterThan(0);
+  await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true }); document.dispatchEvent(new Event("visibilitychange")); });
+  await expect(page.getByText("Live reads paused to save the access key’s quota. Press any key to resume.")).toBeVisible();
+  await page.waitForTimeout(500);
+  const paused = reads;
+  await page.waitForTimeout(5000);
+  assert.equal(reads, paused, "A hidden /map must not read the DB-Chain.");
+  await page.evaluate(() => { delete document.visibilityState; });
+  await page.keyboard.press("Shift");
+  await expect(page.getByText("Live reads paused", { exact: false })).toHaveCount(0);
+  await expect.poll(() => reads, { timeout: 10000 }).toBeGreaterThan(paused);
+  page.off("request", countRead);
   await page.getByRole("combobox", { name: "Data source" }).selectOption("mock");
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
   evidence.push({ surface: "slides", follows: true, keysDriveMap: true, countdownToggles: true, resetStartsSession: true });
