@@ -41,7 +41,19 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
   const token = usePresenterToken() ?? "";
   const latest = useRef(entities);
   const [notice, setNotice] = useState<string | null>(null);
-  useEffect(() => { latest.current = entities; }, [entities]);
+  // "Waiting for the next query" clears when that query lands; other notices fade after a few blocks.
+  const awaitingQuery = useRef(false);
+  useEffect(() => {
+    latest.current = entities;
+    if (!awaitingQuery.current) return;
+    awaitingQuery.current = false;
+    setNotice(null);
+  }, [entities]);
+  useEffect(() => {
+    if (!notice || notice === "Confirm in Rabby…") return;
+    const timer = setTimeout(() => { awaitingQuery.current = false; setNotice(null); }, awaitingQuery.current ? 30_000 : 8_000);
+    return () => clearTimeout(timer);
+  }, [notice]);
   useEffect(() => {
     let busy = false;
     let stopped = false;
@@ -88,6 +100,7 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
             await writer.patch(command.key, { kind: "business", name: entity.attrs.name, category: "cafe", rating: 4.6, opens: 480, closes: 1320, city: "Mumbai" }, entity.attrs);
             stage.dispatch({ type: "setMap", map: "business" });
           }
+          if (source === "live") awaitingQuery.current = true;
           notify(source === "mock" ? "Mock data · action applied" : "Transaction confirmed. Waiting for the next query…");
         } finally {
           clearInterval(heartbeat);
@@ -97,7 +110,11 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
           }
           busy = false;
         }
-      } catch (error) { notify(error instanceof Error ? error.message : "Presenter action failed."); }
+      } catch (error) {
+        // Rabby rejects with a plain { code, message } object, not an Error.
+        const message = error && typeof error === "object" && "message" in error && typeof error.message === "string" ? error.message : null;
+        notify(message ?? "Presenter action failed.");
+      }
     });
     return () => { stopped = true; disconnect(); };
   }, [adapter, source, token]);

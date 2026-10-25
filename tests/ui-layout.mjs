@@ -280,7 +280,11 @@ try {
   page.off("request", countRead);
   await page.getByRole("combobox", { name: "Data source" }).selectOption("mock");
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
-  evidence.push({ surface: "slides", follows: true, keysDriveMap: true, countdownToggles: true, resetStartsSession: true });
+  // A presenter notice must not stay on stage for the rest of the talk.
+  await commands(page, [{ type: "select", keys: [], mode: "set" }, { type: "extend", scope: "selected" }]);
+  await expect(page.locator(".presenter-notice")).toHaveText("Select an entity first.");
+  await expect(page.locator(".presenter-notice")).toHaveCount(0, { timeout: 12000 });
+  evidence.push({ surface: "slides", follows: true, keysDriveMap: true, countdownToggles: true, resetStartsSession: true, noticesFade: true });
   await context.close();
 
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
