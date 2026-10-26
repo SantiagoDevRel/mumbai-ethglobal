@@ -257,6 +257,9 @@ try {
   await page.keyboard.press("?");
   await page.getByRole("combobox", { name: "Data source" }).selectOption("live");
   await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
+  // The update blinker next to the label: this fixture rejects chain reads, so it says so.
+  await expect(page.locator(".source-label")).toHaveAttribute("data-status", "error", { timeout: 15000 });
+  await expect(page.locator(".source-label .refresh-detail")).toHaveText("Reconnecting…");
   // A hidden /map stops reading (every query spends the key's quota) and resumes on the next key.
   let reads = 0;
   const countRead = (request) => { if (request.url() === `${writer}/api/rpc`) reads++; };
@@ -264,6 +267,7 @@ try {
   await expect.poll(() => reads, { timeout: 10000 }).toBeGreaterThan(0);
   await page.evaluate(() => { Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true }); document.dispatchEvent(new Event("visibilitychange")); });
   await expect(page.getByText("Live reads paused to save the access key’s quota. Press any key to resume.")).toBeVisible();
+  await expect(page.locator(".source-label .refresh-detail")).toHaveText("Paused");
   await page.waitForTimeout(500);
   const paused = reads;
   await page.waitForTimeout(5000);

@@ -1,4 +1,5 @@
-// Full phone lifecycle against writer fixtures. Any RPC or other external request is a failure.
+// Full phone lifecycle against writer fixtures: wait for the session, send once, read the ticket
+// until its block is in, then make no more requests. Any RPC or other external request is a failure.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -22,6 +23,7 @@ try {
     await page.clock.install();
     await page.addInitScript(() => { Math.random = () => 0.5; });
     let phase = "queued";
+    let sessionLive = false;
     let sessionReads = 0;
     const rpc = [], tickets = [], submissions = [];
     const ticketId = "11111111-1111-4111-8111-111111111111";
@@ -34,7 +36,7 @@ try {
       if (url.pathname === "/api/session") {
         sessionReads++;
         assert.equal(url.searchParams.get("s"), null);
-        return route.fulfill({ json: { valid: true, code: "ABCD1234", doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
+        return route.fulfill({ json: sessionLive ? { valid: true, code: "ABCD1234", doors: "open", phase: "talk", replay: false, network: "tiramisu" } : { valid: false, code: null, doors: "closed", phase: "talk", replay: false, network: "tiramisu" } });
       }
       if (url.pathname === "/api/submit") {
         submissions.push(request.postDataJSON());
@@ -45,9 +47,7 @@ try {
         tickets.push({ at: await page.evaluate(() => Date.now()), phase, device: request.headers()["x-device-token"] });
         if (phase === "error") return route.fulfill({ status: 429, json: { error: "internal", message: raw } });
         if (phase === "queued") return route.fulfill({ json: { ticket: ticketId, status: "queued", lat: 19, lng: 72 } });
-        if (phase === "loading") return route.fulfill({ json: baseTicket });
-        const block = phase === "blocks" ? "110" : phase === "live" ? "113" : phase === "extended" ? "130" : phase === "boundary" ? "730" : "731";
-        return route.fulfill({ json: { ...baseTicket, currentBlock: block, expiresAtBlock: ["extended", "boundary", "expired"].includes(phase) ? "730" : "130", live: phase !== "expired" } });
+        return route.fulfill({ json: { ...baseTicket, currentBlock: "100", live: true } });
       }
       throw new Error(`Unexpected writer route ${url.pathname}`);
     });
@@ -57,7 +57,6 @@ try {
       assert.doesNotMatch(await page.locator("body").innerText(), /viem|RPC|429|unknown error/i);
       if (capture) await page.screenshot({ path: path.join(capture, `${width}-${colorScheme}-${name}.png`), fullPage: true });
     }
-    const clockSeconds = (text) => { const [m, sec] = text.split(":").map(Number); return m * 60 + sec; };
     async function statusFits(text) {
       const status = page.getByText(text, { exact: true });
       await expect(status).toBeVisible();
@@ -68,68 +67,48 @@ try {
       assert.ok(geometry.size <= 22 && geometry.line >= geometry.size * 1.3 && geometry.fits, JSON.stringify(geometry));
     }
     await page.goto(`${origin}/scan`, { waitUntil: "domcontentloaded" });
+    // Waiting room: before the presenter starts, the phone asks every 3 s, and stops once it is open.
+    await expect(page.getByRole("button", { name: "Not live yet", exact: true })).toBeDisabled();
+    const waitingReads = sessionReads;
+    await tick(3000);
+    assert.equal(sessionReads, waitingReads + 1, "The waiting room asks again after 3 s.");
+    sessionLive = true;
+    await tick(3000);
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
+    const openReads = sessionReads;
+    await tick(30000);
+    assert.equal(sessionReads, openReads, "Once the session is open, the phone stops asking.");
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("SE test");
-    await page.getByRole("button", { name: "Write my entity", exact: true }).click();
-    await expect(page.getByText("In the queue: next block", { exact: true })).toBeVisible();
-    phase = "loading";
-    await tick(1500);
-    await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
-    await page.waitForTimeout(250);
-    assert.deepEqual(rpc, [], "The phone must never attempt an RPC, including after written.");
-    await statusFits("Reading your lifetime…");
-    await snapshot("loading");
-    const sessionReadsAfterWritten = sessionReads;
-    phase = "blocks";
-    await tick(5000);
-    await statusFits("20 blocks left");
-    await snapshot("blocks");
-    phase = "live";
-    await tick(5000);
-    await expect(page.locator(".phone-countdown")).toHaveText(/^\d+:\d{2}$/);
-    await snapshot("live");
-    const previous = clockSeconds(await page.locator(".phone-countdown").innerText());
-    phase = "error";
-    await tick(5000);
-    await expect(page.locator('.phone-notice[role="alert"]')).toHaveText("Reconnecting…");
-    const held = clockSeconds(await page.locator(".phone-countdown").innerText());
-    assert.ok(held > 0 && held <= previous);
-    await snapshot("reconnecting");
-    const firstError = tickets.at(-1);
-    const beforeRetry = tickets.length;
-    await tick(9000);
-    assert.equal(tickets.length, beforeRetry, "No tight retry after an error.");
-    await tick(1000);
-    assert.equal(tickets.length, beforeRetry + 1);
-    assert.ok(tickets.at(-1).at - firstError.at >= 10000);
-    const secondError = tickets.at(-1);
-    phase = "extended";
-    await tick(20000);
-    assert.ok(tickets.at(-1).at - secondError.at >= 20000);
-    await expect(page.locator('.phone-notice[role="alert"]')).toHaveCount(0);
-    await expect(page.getByText("Santiago extended you! +20 min.", { exact: true })).toBeVisible();
-    await expect(page.locator(".phone-countdown")).toHaveText(/^\d+:\d{2}$/);
-    assert.equal(sessionReads, sessionReadsAfterWritten, "After written the phone reads only its ticket.");
-    phase = "boundary";
-    await tick(5000);
-    await statusFits("Checking Entity Expiration…");
-    await expect(page.getByText(/You expired at block/)).toHaveCount(0);
-    await snapshot("checking");
-    phase = "expired";
-    await tick(5000);
-    await expect(page.getByText("You expired at block #730. That’s Entity Expiration.", { exact: true })).toBeVisible();
-    await snapshot("expired");
-    const writtenCount = await page.evaluate(() => localStorage.getItem(`arkiv-workshop-count:ABCD1234:${localStorage.getItem("arkiv-workshop-device")}`));
-    assert.equal(writtenCount, "1", "Repeated written polls must count the write only once.");
-    await page.getByRole("button", { name: "Write another", exact: true }).click();
     phase = "submit-error";
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
     await expect(page.locator('.phone-notice[role="alert"]')).toHaveText("Reconnecting…");
     await snapshot("submit-error");
-    assert.deepEqual(rpc, []);
-    assert.equal(submissions[0].session, "ABCD1234");
+    phase = "queued";
+    await page.getByRole("button", { name: "Write my entity", exact: true }).click();
+    await expect(page.getByText("In the queue: next block", { exact: true })).toBeVisible();
+    phase = "error";
+    await tick(1500);
+    await expect(page.locator('.phone-notice[role="alert"]')).toHaveText("Reconnecting…");
+    const beforeRetry = tickets.length;
+    await tick(1000);
+    assert.equal(tickets.length, beforeRetry, "No tight retry after an error.");
+    phase = "written";
+    await tick(2000);
+    await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
+    await expect(page.getByText("Set to expire at block #130 (15 min)", { exact: true })).toBeVisible();
+    await expect(page.locator('.phone-notice[role="alert"]')).toHaveCount(0);
+    await statusFits("You’re done. Watch the map.");
+    await snapshot("written");
+    // Done: no more requests of any kind, however long the phone stays open.
+    const done = { session: sessionReads, tickets: tickets.length };
+    await tick(120000);
+    assert.deepEqual({ session: sessionReads, tickets: tickets.length }, done, "After written the phone makes no requests.");
+    const writtenCount = await page.evaluate(() => localStorage.getItem(`arkiv-workshop-count:ABCD1234:${localStorage.getItem("arkiv-workshop-device")}`));
+    assert.equal(writtenCount, "1", "The write counts once.");
+    assert.deepEqual(rpc, [], "The phone must never attempt an RPC.");
+    assert.equal(submissions.at(-1).session, "ABCD1234");
     assert.ok(tickets.every((item) => /^[a-f0-9-]{36}$/i.test(item.device)));
-    results.push({ width, colorScheme, rpcRequests: rpc.length, ticketRequests: tickets.length, errorBackoff: true, extension: true, expirationAuthoritative: true, statusFits: true });
+    results.push({ width, colorScheme, sessionReads, ticketRequests: tickets.length, rpcRequests: rpc.length, silentAfterWritten: true, errorBackoff: true, statusFits: true });
     await context.close();
   }
   assert.deepEqual(errors, []);

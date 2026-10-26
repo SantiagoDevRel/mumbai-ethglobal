@@ -4,14 +4,14 @@
 
 The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026). Five minutes of Arkiv 101,
 then the room becomes the database: everyone scans a QR code, picks a name, a color, a country and a
-lifetime (5 to 15 minutes, 15 by default), and their Arkiv entity drops onto a live 3D globe with its own
-countdown. The map is just a query, and the panel under it shows the query that ran.
+lifetime (5 to 15 minutes, 15 by default), and their Arkiv entity drops onto a live 3D globe, where it
+counts down and expires. The map is just a query, and the panel under it shows the query that ran.
 
 | Route | Who | What |
 |---|---|---|
 | `/map` | Projector, left half | The live globe, the query panel and the QR. Presenter password. |
 | `/slides` | Projector, right half | The slides, in step with `/map`. Presenter password. |
-| `/scan` | Phones | Join the map, then follow your entity |
+| `/scan` | Phones | Join the map: write one entity, then watch it on the projector |
 
 `/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
 
@@ -48,21 +48,26 @@ rollback.
 
 ## Requests and limits
 
-Polling is what costs requests, so it is cheap by design:
+A phone writes once and then goes quiet:
 
-- `/api/session` (each phone, every 3 s until it writes) is cached by Vercel's CDN for 2 s.
-- Each written phone polls its own ticket every 5 s; the DB-Chain is queried once per two seconds for
-  the whole room, not once per phone.
-- Phones and the presenter pages stop polling while the tab is hidden or the phone is locked.
+1. It loads `/scan` and asks for the running session (`/api/session`, cached by Vercel's CDN for 2 s).
+   Only if the presenter has not started yet does it ask again, every 3 s, until writing opens.
+2. On "Write my entity" it reads the session once more (the map may have been reset) and sends the form.
+3. It asks about its ticket about every 1.2 s until the block is in (two or three asks), shows the
+   block, the explorer link and when the entity is set to expire, and makes no more requests.
+
+The countdown, the extension and the expiration happen on `/map`, which queries the DB-Chain once
+per block through the writer's read proxy; the dot next to "Live · Arkiv DB-Chain" flashes each time a
+query lands. `/map` stops reading while hidden or after 20 minutes without input.
 
 | Session | CDN requests | Function invocations |
 | --- | ---: | ---: |
-| Rehearsal: 5 phones, 20 min | about 3,000 | about 1,500 |
-| Workshop: 200 phones, 20 min, all on screen the whole time | about 120,000 | about 42,000 |
+| Rehearsal: 5 phones, 20 min | about 2,000 | about 2,000 |
+| Workshop: 200 phones, 20 min | about 6,500 | about 3,000 |
 
-On Vercel Pro that is about 12% of the 1M CDN requests included each month and under 5 cents of
-function invocations; the database runs on Neon's free plan. Load test evidence:
-[writer/vercel-loadtest.md](./writer/vercel-loadtest.md).
+Most of it is `/map` (about 60 reads a minute); each phone adds about 20 requests, page files
+included. On Vercel Pro that is under 1% of the 1M CDN requests included each month; the database runs
+on Neon's free plan. Load test evidence: [writer/vercel-loadtest.md](./writer/vercel-loadtest.md).
 
 ## Network
 

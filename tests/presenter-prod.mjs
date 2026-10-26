@@ -34,6 +34,11 @@ try {
   await expect(map.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await expect(map.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 30000 });
   await expect.poll(() => reads.proxy, { timeout: 20000 }).toBeGreaterThan(0);
+  // The blinker names each new block as its query lands (Tiramisu: one block about every 2 s).
+  const detail = map.locator(".source-label .refresh-detail");
+  await expect(detail).toHaveText(/^Updated · block #\d+$/, { timeout: 20000 });
+  const firstUpdate = await detail.textContent();
+  await expect(detail).not.toHaveText(firstUpdate, { timeout: 10000 });
   const slides = await context.newPage();
   slides.on("pageerror", (error) => errors.push(error.message));
   await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });

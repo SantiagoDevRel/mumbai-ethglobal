@@ -84,7 +84,7 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   L9: [
     "Write it. Query it. Own it. Expire it. Thank you.",
-    "Phones show each person's entity in its final state.",
+    "Phones keep showing the entity each person wrote; its countdown and expiration are on the map.",
   ],
 };
 
