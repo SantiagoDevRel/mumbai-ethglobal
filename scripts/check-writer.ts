@@ -9,8 +9,10 @@ import { delay, presenterRequest, writerRequest } from "./writer-http.ts";
 
 // One real create, followed all the way from HTTP admission to disappearance at its expiry block.
 const profile = getProfile(process.env.ARKIV_PROFILE);
-const { reader } = createSdkClients({ profile, creator: WRITER_ADDRESS, read: { kind: "public" } });
-const adapter = createArkivAdapter({ profile, creator: WRITER_ADDRESS, read: { kind: "public" } });
+// The public RPC gives each IP a small anonymous query budget; use the key when the operator has it.
+const read = process.env.RPC && process.env.ACCESS_KEY ? { kind: "keyed" as const, url: process.env.RPC, accessKey: process.env.ACCESS_KEY } : { kind: "public" as const };
+const { reader } = createSdkClients({ profile, creator: WRITER_ADDRESS, read });
+const adapter = createArkivAdapter({ profile, creator: WRITER_ADDRESS, read });
 const { code } = await presenterRequest<{ code: string }>("session/start", {});
 try {
   await presenterRequest("doors", { open: true });
@@ -35,12 +37,14 @@ try {
   const expiry = BigInt(ticket.expiresAtBlock);
   let lastPresentBlock = receipt.blockNumber;
   let firstMissingBlock: bigint | undefined;
-  while (Date.now() < deadline) {
+  // The entity lives for its whole lifetime; the confirmation deadline above is far shorter.
+  const expiryDeadline = Date.now() + 360_000;
+  while (Date.now() < expiryDeadline) {
     const block = await reader.getBlockNumber();
     const result = await reader.select({ key: true }).createdBy(WRITER_ADDRESS).where(eq("app", APP_ID), eq("$key", key(ticket.entityKey))).atBlock(block).fetch();
     if (!result.entities.length) { firstMissingBlock = block; break; }
     lastPresentBlock = block;
-    await delay(500);
+    await delay(1_000);
   }
   if (firstMissingBlock === undefined || firstMissingBlock < expiry || firstMissingBlock - expiry > 1n) throw new Error("Entity Expiration differs from the countdown by more than one block.");
   console.log(JSON.stringify({ session: code, ticket: accepted.ticket, txHash: ticket.txHash, entityKey: ticket.entityKey,

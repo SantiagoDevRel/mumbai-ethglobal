@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useSourceMode } from "../../../lib/data/source-mode";
 import { useLiveBlock } from "../../../lib/data/useLiveBlock";
-import { WRITER_URL } from "../../../lib/data/writer-client";
+import { WRITER_CONNECTED } from "../../../lib/data/writer-client";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { WRITER_ADDRESS } from "../../../shared/arkiv/profiles";
 import { Chip, EASE, PANEL_EASE, Reveal, Rise, Slide, T } from "../ui";
@@ -17,7 +17,7 @@ import { Chip, EASE, PANEL_EASE, Reveal, Rise, Slide, T } from "../ui";
 /** The stage's resolved source: the same rule as useLiveData (live when chosen, or auto with a writer). */
 function useIsMock(): boolean {
   const mode = useSourceMode();
-  return !(mode === "live" || (mode === "auto" && !!WRITER_URL));
+  return !(mode === "live" || (mode === "auto" && WRITER_CONNECTED));
 }
 
 function LiveBlock() {

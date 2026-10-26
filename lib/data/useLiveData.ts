@@ -68,7 +68,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       if (stopped) return;
       try {
         const profile = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
-        const live = !isMockSource(mode, WRITER_URL);
+        const live = !isMockSource(mode);
         const mock = live ? null : createMockAdapter({ autoSpawnMs: 1500 });
         const adapter = mock ?? createLiveAdapter({ profile, creator: WRITER_ADDRESS, read: stageReadTransport(token, WRITER_URL + WRITER_ROUTES.rpc) });
         stopMock = mock?.stop;

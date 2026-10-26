@@ -4,14 +4,15 @@
 // Usage: PRESENTER_PASSWORD=… node tests/presenter-prod.mjs [origin]
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
+import { protectionHeaders } from "./local-app.mjs";
 
 const origin = process.argv[2] ?? "https://mumbai-ethglobal.vercel.app";
-const writer = "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
+const writer = origin;
 assert.ok(process.env.PRESENTER_PASSWORD, "PRESENTER_PASSWORD must be supplied in the process environment.");
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
 const errors = [];
 try {
-  const context = await browser.newContext({ viewport: { width: 960, height: 1080 } });
+  const context = await browser.newContext({ viewport: { width: 960, height: 1080 }, extraHTTPHeaders: protectionHeaders() });
   const reads = { proxy: 0, publicRpc: 0, hosts: new Set() };
   context.on("request", (request) => {
     const url = new URL(request.url());
@@ -21,7 +22,7 @@ try {
   const map = await context.newPage();
   map.on("pageerror", (error) => errors.push(error.message));
   const root = await map.goto(origin, { waitUntil: "domcontentloaded" });
-  assert.equal(new URL(map.url()).pathname, "/map/", "/ opens /map.");
+  assert.equal(new URL(map.url()).pathname, "/map", "/ opens /map.");
   assert.ok(root.ok());
   await expect(map.getByRole("heading", { name: "Presenter", exact: true })).toBeVisible({ timeout: 20000 });
   await map.getByLabel("Password").fill("not-the-password");
@@ -35,13 +36,13 @@ try {
   await expect.poll(() => reads.proxy, { timeout: 20000 }).toBeGreaterThan(0);
   const slides = await context.newPage();
   slides.on("pageerror", (error) => errors.push(error.message));
-  await slides.goto(`${origin}/slides/`, { waitUntil: "domcontentloaded" });
+  await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
   await expect(slides.locator('[data-screen="slides"]')).toBeVisible({ timeout: 20000 });
   await expect(slides.getByRole("heading", { name: "Presenter", exact: true })).toHaveCount(0);
   await map.waitForTimeout(8000);
   const redirects = {};
-  for (const [from, to] of [["/j", "/scan/"], ["/notes", "/map/"]]) {
-    const response = await fetch(origin + from, { redirect: "manual" });
+  for (const [from, to] of [["/j", "/scan"], ["/notes", "/map"]]) {
+    const response = await fetch(origin + from, { redirect: "manual", headers: protectionHeaders() });
     redirects[from] = { status: response.status, location: new URL(response.headers.get("location"), origin).pathname };
     assert.equal(redirects[from].location, to);
   }

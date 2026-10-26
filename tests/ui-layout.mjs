@@ -1,18 +1,18 @@
-// Isolated read-only layout checks of the static build in out/. Writer responses here are UI
+// Isolated read-only layout checks of this build (served by tests/local-app.mjs). Writer responses here are UI
 // fixtures (login, status, session, RPC); nothing reaches the real writer or the DB-Chain.
 import assert from "node:assert/strict";
-import { mkdir, readFile, stat } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
+import { startApp } from "./local-app.mjs";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
-const writer = "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
+const writer = origin;
 const PASSWORD = "fixture-password";
 const PALETTE = ["#fe7446", "#f6f4ef", "#14f195", "#9945ff", "#dc1fff", "#627eea", "#00c2ff"];
-const root = path.resolve("out");
 const capture = process.argv[2];
 if (capture) await mkdir(capture, { recursive: true });
-const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
+const app = await startApp();
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
 const errors = [];
 const evidence = [];
@@ -23,13 +23,8 @@ async function setup(options, { loggedIn = true } = {}) {
     sessionStorage.setItem("arkiv-stage-source", "mock");
     if (signedIn && !localStorage.getItem("arkiv-presenter-login")) localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token: "p.fixture", expiresAt: Date.now() + 3_600_000 }));
   }, [loggedIn]);
-  await context.route(`${origin}/**`, async (route) => {
-    let file = path.resolve(root, "." + decodeURIComponent(new URL(route.request().url()).pathname));
-    if (!file.startsWith(root + path.sep) && file !== root) return route.abort();
-    try { if ((await stat(file)).isDirectory()) file = path.join(file, "index.html"); await route.fulfill({ status: 200, contentType: mime[path.extname(file)] ?? "application/octet-stream", body: await readFile(file) }); }
-    catch { await route.fulfill({ status: 404, body: "Not found" }); }
-  });
-  await context.route(`${writer}/**`, (route) => route.abort());
+  await app.serve(context, origin);
+  await context.route(`${writer}/api/**`, (route) => route.abort());
   await context.route(`${writer}/api/session*`, (route) => route.fulfill({ json: { valid: true, code: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, network: "Tiramisu" } }));
   await context.route(`${writer}/api/rpc`, (route) => route.fulfill({ json: { jsonrpc: "2.0", id: 1, error: { code: -32000, message: "UI fixture: no chain reads" } } }));
   await context.route(`${writer}/api/login`, (route) => {
@@ -51,7 +46,7 @@ try {
   // The presenter pages ask for the password; one login unlocks both windows of the split screen.
   {
     const { context, page } = await setup({ viewport: { width: 1280, height: 720 } }, { loggedIn: false });
-    await page.goto(`${origin}/map/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Presenter", exact: true })).toBeVisible();
     await expect(page.locator(".globe-shell,.join-qr")).toHaveCount(0);
     await page.getByLabel("Password").fill("wrong");
@@ -62,12 +57,12 @@ try {
     await expect(page.locator(".qr-image img")).toBeVisible();
     const slides = await context.newPage();
     slides.on("pageerror", (error) => errors.push(error.message));
-    await slides.goto(`${origin}/slides/`, { waitUntil: "domcontentloaded" });
+    await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
     await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
     await expect(slides.getByRole("heading", { name: "Presenter", exact: true })).toHaveCount(0);
     // The phone page has no gate.
     const phone = await context.newPage();
-    await phone.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
+    await phone.goto(`${origin}/scan`, { waitUntil: "domcontentloaded" });
     await expect(phone.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     assert.equal(writerCalls.login, 2);
     evidence.push({ surface: "gate", wrongPasswordRejected: true, sharedAcrossWindows: true, phoneUngated: true });
@@ -75,7 +70,7 @@ try {
   }
 
   const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
-  await page.goto(`${origin}/map/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
   await expect(page.locator(".qr-image img")).toBeVisible();
   // The map shows its HUD and dots from the first slide: phones can write before S7.
   await expect(page.locator(".app-hud")).toHaveCount(1);
@@ -195,7 +190,7 @@ try {
   const slides = await context.newPage();
   slides.on("pageerror", (error) => errors.push(error.message));
   await slides.setViewportSize({ width: 1280, height: 720 });
-  await slides.goto(`${origin}/slides/`, { waitUntil: "domcontentloaded" });
+  await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
   await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible({ timeout: 20000 });
   await expect(slides.getByText("Thank you.")).toBeVisible();
   await commands(page, [{ type: "goto", index: 7 }]);
@@ -232,7 +227,7 @@ try {
   const secondMap = await context.newPage();
   secondMap.on("pageerror", (error) => errors.push(error.message));
   await secondMap.setViewportSize({ width: 1280, height: 720 });
-  await secondMap.goto(`${origin}/map/`, { waitUntil: "domcontentloaded" });
+  await secondMap.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
   await expect(secondMap.getByText("Another map window is running the talk. This one follows it.")).toBeVisible({ timeout: 20000 });
   await expect(page.getByText("Another map window is running the talk.")).toHaveCount(0);
   await expect(secondMap.locator('[data-screen="map"][data-scene="L8"]')).toBeVisible();
@@ -289,7 +284,7 @@ try {
 
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
     const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme }, { loggedIn: false });
-    await page.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/scan`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await page.evaluate(() => document.fonts.ready);
     const layout = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, swatches: [...document.querySelectorAll(".color-swatch")].map((swatch) => getComputedStyle(swatch).backgroundColor), header: getComputedStyle(document.querySelector(".phone-header")).height, input: getComputedStyle(document.querySelector('input[name="name"]')).height, cta: getComputedStyle(document.querySelector(".phone-submit")).height, background: getComputedStyle(document.querySelector(".phone-surface")).backgroundColor, text: document.querySelector(".phone-main").innerText }));
@@ -336,7 +331,7 @@ try {
       if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-${state}.png`), fullPage: true });
     };
     // No code to type: the bare link joins the running session.
-    await page.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/scan`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await expect(page.getByRole("textbox", { name: "Workshop code" })).toHaveCount(0);
     await snapshot("joined");
@@ -363,4 +358,4 @@ try {
   }
   assert.deepEqual(errors, []);
   process.stdout.write(JSON.stringify({ checks: evidence, pageErrors: errors.length }) + "\n");
-} finally { if (errors.length) process.stderr.write(JSON.stringify({ pageErrors: errors }) + "\n"); await browser.close(); }
+} finally { if (errors.length) process.stderr.write(JSON.stringify({ pageErrors: errors }) + "\n"); await browser.close(); app.stop(); }

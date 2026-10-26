@@ -1,9 +1,9 @@
-// Explicitly authorized, real-time Tiramisu rehearsal. No credentials enter the static build.
+// Explicitly authorized, real-time Tiramisu rehearsal against the deployed app (APP_ORIGIN; a protected
+// preview also needs VERCEL_OIDC_TOKEN). No credentials enter the client bundle.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { open, readFile, stat } from "node:fs/promises";
-import path from "node:path";
+import { open, readFile } from "node:fs/promises";
 import { chromium, expect } from "@playwright/test";
 import { decodeFunctionData, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -12,16 +12,15 @@ import { getProfile, WRITER_ADDRESS, explorerUrl } from "../shared/arkiv/profile
 import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
 import { createArkivAdapter } from "../shared/arkiv/sdk-0.8.ts";
 
-const ORIGIN = "https://mumbai-ethglobal.vercel.app";
-const WRITER = process.env.WRITER_URL ?? "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
+const ORIGIN = (process.env.APP_ORIGIN ?? "https://mumbai-ethglobal.vercel.app").replace(/\/$/, "");
+const WRITER = ORIGIN;
+const PROTECTION = process.env.VERCEL_OIDC_TOKEN ? { "x-vercel-trusted-oidc-idp-token": process.env.VERCEL_OIDC_TOKEN } : {};
 const FLOOR = 8n * 10n ** 18n;
 // Verified against the pinned SDK's entity/operations.ts and entity/params.ts.
 const EXECUTE = parseAbi(["function execute((uint8 operation, bytes operationData)[] ops) external returns (bytes32[] keys)"]);
 const REGISTRY = "0x4400000000000000000000000000000000000044";
 const GREEN = "#14f195";
 const ORANGE = "#fe7446";
-const root = path.resolve("out");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json" };
 const flag = (name) => process.argv[process.argv.indexOf(name) + 1];
 const preflight = process.argv.includes("--preflight");
 for (const name of ["WORKSHOP_WRITER_PRIVATE_KEY", "RPC", "ACCESS_KEY", "WORKSHOP_PRESENTER_TOKEN"]) assert.ok(process.env[name], `${name} must be supplied in the Node environment.`);
@@ -40,10 +39,10 @@ const report = {
   schema: 1, network: profile.id, origin: ORIGIN, writerUrl: WRITER,
   sourceSnapshot: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   scriptSha256: createHash("sha256").update(await readFile(new URL(import.meta.url))).digest("hex"),
-  staticIndexSha256: createHash("sha256").update(await readFile(path.join(root, "map", "index.html"))).digest("hex"),
+  mapHtmlSha256: createHash("sha256").update(await (await fetch(`${ORIGIN}/map`, { headers: PROTECTION })).text()).digest("hex"),
   startedAt: new Date().toISOString(), plannedTalkMs: TALK_LENGTH_SEC * 1000,
   timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; lifetimes stay at 120 s. The two cohorts avoid querying an entity immediately before its expiration during L2 preparation. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
-  deployedWorker: { version: "c221c14e-fd84-481d-b625-b62d6e42a231", sourceCommit: "e1732fb", bundleSha256: "e2c0893aacfb1896895cbf0adeccf88779e682c4efdd4f07b3f43390d0e05d1a", verification: "Cloudflare deployments list, 100% active, checked before this campaign" },
+  writer: "the app's own /api (Vercel function)",
   scenes: [], operations: [], transactions: [], phones: [], balances: [], pageErrors: [], requestFailures: [], dataErrors: [],
   ownership: { mode: "demo view", allowedWalletOperationTags: [2, 3], onChainTransfers: 0 },
   sessionEnded: false, status: "running",
@@ -67,7 +66,7 @@ async function writeCheckpoint() {
   await reportFile.sync();
 }
 async function presenter(route, body) {
-  const response = await fetch(`${WRITER}/api/presenter/${route}`, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", authorization: `Bearer ${process.env.WORKSHOP_PRESENTER_TOKEN}` }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(25000) });
+  const response = await fetch(`${WRITER}/api/presenter/${route}`, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", ...PROTECTION, authorization: `Bearer ${process.env.WORKSHOP_PRESENTER_TOKEN}` }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(25000) });
   const result = await response.json();
   assert.ok(response.ok, `Presenter ${route}: HTTP ${response.status}`);
   return result;
@@ -203,14 +202,14 @@ async function submitSynthetic(index) {
   return op(`synthetic phone ${index + 1}`, async () => {
     const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : ORANGE, lifetimeSec: 300 };
     const submittedAtMs = now();
-    const response = await fetch(`${WRITER}/api/submit`, { method: "POST", headers: { "content-type": "application/json", "x-device-token": crypto.randomUUID(), origin: ORIGIN }, body: JSON.stringify(draft), signal: AbortSignal.timeout(20000) });
+    const response = await fetch(`${WRITER}/api/submit`, { method: "POST", headers: { "content-type": "application/json", ...PROTECTION, "x-device-token": crypto.randomUUID(), origin: ORIGIN }, body: JSON.stringify(draft), signal: AbortSignal.timeout(20000) });
     assert.equal(response.status, 200);
     const ticket = await response.json();
     const item = { kind: "synthetic", name: draft.name, country: draft.country, color: draft.color, submittedAtMs, acceptedAtMs: now(), ticket: ticket.ticket };
     report.phones.push(item);
     const deadline = performance.now() + 45000;
     while (performance.now() < deadline) {
-      const result = await fetch(`${WRITER}/api/ticket/${ticket.ticket}`, { signal: AbortSignal.timeout(20000) });
+      const result = await fetch(`${WRITER}/api/ticket/${ticket.ticket}`, { headers: PROTECTION, signal: AbortSignal.timeout(20000) });
       assert.ok(result.ok); const state = await result.json();
       assert.notEqual(state.status, "failed", state.error);
       if (state.status === "written") {
@@ -313,7 +312,7 @@ async function sceneWork(id, step) {
     // the fresh-scan route to the L8 resources.
     report.l8WrittenPhoneHeading = await phone.locator("h1").textContent();
     const resources = await phone.context().newPage(); observe(resources, "resources");
-    await resources.goto(`${ORIGIN}/scan/`, { waitUntil: "domcontentloaded" });
+    await resources.goto(`${ORIGIN}/scan`, { waitUntil: "domcontentloaded" });
     await expect(resources.getByRole("heading", { name: "Build on Arkiv this weekend" })).toBeVisible({ timeout: 15000 });
     await expect(resources.getByRole("link", { name: /Docs/ })).toBeVisible();
     report.l8FreshScanResourcesVisible = true; await resources.close();
@@ -327,19 +326,12 @@ try {
   if (!preflight) assert.equal(status.session, null, "An existing session belongs to someone else; it will not be replaced.");
   assert.ok(!status.inFlight && status.queued === 0 && !status.held && !status.replay);
   assert.equal(status.network, profile.name);
-  await stat(path.join(root, "map", "index.html"));
   browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
-  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-  await context.route(`${ORIGIN}/**`, async (route) => {
-    let file = path.resolve(root, "." + decodeURIComponent(new URL(route.request().url()).pathname));
-    if (!file.startsWith(root + path.sep) && file !== root) return route.abort();
-    try { if ((await stat(file)).isDirectory()) file = path.join(file, "index.html"); await route.fulfill({ status: 200, contentType: mime[path.extname(file)] ?? "application/octet-stream", body: await readFile(file) }); }
-    catch { await route.fulfill({ status: 404, body: "Not found" }); }
-  });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1, extraHTTPHeaders: PROTECTION });
   stage = await context.newPage(); observe(stage, "stage");
   await stage.exposeFunction("__rehearsalWallet", walletRequest);
   await stage.addInitScript((token) => {
-    // The static presenter credential stands in for the password login (the Worker accepts both).
+    // The static presenter credential stands in for the password login (the writer accepts both).
     localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token, expiresAt: Date.now() + 12 * 3_600_000 }));
     window.ethereum = { isRabby: true, request: (request) => window.__rehearsalWallet(request), on() {}, removeListener() {} };
     window.__rehearsalState = null;
@@ -347,7 +339,7 @@ try {
     window.__rehearsalChannel.onmessage = (event) => { if (event.data.kind === "state") window.__rehearsalState = event.data.state; };
   }, process.env.WORKSHOP_PRESENTER_TOKEN);
   // /map starts a writer session by itself when none is running; the rehearsal's own start below replaces it.
-  await stage.goto(`${ORIGIN}/map/`, { waitUntil: "domcontentloaded" });
+  await stage.goto(`${ORIGIN}/map`, { waitUntil: "domcontentloaded" });
   await stage.evaluate(() => window.__rehearsalChannel.postMessage({ kind: "hello" }));
   await expect.poll(() => stage.evaluate(() => window.__rehearsalState?.sceneIndex)).toBe(0);
   // The HUD is only mounted in live scenes; check its live source briefly, then reset before the clock.
@@ -373,7 +365,7 @@ try {
     await presenter("phase", { phase: "talk" });
     phone = await context.newPage(); observe(phone, "phone");
     await phone.setViewportSize({ width: 390, height: 844 });
-    await phone.goto(`${ORIGIN}/scan/`, { waitUntil: "domcontentloaded" });
+    await phone.goto(`${ORIGIN}/scan`, { waitUntil: "domcontentloaded" });
     await phone.getByPlaceholder("Name or nickname").fill("Rehearsal phone");
     await phone.getByRole("button", { name: "Green", exact: true }).click();
     await phone.getByRole("combobox", { name: "Your country" }).click();

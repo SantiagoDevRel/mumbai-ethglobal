@@ -6,7 +6,8 @@
 import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { PresenterStatus, SessionStartResponse } from "../../shared/writer-api";
-import { WRITER_ROUTES, WRITER_URL, WriterRequestError } from "../../lib/data/writer-client";
+import { WRITER_ROUTES, WRITER_CONNECTED, WriterRequestError } from "../../lib/data/writer-client";
+import { waitVisible } from "../../lib/data/visible-poll";
 import { presenterLogin, presenterRequest, usePresenterToken } from "../../lib/data/presenter-auth";
 import { stage } from "../../lib/stage/store";
 import "./presenter.css";
@@ -24,7 +25,7 @@ export function PresenterGate({ children }: { children: ReactNode }) {
     if (typeof password !== "string" || !password) return;
     setBusy(true); setError(null);
     try { await presenterLogin(password); }
-    catch (err) { setError(err instanceof WriterRequestError ? err.message : WRITER_URL ? "The writer is not answering. Try again." : "The workshop writer is not connected yet."); }
+    catch (err) { setError(err instanceof WriterRequestError ? err.message : WRITER_CONNECTED ? "The writer is not answering. Try again." : "The workshop writer is not connected yet."); }
     finally { setBusy(false); }
   }
   return <main className="presenter-gate"><form className="gate-card" onSubmit={submit}>
@@ -66,18 +67,18 @@ export function PresenterBar({ inline = false }: { inline?: boolean }) {
  * QR works from the first slide. */
 export function usePresenterSession() {
   useEffect(() => {
-    if (!WRITER_URL) return;
-    let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
+    if (!WRITER_CONNECTED) return;
+    const controller = new AbortController();
     async function poll() {
       try {
         let { session } = PresenterStatus.parse(await presenterRequest(WRITER_ROUTES.presenter.status));
         if (!session) session = SessionStartResponse.parse(await presenterRequest(WRITER_ROUTES.presenter.sessionStart, {})).code;
-        if (!stopped && stage.getState().session !== session) stage.dispatch({ type: "session", code: session });
+        if (!controller.signal.aborted && stage.getState().session !== session) stage.dispatch({ type: "session", code: session });
       } catch { /* The next poll retries; a rejected login brings the password form back. */ }
-      if (!stopped) timer = setTimeout(poll, 3000);
+      // A hidden /map stops polling the writer until it is shown again.
+      waitVisible(3000, controller.signal).then(poll, () => undefined);
     }
     void poll();
-    return () => { stopped = true; clearTimeout(timer); };
+    return () => controller.abort();
   }, []);
 }

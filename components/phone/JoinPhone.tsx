@@ -6,7 +6,8 @@ import { explorerUrl, getProfile } from "../../shared/arkiv/profiles";
 import { SessionPublic, SubmitRequest, SubmitResponse } from "../../shared/writer-api";
 import type { DotDraft, Hex } from "../../shared/types";
 import { LIFETIME_DEFAULT_SEC, LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, NAME_MAX_CHARS, MAX_ENTITIES_PER_DEVICE } from "../../shared/types";
-import { deviceToken, writerRequest, WriterRequestError, WRITER_ROUTES, WRITER_URL } from "../../lib/data/writer-client";
+import { deviceToken, writerRequest, WriterRequestError, WRITER_ROUTES, WRITER_CONNECTED } from "../../lib/data/writer-client";
+import { waitVisible } from "../../lib/data/visible-poll";
 import { phoneWriteMessage, ticketSeconds, writeBlockMs } from "../../lib/data/phone-ticket";
 import { usePhoneTicket } from "../../lib/data/usePhoneTicket";
 import { CountryPicker } from "./CountryPicker";
@@ -59,18 +60,18 @@ export function JoinPhone() {
   // No code to type: the phone joins whatever session the presenter is running.
   // After inclusion, the only background read is the ticket; phones never call an RPC.
   useEffect(() => {
-    if (!WRITER_URL || state.status === "written") return;
+    if (!WRITER_CONNECTED || state.status === "written") return;
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
         const result = SessionPublic.parse(await writerRequest(WRITER_ROUTES.session(), { signal: controller.signal }));
         if (!controller.signal.aborted) { setSessionInfo(result); setSession(result.code ?? ""); setSessionReconnecting(false); }
       } catch { if (!controller.signal.aborted) setSessionReconnecting(true); }
-      if (!controller.signal.aborted) timer = setTimeout(poll, 3000);
+      // A locked phone or a background tab stops asking until it is visible again.
+      waitVisible(3000, controller.signal).then(poll, () => undefined);
     };
     void poll();
-    return () => { controller.abort(); clearTimeout(timer); };
+    return () => controller.abort();
   }, [state.status]);
 
   useEffect(() => {
@@ -128,7 +129,7 @@ export function JoinPhone() {
   return <div className="phone-surface"><main className="phone-main">
     <h1 className="phone-header">{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : "Join the map"}</h1>
     {sessionInfo?.replay && <p className="phone-notice">We’re in replay mode.</p>}
-    {!WRITER_URL && <p className="phone-notice">Not ready yet.</p>}
+    {!WRITER_CONNECTED && <p className="phone-notice">Not ready yet.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
     {(reconnecting || error) && <p className="phone-notice" role="alert">{reconnecting ? "Reconnecting…" : error}</p>}
     {sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">

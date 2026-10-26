@@ -1,18 +1,18 @@
-// Screenshots of every scene and step on /map and /slides, and of /scan, from the static build in
-// out/, in mock mode.
+// Screenshots of every scene and step on /map and /slides, and of /scan, from this build (served by
+// tests/local-app.mjs), in mock mode.
 // Read-only: the writer's session endpoint is a fixture and nothing is sent to the chain.
 // Usage: npm run build && node scripts/stage-shots.mjs [outDir] [only]   (default: shots/, every surface)
 // `only` is a comma list of surfaces such as slides-1920x1080,map-1920x1080.
-import { mkdir, readFile, stat } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "@playwright/test";
 import { SCENES } from "../shared/scenes.ts";
+import { startApp } from "../tests/local-app.mjs";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
-const writer = "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
-const root = path.resolve("out");
+const writer = origin;
+const app = await startApp();
 const dir = path.resolve(process.argv[2] ?? "shots");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".png": "image/png", ".webp": "image/webp", ".json": "application/json" };
 const errors = [];
 const only = process.argv[3]?.split(",");
 
@@ -25,15 +25,8 @@ async function open(url, viewport) {
     sessionStorage.setItem("arkiv-stage-source", "mock");
     localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token: "p.fixture", expiresAt: Date.now() + 3_600_000 }));
   });
-  await context.route(`${origin}/**`, async (route) => {
-    let file = path.resolve(root, "." + decodeURIComponent(new URL(route.request().url()).pathname));
-    if (!file.startsWith(root + path.sep) && file !== root) return route.abort();
-    try {
-      if ((await stat(file)).isDirectory()) file = path.join(file, "index.html");
-      await route.fulfill({ status: 200, contentType: mime[path.extname(file)] ?? "application/octet-stream", body: await readFile(file) });
-    } catch { await route.fulfill({ status: 404, body: "Not found" }); }
-  });
-  await context.route(`${writer}/**`, (route) => route.fulfill({ json: { valid: true, code: "MOCK", doors: "open", phase: "talk", replay: false, network: "tiramisu" } }));
+  await app.serve(context, origin);
+  await context.route(`${writer}/api/**`, (route) => route.fulfill({ json: { valid: true, code: "MOCK", doors: "open", phase: "talk", replay: false, network: "tiramisu" } }));
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(`${url}: ${error.message}`));
   await page.goto(`${origin}${url}`, { waitUntil: "domcontentloaded" });
@@ -53,7 +46,7 @@ const shot = (page, name) => page.screenshot({ path: path.join(dir, `${name}.png
 
 for (const [screen, width, height] of [["map", 1920, 1080], ["map", 1280, 720], ["map", 960, 1080], ["slides", 1920, 1080], ["slides", 960, 1080]]) {
   if (only && !only.includes(`${screen}-${width}x${height}`)) continue;
-  const { context, page } = await open(`/${screen}/`, { width, height });
+  const { context, page } = await open(`/${screen}`, { width, height });
   await settle(page);
   // /slides on its own drives itself from the keyboard (a follower ignores channel commands), so it
   // walks the talk with → from the first slide; /map takes channel commands as the leader.
@@ -69,7 +62,7 @@ for (const [screen, width, height] of [["map", 1920, 1080], ["map", 1280, 720], 
   await context.close();
 }
 
-for (const [name, url, viewport] of [["phone-390", "/scan/", { width: 390, height: 844 }], ["phone-360", "/scan/", { width: 360, height: 780 }]]) {
+for (const [name, url, viewport] of [["phone-390", "/scan", { width: 390, height: 844 }], ["phone-360", "/scan", { width: 360, height: 780 }]]) {
   const { context, page } = await open(url, viewport);
   await settle(page);
   await page.screenshot({ path: path.join(dir, `${name}.png`), fullPage: true, timeout: 60_000 });
@@ -77,4 +70,5 @@ for (const [name, url, viewport] of [["phone-390", "/scan/", { width: 390, heigh
 }
 
 await browser.close();
+app.stop();
 console.log(JSON.stringify({ dir, pageErrors: errors }));

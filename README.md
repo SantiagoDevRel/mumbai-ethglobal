@@ -23,24 +23,46 @@ the QR slide.
 ## How it works
 
 ```
-phone /scan ──POST──► writer (Cloudflare Worker + Durable Object) ──► Arkiv DB-Chain (Tiramisu)
-                                                                         ▲
-/map and /slides (static Next.js) ── query every block, via the writer ──┘
+phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + Postgres) ──► Arkiv DB-Chain (Tiramisu)
+                                                                                      ▲
+/map and /slides ── query every block, via the writer's keyed read proxy ─────────────┘
 ```
 
 - Every entity is written by one writer wallet, with permissionless extension on, so anyone can extend it.
 - Every query is scoped by `$creator` (the writer) and the `app` attribute.
+- One sender at a time: a lease in Postgres lets only one function instance sign for the writer wallet, at most one batch per block.
 - Entities are made only of queryable attributes (empty payload): your columns, plus Arkiv's `$key`, `$owner`, `$creator` and `$expiresAt`.
 
 ## Run it
 
 ```bash
 npm install
-npm run dev            # the app on http://localhost:3000
-cd writer && npm install && npx wrangler dev   # the writer
+npm run dev            # the app and its writer on http://localhost:3000
 ```
 
-The app runs on mock data until `NEXT_PUBLIC_WRITER_URL` points at a writer.
+The app runs on mock data until `NEXT_PUBLIC_WRITER_URL` is set: `same-origin` for the app's own
+`/api`. The writer also needs `DATABASE_URL` (Postgres), `ARKIV_PROFILE`, `RPC`, `ACCESS_KEY`,
+`WORKSHOP_WRITER_PRIVATE_KEY`, `WORKSHOP_PRESENTER_TOKEN`, `PRESENTER_PASSWORD` and
+`MIN_WRITER_BALANCE_WEI`, all server-side only. `writer/` is the earlier Cloudflare Worker, kept for
+rollback.
+
+## Requests and limits
+
+Polling is what costs requests, so it is cheap by design:
+
+- `/api/session` (each phone, every 3 s until it writes) is cached by Vercel's CDN for 2 s.
+- Each written phone polls its own ticket every 5 s; the DB-Chain is queried once per two seconds for
+  the whole room, not once per phone.
+- Phones and the presenter pages stop polling while the tab is hidden or the phone is locked.
+
+| Session | CDN requests | Function invocations |
+| --- | ---: | ---: |
+| Rehearsal: 5 phones, 20 min | about 3,000 | about 1,500 |
+| Workshop: 200 phones, 20 min, all on screen the whole time | about 120,000 | about 42,000 |
+
+On Vercel Pro that is about 12% of the 1M CDN requests included each month and under 5 cents of
+function invocations; the database runs on Neon's free plan. Load test evidence:
+[writer/vercel-loadtest.md](./writer/vercel-loadtest.md).
 
 ## Network
 

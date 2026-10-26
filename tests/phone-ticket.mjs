@@ -1,15 +1,15 @@
 // Full phone lifecycle against writer fixtures. Any RPC or other external request is a failure.
 import assert from "node:assert/strict";
-import { readFile, stat, mkdir } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
+import { startApp } from "./local-app.mjs";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
-const writer = "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
-const root = path.resolve("out");
+const writer = origin;
+const app = await startApp();
 const capture = process.argv[2];
 if (capture) await mkdir(capture, { recursive: true });
-const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2" };
 const raw = "An unknown RPC error occurred. Details: RPC request rejected (429). Version: viem@2.57.11";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const results = [];
@@ -29,14 +29,7 @@ try {
     await context.route("**/*", async (route) => {
       const request = route.request();
       const url = new URL(request.url());
-      if (url.origin === origin) {
-        let file = path.resolve(root, "." + decodeURIComponent(url.pathname));
-        if (!file.startsWith(root + path.sep) && file !== root) return route.abort();
-        try {
-          if ((await stat(file)).isDirectory()) file = path.join(file, "index.html");
-          return route.fulfill({ contentType: mime[path.extname(file)] ?? "application/octet-stream", body: await readFile(file) });
-        } catch { return route.fulfill({ status: 404, body: "Not found" }); }
-      }
+      if (url.origin === origin && !url.pathname.startsWith("/api/")) return app.proxy(route);
       if (url.origin !== writer || url.pathname === "/api/rpc") { rpc.push({ url: request.url(), method: request.method() }); return route.abort(); }
       if (url.pathname === "/api/session") {
         sessionReads++;
@@ -74,7 +67,7 @@ try {
       });
       assert.ok(geometry.size <= 22 && geometry.line >= geometry.size * 1.3 && geometry.fits, JSON.stringify(geometry));
     }
-    await page.goto(`${origin}/scan/`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/scan`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("SE test");
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
@@ -141,4 +134,4 @@ try {
   }
   assert.deepEqual(errors, []);
   process.stdout.write(JSON.stringify({ checks: results, pageErrors: errors }) + "\n");
-} finally { await browser.close(); }
+} finally { await browser.close(); app.stop(); }

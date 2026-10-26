@@ -1,5 +1,10 @@
 # Workshop writer
 
+> **Retired on October 26, 2026.** The writer now runs as the app's own `/api` on Vercel
+> (`../app/api/[...path]/route.ts`, `../lib/server/`) with Postgres. This Worker is kept
+> only for rollback, with its doors closed so it cannot send with the same wallet. Load tests
+> of the new writer: [vercel-loadtest.md](./vercel-loadtest.md).
+
 Cloudflare Worker and one SQLite Durable Object. The public API is defined in
 `../shared/writer-api.ts`. The Worker holds the signing key and RPC access key;
 neither belongs in a frontend bundle.

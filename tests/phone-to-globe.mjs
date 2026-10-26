@@ -1,16 +1,14 @@
-// Explicit live UI smoke. Uses one short-lived test entity and never replaces an active session.
+// Explicit live UI smoke of the deployed app (APP_ORIGIN). Uses one short-lived test entity and never
+// replaces an active session.
 import assert from "node:assert/strict";
-import { readFile, stat } from "node:fs/promises";
-import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 
-const ORIGIN = "https://mumbai-ethglobal.vercel.app";
-const WRITER = "https://mumbai-workshop-writer.santiagotrujillozuluaga.workers.dev";
-const root = path.resolve("out");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".css": "text/css", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json" };
+const ORIGIN = (process.env.APP_ORIGIN ?? "https://mumbai-ethglobal.vercel.app").replace(/\/$/, "");
+const WRITER = ORIGIN;
+const PROTECTION = process.env.VERCEL_OIDC_TOKEN ? { "x-vercel-trusted-oidc-idp-token": process.env.VERCEL_OIDC_TOKEN } : {};
 async function presenter(route, body) {
   assert.ok(process.env.WORKSHOP_PRESENTER_TOKEN, "Presenter credential is required in the process environment.");
-  const response = await fetch(`${WRITER}/api/presenter/${route}`, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", authorization: `Bearer ${process.env.WORKSHOP_PRESENTER_TOKEN}` }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20000) });
+  const response = await fetch(`${WRITER}/api/presenter/${route}`, { method: body === undefined ? "GET" : "POST", headers: { "content-type": "application/json", ...PROTECTION, authorization: `Bearer ${process.env.WORKSHOP_PRESENTER_TOKEN}` }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(20000) });
   const result = await response.json();
   assert.ok(response.ok, `Presenter ${route} failed (${response.status}): ${result.message ?? "request failed"}`);
   return result;
@@ -36,27 +34,16 @@ try {
     ownedSession = true;
   }
   browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
-  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
-  // Serve this exact build under the authorized production origin. All Worker/RPC requests are real.
-  await context.route(`${ORIGIN}/**`, async (route) => {
-    const url = new URL(route.request().url());
-    let file = path.resolve(root, "." + decodeURIComponent(url.pathname));
-    if (!file.startsWith(root + path.sep) && file !== root) return route.abort();
-    try {
-      if ((await stat(file)).isDirectory()) file = path.join(file, "index.html");
-      const body = await readFile(file);
-      await route.fulfill({ status: 200, contentType: mime[path.extname(file)] ?? "application/octet-stream", body });
-    } catch { await route.fulfill({ status: 404, body: "Not found" }); }
-  });
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1, extraHTTPHeaders: PROTECTION });
   const stage = await context.newPage();
-  // The static presenter credential stands in for the password login (the Worker accepts both).
+  // The static presenter credential stands in for the password login (the writer accepts both).
   await stage.addInitScript((credential) => localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token: credential, expiresAt: Date.now() + 3_600_000 })), process.env.WORKSHOP_PRESENTER_TOKEN);
   let proxyReads = 0;
   stage.on("request", (request) => { if (request.url() === WRITER + "/api/rpc") proxyReads++; });
   stage.on("pageerror", (error) => errors.push(error.message));
   let publicRpcReads = 0;
   stage.on("request", (request) => { if (/rpc\.[a-z0-9.-]*arkiv\.network/.test(new URL(request.url()).host)) publicRpcReads++; });
-  await stage.goto(`${ORIGIN}/map/`, { waitUntil: "domcontentloaded" });
+  await stage.goto(`${ORIGIN}/map`, { waitUntil: "domcontentloaded" });
   await expect(stage.locator(".qr-image img")).toBeVisible({ timeout: 20000 });
   await stage.evaluate((code) => {
     const channel = new BroadcastChannel("arkiv-mumbai-stage");
@@ -69,9 +56,14 @@ try {
   const phone = await context.newPage();
   await phone.setViewportSize({ width: 390, height: 844 });
   const phoneWriterRequests = [];
-  phone.on("request", (request) => { if (request.url().startsWith(WRITER)) phoneWriterRequests.push({ at: Date.now(), path: new URL(request.url()).pathname }); });
+  let phoneRpcReads = 0;
+  phone.on("request", (request) => {
+    const url = new URL(request.url());
+    if (url.origin === WRITER && url.pathname.startsWith("/api/")) phoneWriterRequests.push({ at: Date.now(), path: url.pathname });
+    if (/rpc\.[a-z0-9.-]*arkiv\.network/.test(url.host)) phoneRpcReads++;
+  });
   phone.on("pageerror", (error) => errors.push(error.message));
-  await phone.goto(`${ORIGIN}/scan/`, { waitUntil: "domcontentloaded" });
+  await phone.goto(`${ORIGIN}/scan`, { waitUntil: "domcontentloaded" });
   await phone.getByPlaceholder("Name or nickname").fill("App smoke");
   await phone.getByRole("button", { name: "Green", exact: true }).click();
   await phone.getByRole("combobox", { name: "Your country" }).click();
@@ -97,17 +89,20 @@ try {
   }), { timeout: 15000 }).toBeGreaterThan(0);
   await stage.locator(".event-log").getByRole("button", { name: /App smoke/ }).first().click();
   await expect(stage.locator(".inspector-panel")).toContainText("App smoke");
-  await expect(phone.getByText(/You expired at block #\d+/)).toBeVisible({ timeout: 45000 });
+  // The slider's minimum lifetime is five minutes.
+  await expect(phone.getByText(/You expired at block #\d+/)).toBeVisible({ timeout: 360000 });
   const expired = await phone.getByText(/You expired at block #\d+/).textContent();
   await expect(stage.locator(".inspector-panel")).toContainText("Select a dot on the map", { timeout: 10000 });
   const expiredAt = Date.now();
-  const unexpected = phoneWriterRequests.filter((request) => request.at > includedAt + 500 && request.at < expiredAt - 1000);
-  assert.deepEqual(unexpected, [], "The included phone must read the public RPC, not poll the writer.");
+  // Once included, the phone polls only its own ticket; the writer shares one keyed query per refresh.
+  const unexpected = phoneWriterRequests.filter((request) => request.at > includedAt + 500 && request.at < expiredAt - 1000 && !request.path.startsWith("/api/ticket/"));
+  assert.deepEqual(unexpected, [], "The included phone must poll only its own ticket.");
+  assert.equal(phoneRpcReads, 0, "Phones never call an RPC.");
   assert.deepEqual(errors, []);
-  assert.ok(proxyReads > 0, "The presenter must use its authenticated Worker read proxy.");
+  assert.ok(proxyReads > 0, "The presenter must use its authenticated writer read proxy.");
   assert.equal(publicRpcReads, 0, "The presenter map must never read the public RPC.");
   assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  process.stdout.write(JSON.stringify({ session, entityKey: key, written, expired, phoneToInclusionMs: includedAt - submittedAt, liveDotRendered: true, inspectorConfirmed: true, presenterProxyReads: proxyReads, presenterPublicRpcReads: publicRpcReads, noWriterPollingWhileIncluded: true, viewport: "390x844", pageErrors: errors.length }) + "\n");
+  process.stdout.write(JSON.stringify({ session, entityKey: key, written, expired, phoneToInclusionMs: includedAt - submittedAt, liveDotRendered: true, inspectorConfirmed: true, presenterProxyReads: proxyReads, presenterPublicRpcReads: publicRpcReads, onlyTicketPollsWhileIncluded: true, phoneRpcReads, viewport: "390x844", pageErrors: errors.length }) + "\n");
 } finally {
   await browser?.close();
   if (ownedSession) {

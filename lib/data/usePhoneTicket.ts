@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { TicketResponse } from "../../shared/writer-api";
 import { advanceTicketClock, ticketBlock, ticketPollDelay, type TicketClock } from "./phone-ticket";
 import { writerRequest, WRITER_ROUTES } from "./writer-client";
+import { waitVisible } from "./visible-poll";
 
 interface PhoneTicket {
   id: string | null;
@@ -20,7 +21,6 @@ export function usePhoneTicket(id: string | null, device: string): PhoneTicket {
   useEffect(() => {
     if (!id || !device) return;
     const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
     let current: PhoneTicket = { ...EMPTY, id };
     let failures = 0;
     let written = false;
@@ -44,10 +44,11 @@ export function usePhoneTicket(id: string | null, device: string): PhoneTicket {
         current = { ...current, reconnecting: true };
         setSnapshot(current);
       }
-      if (!controller.signal.aborted) timer = setTimeout(poll, ticketPollDelay(written, failures));
+      // Hidden phones stop polling; the countdown catches up on the first poll after unlock.
+      waitVisible(ticketPollDelay(written, failures), controller.signal).then(poll, () => undefined);
     };
     void poll();
-    return () => { controller.abort(); clearTimeout(timer); };
+    return () => controller.abort();
   }, [id, device]);
   return id && snapshot.id === id ? snapshot : EMPTY;
 }

@@ -1,10 +1,7 @@
 import type { NextConfig } from "next";
 
-// Static export: no server routes (the writer is a Cloudflare Worker), which also keeps a
-// later move to Swarm hosting easy.
+// The pages are static; /api/* is the workshop writer on Vercel Functions (lib/server/writer.ts).
 const config: NextConfig = {
-  output: "export",
-  trailingSlash: true,
   images: { unoptimized: true },
   reactStrictMode: true,
 };

@@ -1,6 +1,9 @@
 import { ErrorResponse, WRITER_ROUTES, type ErrorCode } from "../../shared/writer-api";
 
-export const WRITER_URL = process.env.NEXT_PUBLIC_WRITER_URL?.replace(/\/$/, "") ?? "";
+const configured = process.env.NEXT_PUBLIC_WRITER_URL?.replace(/\/$/, "") ?? "";
+/** "same-origin": the writer is this app's own /api on Vercel. Any other value is the writer's base URL. */
+export const WRITER_CONNECTED = configured !== "";
+export const WRITER_URL = configured === "same-origin" ? "" : configured;
 export { WRITER_ROUTES };
 
 export class WriterRequestError extends Error {
@@ -9,7 +12,7 @@ export class WriterRequestError extends Error {
 }
 
 export async function writerRequest(path: string, options: { token?: string; body?: unknown; signal?: AbortSignal; device?: string } = {}): Promise<unknown> {
-  if (!WRITER_URL) throw new Error("The workshop writer is not connected yet.");
+  if (!WRITER_CONNECTED) throw new Error("The workshop writer is not connected yet.");
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (options.token) headers.authorization = `Bearer ${options.token}`;
   if (options.device) headers["x-device-token"] = options.device;
