@@ -32,6 +32,7 @@ Change a contract only through the orchestrator. Every user-facing string is Eng
 - Palette for UI chrome: Arkiv Blue `#181EA9`, Arkiv Orange `#FE7446`, Ink `#111111`, Sand `#F6F4EF`, Stone `#E9E6DE`. Official logo SVGs only (`public/brand/`). Dot colors are the seven in `DOT_PALETTE` (`shared/encoding.ts`); the writer accepts no other.
 - Text font IBM Plex Sans; code IBM Plex Mono.
 - Never `git add .`; scan staged changes for secrets before every commit.
+- Vercel is connected to this repo: every push to `main` deploys production (`mumbai-ethglobal.vercel.app`), and other branches get preview deployments. Push to `main` only verified work.
 
 ## Changing the network or the SDK
 
