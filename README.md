@@ -48,26 +48,29 @@ rollback.
 
 ## Requests and limits
 
-A phone writes once and then goes quiet:
+A phone makes one request:
 
-1. It loads `/scan` and asks for the running session (`/api/session`, cached by Vercel's CDN for 2 s).
-   Only if the presenter has not started yet does it ask again, every 3 s, until writing opens.
-2. On "Write my entity" it reads the session once more (the map may have been reset) and sends the form.
-3. It asks about its ticket about every 1.2 s until the block is in (two or three asks), shows the
-   block, the explorer link and when the entity is set to expire, and makes no more requests.
+1. It loads `/scan` (page files only; it asks the writer nothing).
+2. "Write my entity" sends the form once (`POST /api/submit?wait=1`). The writer puts the entity in
+   the running session, sends it, and answers when the block is in (a few seconds; after 25 s it
+   answers "on its way" and the dot still lands on the map).
+3. The phone shows the block, the explorer link and a countdown of the lifetime the person chose. The
+   countdown runs on the phone's own clock and fetches nothing, so it can't see a Lifetime Extension:
+   at zero it says the entity has expired unless someone extended it.
 
-The countdown, the extension and the expiration happen on `/map`, which queries the DB-Chain once
+The live countdown, the extension and the expiration are on `/map`, which queries the DB-Chain once
 per block through the writer's read proxy; the dot next to "Live · Arkiv DB-Chain" flashes each time a
 query lands. `/map` stops reading while hidden or after 20 minutes without input.
 
 | Session | CDN requests | Function invocations |
 | --- | ---: | ---: |
 | Rehearsal: 5 phones, 20 min | about 2,000 | about 2,000 |
-| Workshop: 200 phones, 20 min | about 6,500 | about 3,000 |
+| Workshop: 50 phones, 20 min | about 2,700 | about 2,000 |
 
-Most of it is `/map` (about 60 reads a minute); each phone adds about 20 requests, page files
-included. On Vercel Pro that is under 1% of the 1M CDN requests included each month; the database runs
-on Neon's free plan. Load test evidence: [writer/vercel-loadtest.md](./writer/vercel-loadtest.md).
+Most of it is `/map` (about 60 reads a minute); each phone adds about 16 requests, page files
+included, and one function invocation. On Vercel Pro that is well under 1% of the 1M CDN requests
+included each month; the database runs on Neon's free plan. The load tests ran 200 phones:
+[writer/vercel-loadtest.md](./writer/vercel-loadtest.md).
 
 ## Network
 

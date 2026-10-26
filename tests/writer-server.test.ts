@@ -224,6 +224,42 @@ test("the balance floor closes doors and holds queued writes before any send", o
   } finally { await dispose(); }
 });
 
+test("a phone's one submit joins the running session and waits for its block", opts, async () => {
+  const { db, call, drain, dispose } = await fixture();
+  // Below the balance floor nothing is sent; the test marks the ticket written as the sender would.
+  balance = "0x6124fee993bc0000";
+  try {
+    const phone = { "x-device-token": "one-request-phone-device", "content-type": "application/json", origin: "https://app.example" };
+    const dot = { name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 300 };
+    assert.equal((await call("/api/submit?wait=1", dot, phone)).data.error, "doors_closed", "Before a session starts, a phone is told to try again.");
+    const { data: { code } } = await call("/api/presenter/session/start", {});
+    const key = `0x${"ab".repeat(32)}`;
+    const marker = (async () => {
+      for (let i = 0; i < 50; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const [row] = await db.query<{ id: string }>(`select id from ${db.t("tickets")} where session = $1`, [code]);
+        if (row) {
+          await db.query(`update ${db.t("tickets")} set status = 'written', entity_key = $2, block = '120', expires_at_block = '270' where id = $1`, [row.id, key]);
+          return;
+        }
+      }
+      throw new Error("The submit never queued a ticket.");
+    })();
+    const started = Date.now();
+    const answered = await call("/api/submit?wait=1", dot, phone);
+    await marker;
+    assert.equal(answered.status, 200, JSON.stringify(answered.data));
+    assert.equal(answered.data.session, code);
+    assert.equal(answered.data.status, "written");
+    assert.equal(answered.data.entityKey, key);
+    assert.equal(answered.data.block, "120");
+    assert.equal(answered.data.expiresAtBlock, "270");
+    assert.ok(Date.now() - started < 10_000, "The answer comes as soon as the block is in.");
+    await drain();
+    assert.equal(calls.some(rpc => rpc.method.startsWith("eth_send")), false);
+  } finally { await dispose(); }
+});
+
 test("two instances never send at once, and hold stops a batch that was not admitted yet", opts, async () => {
   const { call, drain, dispose, writers } = await fixture({ instances: 2 });
   let release!: () => void, reached!: () => void;

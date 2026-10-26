@@ -3,144 +3,96 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { DOT_COLOR_NAMES, DOT_PALETTE, shortKey } from "../../shared/encoding";
 import { explorerUrl, getProfile } from "../../shared/arkiv/profiles";
-import { SessionPublic, SubmitRequest, SubmitResponse } from "../../shared/writer-api";
+import { SubmitRequest, SubmitResponse } from "../../shared/writer-api";
 import type { DotDraft, Hex } from "../../shared/types";
-import { LIFETIME_DEFAULT_SEC, LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, NAME_MAX_CHARS, MAX_ENTITIES_PER_DEVICE } from "../../shared/types";
+import { LIFETIME_DEFAULT_SEC, LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, NAME_MAX_CHARS } from "../../shared/types";
 import { deviceToken, writerRequest, WriterRequestError, WRITER_ROUTES, WRITER_CONNECTED } from "../../lib/data/writer-client";
-import { waitVisible } from "../../lib/data/visible-poll";
 import { phoneWriteMessage } from "../../lib/data/phone-ticket";
-import { usePhoneTicket } from "../../lib/data/usePhoneTicket";
 import { CountryPicker } from "./CountryPicker";
 import { LifetimeRing } from "./LifetimeRing";
 import { ArrowUpRight, BookOpen, Plug, Terminal, Gift } from "lucide-react";
 import "./phone.css";
 
-type PhoneState = { status: "form" } | { status: "submitting" } | { status: "queued"; ticket: string } |
-  { status: "written"; ticket: string; key: Hex; includedAt: bigint; expiresAt: bigint; draft: DotDraft };
+type PhoneState = { status: "form" } | { status: "submitting" } | { status: "queued"; draft: DotDraft } |
+  { status: "written"; key: Hex; includedAt: bigint; draft: DotDraft; endsAt: number };
 
+/** The phone makes one request: it sends the form and the writer answers once the entity is in a
+ * block. The countdown runs on the phone's own clock from the chosen lifetime; nothing is fetched. */
 export function JoinPhone() {
-  const [session, setSession] = useState("");
   const [device, setDevice] = useState("");
-  const [sessionInfo, setSessionInfo] = useState<SessionPublic | null>(null);
   const [state, setState] = useState<PhoneState>({ status: "form" });
   const [draft, setDraft] = useState<DotDraft>({ name: "", color: DOT_PALETTE[0], country: "IN", lifetimeSec: LIFETIME_DEFAULT_SEC });
   const [error, setError] = useState<string | null>(null);
-  const [sessionReconnecting, setSessionReconnecting] = useState(false);
-  const [writes, setWrites] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const [build, setBuild] = useState(false);
   const submitLock = useRef(false);
   const profile = useMemo(() => { try { return getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE); } catch { return null; } }, []);
-  const ticketId = state.status === "queued" || state.status === "written" ? state.ticket : null;
-  const reading = usePhoneTicket(ticketId, device);
 
   useEffect(() => {
     let stopped = false;
     void Promise.resolve().then(() => {
       if (stopped) return;
+      // The L8 QR adds ?build: the same page opens the build resources.
+      setBuild(new URLSearchParams(location.search).has("build"));
       try { setDevice(deviceToken()); } catch { setError("Allow browser storage so we can keep your place on the map."); }
     });
     return () => { stopped = true; };
   }, []);
 
-  // The per-device count is kept per session, so a new session starts at zero.
+  const counting = state.status === "written" && now < state.endsAt;
   useEffect(() => {
-    if (!session || !device) return;
-    let stopped = false;
-    void Promise.resolve().then(() => {
-      if (stopped) return;
-      try {
-        const used = Number(localStorage.getItem(`arkiv-workshop-count:${session}:${device}`) ?? 0);
-        setWrites(Number.isSafeInteger(used) && used >= 0 ? Math.min(used, MAX_ENTITIES_PER_DEVICE) : 0);
-      } catch { setError("Allow browser storage so we can keep your place on the map."); }
-    });
-    return () => { stopped = true; };
-  }, [session, device]);
-
-  // No code to type: the phone joins whatever session the presenter is running. It asks once,
-  // and keeps asking (every 3 s, only while visible) just until the session is open for writes.
-  // After that the phone sends its entity and reads its ticket until the block is in. Nothing else.
-  useEffect(() => {
-    if (!WRITER_CONNECTED || state.status !== "form") return;
-    const controller = new AbortController();
-    const poll = async () => {
-      try {
-        const result = SessionPublic.parse(await writerRequest(WRITER_ROUTES.session(), { signal: controller.signal }));
-        if (controller.signal.aborted) return;
-        setSessionInfo(result); setSession(result.code ?? ""); setSessionReconnecting(false);
-        if (sessionOpen(result)) return;
-      } catch { if (!controller.signal.aborted) setSessionReconnecting(true); }
-      waitVisible(3000, controller.signal).then(poll, () => undefined);
-    };
-    void poll();
-    return () => controller.abort();
-  }, [state.status]);
-
-  useEffect(() => {
-    const ticket = reading.ticket;
-    if (state.status !== "queued" || !ticket) return;
-    let stopped = false;
-    void Promise.resolve().then(() => {
-      if (stopped) return;
-      if (ticket.status === "failed") { setError("The write failed. Try again."); setState({ status: "form" }); return; }
-      if (ticket.status === "written" && ticket.entityKey && ticket.block && ticket.expiresAtBlock) {
-        const used = writes + 1;
-        setWrites(used);
-        try { localStorage.setItem(`arkiv-workshop-count:${session}:${device}`, String(used)); } catch { /* The writer still enforces the device limit. */ }
-        setError(null);
-        setSessionReconnecting(false);
-        setState({ status: "written", ticket: ticket.ticket, key: ticket.entityKey as Hex, includedAt: BigInt(ticket.block), expiresAt: BigInt(ticket.expiresAtBlock), draft });
-      }
-    });
-    return () => { stopped = true; };
-  }, [reading.ticket, state.status, draft, device, writes, session]);
-
+    if (!counting) return;
+    const timer = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(timer);
+  }, [counting]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (submitLock.current || !device || !open) return;
+    if (submitLock.current || !device || !ready) return;
+    const validated = SubmitRequest.safeParse(draft);
+    if (!validated.success) { setError(phoneWriteMessage("invalid")); return; }
     submitLock.current = true;
     setError(null);
     setState({ status: "submitting" });
     try {
-      // The presenter may have reset the map since the page loaded: send to the session running now.
-      const current = SessionPublic.parse(await writerRequest(WRITER_ROUTES.session()));
-      setSessionInfo(current); setSession(current.code ?? "");
-      if (!sessionOpen(current)) { setError(phoneWriteMessage("doors_closed")); setState({ status: "form" }); return; }
-      const validated = SubmitRequest.safeParse({ ...draft, session: current.code });
-      if (!validated.success) { setError(phoneWriteMessage("invalid")); setState({ status: "form" }); return; }
-      const body = validated.data;
-      const result = SubmitResponse.parse(await writerRequest(WRITER_ROUTES.submit, { body, device }));
-      setState({ status: "queued", ticket: result.ticket });
+      const sent = { ...draft };
+      const result = SubmitResponse.parse(await writerRequest(`${WRITER_ROUTES.submit}?wait=1`, { body: validated.data, device, timeoutMs: 40_000 }));
+      if (result.status === "failed") { setError("The write failed. Try again."); setState({ status: "form" }); return; }
+      if (result.status === "written" && result.entityKey && result.block) {
+        const writtenAt = Date.now();
+        setNow(writtenAt);
+        setState({ status: "written", key: result.entityKey as Hex, includedAt: BigInt(result.block), draft: sent, endsAt: writtenAt + sent.lifetimeSec * 1000 });
+      } else setState({ status: "queued", draft: sent });
     } catch (err) { setError(phoneWriteMessage(err instanceof WriterRequestError ? err.code : undefined)); setState({ status: "form" }); }
     finally { submitLock.current = false; }
   }
-  const open = sessionInfo && sessionOpen(sessionInfo) && profile;
-  const closedLabel = !sessionInfo ? "Connecting…" : !sessionInfo.code ? "Not live yet" : "Paused";
+  const ready = WRITER_CONNECTED && profile;
   const entityLink = profile && state.status === "written" ? explorerUrl(profile, "entity", state.key) : null;
-  const reconnecting = sessionReconnecting || reading.reconnecting;
+  const left = state.status === "written" ? Math.max(0, state.endsAt - now) / 1000 : 0;
   return <div className="phone-surface"><main className="phone-main">
-    <h1 className="phone-header">{sessionInfo?.phase === "build" ? "Build on Arkiv this weekend" : "Join the map"}</h1>
-    {sessionInfo?.replay && <p className="phone-notice">We’re in replay mode.</p>}
+    <h1 className="phone-header">{build ? "Build on Arkiv this weekend" : "Join the map"}</h1>
     {!WRITER_CONNECTED && <p className="phone-notice">Not ready yet.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
-    {(reconnecting || error) && <p className="phone-notice" role="alert">{reconnecting ? "Reconnecting…" : error}</p>}
-    {sessionInfo?.phase === "build" ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
-      <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={state.draft.color} progress={1} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country)}</p>
-      <p className="phone-place">Set to expire at block #{state.expiresAt.toString()} ({state.draft.lifetimeSec / 60} min)</p>
-      <p className="phone-lifetime-status">You’re done. Watch the map.</p>
+    {error && <p className="phone-notice" role="alert">{error}</p>}
+    {build ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
+      <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={state.draft.color} progress={left / state.draft.lifetimeSec} muted={left === 0} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country)}</p>
+      {left > 0 ? <p className="phone-countdown" aria-label="Time left">{formatClock(left)}</p> : <p className="phone-lifetime-status">Time’s up. Unless someone extended it, your entity has expired: that’s Entity Expiration.</p>}
       <code>{shortKey(state.key)}</code>
       {entityLink && <a className="entity-explorer" href={entityLink} target="_blank" rel="noreferrer">View in explorer <ArrowUpRight size={18} /></a>}
-    </section> : state.status === "queued" ? <section className="phone-entity" role="status"><p className="phone-status">In the queue: next block</p><LifetimeRing color={draft.color} progress={0} muted /><h2>{draft.name}</h2><p>Your dot is on its way.</p></section> : <form className="phone-form" onSubmit={submit}>
+      {left === 0 && <button className="phone-submit" onClick={() => { setError(null); setState({ status: "form" }); }}>Write another</button>}
+    </section> : state.status === "queued" ? <section className="phone-entity" role="status"><p className="phone-status">On its way</p><LifetimeRing color={state.draft.color} progress={0} muted /><h2>{state.draft.name}</h2><p>Your dot is on its way. Watch the map.</p></section> : <form className="phone-form" onSubmit={submit}>
       <label>Your name<input name="name" placeholder="Name or nickname" autoComplete="nickname" maxLength={NAME_MAX_CHARS} required value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
       <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={DOT_COLOR_NAMES[color]} aria-pressed={draft.color === color} onClick={() => setDraft({ ...draft, color })} />)}</div></fieldset>
       <div className="phone-field"><span>Choose a country</span><CountryPicker value={draft.country} onChange={(country) => setDraft({ ...draft, country })} /></div>
-      <label>How long should this data (entity) live?<output className="lifetime-value">{draft.lifetimeSec / 60} min</output><input type="range" style={{ background: `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span></label>
-      {writes >= MAX_ENTITIES_PER_DEVICE && <p className="limit-note">You’ve reached the limit for this session.</p>}<button className="phone-submit" disabled={!open || !device || writes >= MAX_ENTITIES_PER_DEVICE || state.status === "submitting"}>{state.status === "submitting" ? "Sending…" : writes >= MAX_ENTITIES_PER_DEVICE ? "Session limit reached" : open ? "Write my entity" : closedLabel}</button>
+      <label>How long should this data (entity) live?<output className="lifetime-value">{draft.lifetimeSec / 60} min</output><input type="range" style={{ background: `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span></label><button className="phone-submit" disabled={!ready || !device || state.status === "submitting"}>{state.status === "submitting" ? "Writing… (a few seconds)" : "Write my entity"}</button>
     </form>}
   </main></div>;
 }
 
-function sessionOpen(info: SessionPublic): boolean {
-  return Boolean(info.valid && info.doors === "open" && !info.replay && info.network);
+/** 14:59, then 0:09: minutes and seconds left. */
+function formatClock(seconds: number): string {
+  const total = Math.ceil(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
 function BuildResources() {

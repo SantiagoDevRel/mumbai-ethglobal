@@ -179,7 +179,8 @@ try {
   await expect(page.locator(".join-qr-corner")).toBeVisible();
   await commands(page, [{ type: "goto", index: 15 }]);
   await expect(page.locator(".join-qr-build .qr-image img")).toHaveAttribute("width", "320");
-  await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan?build");
+  await expect(page.locator(".join-qr-build .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan?build");
   assert.ok((await page.locator(".join-qr-build").boundingBox()).y + (await page.locator(".join-qr-build").boundingBox()).height <= 782 * 1280 / 1920, "The L8 card must stay above the mascot.");
   assert.equal(await page.locator(".join-qr-build .qr-url").evaluate((element) => getComputedStyle(element).whiteSpace === "nowrap" && element.scrollWidth <= element.clientWidth), true);
   await commands(page, [{ type: "goto", index: 16 }]);
@@ -318,23 +319,18 @@ try {
   }
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
     const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme }, { loggedIn: false });
-    let current = "ABCD1234";
     const sessionReads = [];
     const submissions = [];
-    await context.route(`${writer}/api/session*`, (route) => {
-      sessionReads.push({ code: new URL(route.request().url()).searchParams.get("s"), method: route.request().method() });
-      return route.fulfill({ json: { valid: current !== null, code: current, doors: "open", phase: "talk", replay: false, network: "tiramisu" } });
-    });
-    await context.route(`${writer}/api/submit`, (route) => {
+    await context.route(`${writer}/api/session*`, (route) => { sessionReads.push(route.request().url()); return route.fallback(); });
+    await context.route(`${writer}/api/submit*`, (route) => {
       submissions.push({ body: route.request().postDataJSON(), device: route.request().headers()["x-device-token"] });
-      current = null;
       return route.fulfill({ status: 403, json: { error: "bad_session", message: "This session has ended." } });
     });
     const snapshot = async (state) => {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-${state}.png`), fullPage: true });
     };
-    // No code to type: the bare link joins the running session.
+    // No code to type and nothing to wait for: the writer puts the entity in the running session.
     await page.goto(`${origin}/scan`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await expect(page.getByRole("textbox", { name: "Workshop code" })).toHaveCount(0);
@@ -343,21 +339,17 @@ try {
     await page.getByRole("button", { name: "Purple", exact: true }).click();
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
     await expect.poll(() => submissions.length).toBe(1);
-    assert.equal(submissions[0].body.session, "ABCD1234");
+    assert.equal("session" in submissions[0].body, false, "Phones send no session code.");
     assert.equal(submissions[0].body.lifetimeSec, 900, "The slider starts at the 15-minute default.");
     assert.equal(submissions[0].body.color, "#9945ff");
     assert.ok(PALETTE.includes(submissions[0].body.color));
     assert.match(submissions[0].device, /^[a-f0-9-]{36}$/i);
-    await expect(page.getByRole("button", { name: "Not live yet", exact: true })).toBeDisabled();
-    await snapshot("ended");
-    await page.evaluate(() => localStorage.setItem(`arkiv-workshop-count:ZXCV5678:${localStorage.getItem("arkiv-workshop-device")}`, "3"));
-    current = "ZXCV5678";
-    await expect(page.getByRole("button", { name: "Session limit reached", exact: true })).toBeVisible();
-    await page.evaluate(() => localStorage.removeItem(`arkiv-workshop-count:ZXCV5678:${localStorage.getItem("arkiv-workshop-device")}`));
-    await page.reload({ waitUntil: "domcontentloaded" });
+    // A session that ended between scan and tap: the phone says so and the button stays usable.
+    await expect(page.locator('.phone-notice[role="alert"]')).toHaveText("The map was reset. Try again.");
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
-    assert.ok(sessionReads.every((request) => request.code === null && request.method === "GET"));
-    evidence.push({ surface: "codeless-phone", width, colorScheme, joinedWithoutCode: true, defaultLifetimeSec: 900, presetColor: true, endedSessionClosed: true, nextSessionJoined: true, interceptedSubmissions: submissions.length });
+    await snapshot("ended");
+    assert.deepEqual(sessionReads, [], "The phone never asks for the session.");
+    evidence.push({ surface: "codeless-phone", width, colorScheme, joinedWithoutCode: true, defaultLifetimeSec: 900, presetColor: true, endedSessionRetryable: true, sessionReads: sessionReads.length, interceptedSubmissions: submissions.length });
     await context.close();
   }
   assert.deepEqual(errors, []);

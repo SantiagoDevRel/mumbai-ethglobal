@@ -11,13 +11,13 @@ export class WriterRequestError extends Error {
   constructor(code: ErrorCode, message: string) { super(message); this.name = "WriterRequestError"; this.code = code; }
 }
 
-export async function writerRequest(path: string, options: { token?: string; body?: unknown; signal?: AbortSignal; device?: string } = {}): Promise<unknown> {
+export async function writerRequest(path: string, options: { token?: string; body?: unknown; signal?: AbortSignal; device?: string; timeoutMs?: number } = {}): Promise<unknown> {
   if (!WRITER_CONNECTED) throw new Error("The workshop writer is not connected yet.");
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (options.token) headers.authorization = `Bearer ${options.token}`;
   if (options.device) headers["x-device-token"] = options.device;
   const response = await fetch(WRITER_URL + path, { method: options.body === undefined ? "GET" : "POST", headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(15_000)]) : AbortSignal.timeout(15_000), cache: "no-store" });
+    body: options.body === undefined ? undefined : JSON.stringify(options.body), signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(options.timeoutMs ?? 15_000)]) : AbortSignal.timeout(options.timeoutMs ?? 15_000), cache: "no-store" });
   const json: unknown = await response.json();
   if (!response.ok) {
     const error = ErrorResponse.safeParse(json);

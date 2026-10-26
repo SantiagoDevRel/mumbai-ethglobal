@@ -235,7 +235,7 @@ async function phoneWave() {
       const submittedAtMs = now();
       await phone.getByRole("button", { name: "Write my entity", exact: true }).click();
       await expect(phone.getByText(/Written in block #\d+/)).toBeVisible({ timeout: 60000 });
-      const href = await phone.getByRole("link", { name: "View your entity" }).getAttribute("href");
+      const href = await phone.getByRole("link", { name: "View in explorer" }).getAttribute("href");
       phoneKey = href.split("/").at(-1); assert.match(phoneKey, /^0x[0-9a-f]{64}$/i);
       const included = await entity(phoneKey);
       const item = { kind: "browser", name: "Rehearsal phone", country: "IN", color: GREEN, submittedAtMs, confirmedAtMs: now(), entityKey: phoneKey, block: included.createdAt.toString(), expiresAtBlock: included.expiresAt.toString() };
@@ -312,7 +312,7 @@ async function sceneWork(id, step) {
     // the fresh-scan route to the L8 resources.
     report.l8WrittenPhoneHeading = await phone.locator("h1").textContent();
     const resources = await phone.context().newPage(); observe(resources, "resources");
-    await resources.goto(`${ORIGIN}/scan`, { waitUntil: "domcontentloaded" });
+    await resources.goto(`${ORIGIN}/scan?build`, { waitUntil: "domcontentloaded" });
     await expect(resources.getByRole("heading", { name: "Build on Arkiv this weekend" })).toBeVisible({ timeout: 15000 });
     await expect(resources.getByRole("link", { name: /Docs/ })).toBeVisible();
     report.l8FreshScanResourcesVisible = true; await resources.close();

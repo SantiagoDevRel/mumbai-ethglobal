@@ -21,7 +21,8 @@ export const DEVICE_HEADER = "x-device-token";
 
 /** POST /api/submit */
 export const SubmitRequest = z.object({
-  session: z.string().min(4).max(16),
+  /** Optional: without it the writer uses the session that is running. Phones send none. */
+  session: z.string().min(4).max(16).optional(),
   name: z.string().trim().min(1).max(NAME_MAX_CHARS),
   /** One of the seven preset colors. */
   color: z.enum(DOT_PALETTE),
@@ -42,6 +43,13 @@ export const SubmitResponse = z.object({
   /** Where the writer placed the dot (stored on-chain as-is). */
   lat: z.number(),
   lng: z.number(),
+  /** The session the entity joined. */
+  session: z.string().optional(),
+  /** With `?wait=1`: the ticket once its block is in (or "queued" if it took longer than the wait). */
+  status: z.enum(["queued", "sending", "written", "failed"]).optional(),
+  entityKey: hex.optional(),
+  block: z.string().optional(),
+  expiresAtBlock: z.string().optional(),
 });
 export type SubmitResponse = z.infer<typeof SubmitResponse>;
 

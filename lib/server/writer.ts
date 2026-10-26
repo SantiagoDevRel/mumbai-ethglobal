@@ -53,6 +53,8 @@ const LOGIN_MAX_FAILURES = 10;
 const LEASE_MS = 30_000;
 /** One sender run stays well inside the function's maximum duration; the next kick continues. */
 const RUN_MS = 90_000;
+/** How long a phone's submit waits for its block before answering "on its way". */
+const SUBMIT_WAIT_MS = 25_000;
 const HOLD_MS = 60_000;
 const SNAPSHOT_MS = 2_000;
 const BALANCE_MS = 15_000;
@@ -465,7 +467,10 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     if (!parsed.success) fail("invalid", 400, "Check your name, color, country and lifetime.");
     const data = parsed.data;
     const current = await readMeta();
-    if (data.session !== current.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");
+    // Phones send no session: they join whatever session is running when they press the button.
+    const session = data.session ?? current.session;
+    if (!session) fail("doors_closed", 409, "Not open yet. Try again in a moment.");
+    if (session !== current.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");
     if (current.doors !== "open" || current.phase !== "talk" || current.replay) fail("doors_closed", 409, "Writing is paused. Try again in a moment.");
     if (nameBlocked(data.name)) fail("name_blocked", 422, REJECTION_MESSAGE);
     const token = deviceToken(request.headers.get(DEVICE_HEADER), request.headers.get("cookie"));
@@ -475,7 +480,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     if (!point) fail("invalid", 400, "Choose a supported country.");
     const { reader } = await network();
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)))).map(b => b.toString(16).padStart(2, "0")).join("");
-    const deviceId = `device:${data.session}:${hash}`;
+    const deviceId = `device:${session}:${hash}`;
     // The chain check runs before the transaction; the transaction re-checks that nothing changed.
     const [device] = await db.query<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1`, [deviceId]);
     let live = false;
@@ -488,10 +493,10 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
         live = page.entities.length > 0;
       }
     }
-    const dot: DotCreate = { session: data.session, name: data.name, color: data.color.toLowerCase(), country: data.country, lifetimeSec: data.lifetimeSec, ...point };
+    const dot: DotCreate = { session, name: data.name, color: data.color.toLowerCase(), country: data.country, lifetimeSec: data.lifetimeSec, ...point };
     const position = await db.transaction(async q => {
       const meta = await lockMeta(q);
-      if (data.session !== meta.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");
+      if (session !== meta.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");
       if (meta.doors !== "open" || meta.phase !== "talk" || meta.replay) fail("doors_closed", 409, "Writing is paused. Try again in a moment.");
       const [locked] = await q<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1 for update`, [deviceId]);
       // A second submit from the same phone raced this one: treat it as the live entity it is.
@@ -499,15 +504,35 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       const denied = admissionError(live, locked?.count ?? 0, meta.accepted);
       if (denied) fail(denied, 429, denied === "map_full" ? "The map is full!" : denied === "device_live" ? "Your device already has a live entity." : "Your device has reached the session limit.");
       await q(`insert into ${t("tickets")} (id, session, device, status, dot, lat, lng, accepted_at) values ($1, $2, $3, 'queued', $4, $5, $6, $7)`,
-        [ticketId, data.session, deviceId, JSON.stringify(dot), point.lat, point.lng, Date.now()]);
+        [ticketId, session, deviceId, JSON.stringify(dot), point.lat, point.lng, Date.now()]);
       await q(`insert into ${t("devices")} (id, count, last_ticket) values ($1, 1, $2) on conflict (id) do update set count = ${t("devices")}.count + 1, last_ticket = $2`, [deviceId, ticketId]);
       meta.accepted++;
       await saveMeta(q, meta);
       const [{ n }] = await q<{ n: number }>(`select count(*)::int as n from ${t("tickets")} where status = 'queued'`) as [{ n: number }];
       return n;
     });
-    kick();
-    return Response.json({ ticket: ticketId, position, ...point }, { headers: { "set-cookie": `workshop_device=${token}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400` } });
+    const headers = { "set-cookie": `workshop_device=${token}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=86400` };
+    if (new URL(request.url).searchParams.get("wait") !== "1") {
+      kick();
+      return Response.json({ ticket: ticketId, position, ...point, session }, { headers });
+    }
+    // The phone sends once and waits here for its block, so it never polls. This request starts a
+    // sender itself (the lease keeps it to one) and starts another if the queue is left waiting.
+    const runs: Promise<void>[] = [];
+    const start = () => runs.push(runWriter().catch(error => console.error("writer run failed:", error instanceof Error ? error.message : String(error))));
+    start();
+    defer(() => Promise.all(runs).then(() => undefined));
+    const deadline = Date.now() + SUBMIT_WAIT_MS;
+    let row: TicketRow | undefined, lastStart = Date.now();
+    while (Date.now() < deadline) {
+      await sleep(400);
+      [row] = await db.query<TicketRow>(`select ${TICKET_COLUMNS} from ${t("tickets")} where id = $1`, [ticketId]);
+      if (row?.status === "written" || row?.status === "failed") break;
+      if (Date.now() - lastStart > 3_000) { lastStart = Date.now(); start(); }
+    }
+    const result = row ? publicTicket(row) : null;
+    return Response.json({ ticket: ticketId, position, ...point, session, status: result?.status ?? "queued",
+      entityKey: result?.entityKey, block: result?.block, expiresAtBlock: result?.expiresAtBlock }, { headers });
   }
 
   async function ticket(id: string): Promise<Response> {

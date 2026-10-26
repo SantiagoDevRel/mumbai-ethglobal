@@ -89,19 +89,20 @@ try {
   }), { timeout: 15000 }).toBeGreaterThan(0);
   await stage.locator(".event-log").getByRole("button", { name: /App smoke/ }).first().click();
   await expect(stage.locator(".inspector-panel")).toContainText("App smoke");
-  await expect(phone.getByText("You’re done. Watch the map.", { exact: true })).toBeVisible();
-  // The slider's minimum lifetime is five minutes; the map drops the dot when it expires.
+  await expect(phone.getByLabel("Time left")).toHaveText(/^[45]:\d\d$/);
+  // The slider's minimum lifetime is five minutes; the map drops the dot when it expires and the
+  // phone's own countdown reaches zero.
   await expect(stage.locator(".inspector-panel")).toContainText("Select a dot on the map", { timeout: 360000 });
   const expired = await stage.locator(".source-label .refresh-detail").textContent();
-  // Once its block is in, the phone makes no more requests.
-  const unexpected = phoneWriterRequests.filter((request) => request.at > includedAt + 500);
-  assert.deepEqual(unexpected, [], "After written the phone makes no requests.");
+  await expect(phone.getByRole("button", { name: "Write another", exact: true })).toBeVisible({ timeout: 30000 });
+  // The phone's whole conversation with the writer is the one submit.
+  assert.deepEqual(phoneWriterRequests.map((request) => request.path), ["/api/submit"], "A phone makes exactly one request.");
   assert.equal(phoneRpcReads, 0, "Phones never call an RPC.");
   assert.deepEqual(errors, []);
   assert.ok(proxyReads > 0, "The presenter must use its authenticated writer read proxy.");
   assert.equal(publicRpcReads, 0, "The presenter map must never read the public RPC.");
   assert.equal(await phone.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-  process.stdout.write(JSON.stringify({ session, entityKey: key, written, mapAfterExpiry: expired,phoneToInclusionMs: includedAt - submittedAt, liveDotRendered: true, inspectorConfirmed: true, presenterProxyReads: proxyReads, presenterPublicRpcReads: publicRpcReads, silentAfterWritten: true, phoneRpcReads, viewport: "390x844", pageErrors: errors.length }) + "\n");
+  process.stdout.write(JSON.stringify({ session, entityKey: key, written, mapAfterExpiry: expired, phoneToInclusionMs: includedAt - submittedAt, liveDotRendered: true, inspectorConfirmed: true, presenterProxyReads: proxyReads, presenterPublicRpcReads: publicRpcReads, oneRequest: true, phoneRpcReads, viewport: "390x844", pageErrors: errors.length }) + "\n");
 } finally {
   await browser?.close();
   if (ownedSession) {

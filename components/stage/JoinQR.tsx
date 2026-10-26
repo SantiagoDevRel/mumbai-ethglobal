@@ -11,13 +11,15 @@ export function JoinQR({ screen }: { screen: "map" | "slides" }) {
   const { scene } = useScene();
   const counting = useStage((s) => s.countdownAt !== null);
   const [qr, setQr] = useState<{ image: string; label: string; url: string } | null>(null);
-  // No session code in the link: the phone joins whatever session is running.
+  // No session code in the link: the phone joins whatever session is running. From L8 the link
+  // carries ?build, so a fresh scan opens the build resources without asking the writer.
+  const buildLink = scene.qr.label === "Start building";
   useEffect(() => {
     let stale = false;
-    const url = new URL("/scan", "https://mumbai-ethglobal.vercel.app");
-    void QRCode.toDataURL(url.href, { width: 480, margin: 2, errorCorrectionLevel: "M", color: { dark: "#111111", light: "#f6f4ef" } }).then((image) => { if (!stale) setQr({ image, label: url.host + url.pathname, url: url.href }); });
+    const url = new URL(buildLink ? "/scan?build" : "/scan", "https://mumbai-ethglobal.vercel.app");
+    void QRCode.toDataURL(url.href, { width: 480, margin: 2, errorCorrectionLevel: "M", color: { dark: "#111111", light: "#f6f4ef" } }).then((image) => { if (!stale) setQr({ image, label: url.host + url.pathname + url.search, url: url.href }); });
     return () => { stale = true; };
-  }, []);
+  }, [buildLink]);
   const center = screen === "slides";
   if (center && (scene.qr.placement !== "center" || counting)) return null;
   const build = !center && scene.id === "L8";
