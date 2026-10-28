@@ -285,6 +285,24 @@ try {
   // The reset closes the card (and its "Resetting…" button) along with everything else.
   await expect(page.getByRole("heading", { name: "Presenter controls", exact: true })).toHaveCount(0);
   await expect(page.locator(".presenter-bar")).toHaveCount(0);
+  // A presenter who can't find the ? key clicks the ? button; a Spanish keyboard's ¿ works too, Esc
+  // closes, and the scene list jumps anywhere.
+  const card = page.getByRole("dialog", { name: "Presenter controls" });
+  await page.getByRole("button", { name: "Presenter controls" }).click();
+  await expect(card).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(card).toHaveCount(0);
+  // Playwright has no Spanish layout: send the keys a Spanish keyboard reports (¿; ? through AltGr).
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "¿", bubbles: true })));
+  await expect(card).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "?", ctrlKey: true, altKey: true, bubbles: true })));
+  await expect(card).toBeVisible();
+  if (capture) await page.screenshot({ path: path.join(capture, "map-1920-controls.png") });
+  await card.getByRole("button", { name: /Agenda/ }).click();
+  await expect(card).toHaveCount(0);
+  await expect(page.locator('[data-screen="map"][data-scene="AG"]')).toBeVisible();
+  await commands(page, [{ type: "goto", index: 0 }]);
   // The data source still switches from the map's "?" toolbar; the HUD shows on live scenes.
   await commands(page, [{ type: "goto", index: 2 }]);
   await page.keyboard.press("?");

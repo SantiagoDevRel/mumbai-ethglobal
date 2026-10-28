@@ -15,7 +15,8 @@ export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "H", action: "Hide the selected dot (local)" },
   { keys: "R", action: "Reset the camera" },
   { keys: "P", action: "Plan B: replay mode" },
-  { keys: "?", action: "Show or hide the controls overlay" },
+  { keys: "? or /", action: "Show or hide these controls (or the ? button, bottom left)" },
+  { keys: "Esc", action: "Close these controls" },
 ];
 
 export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Command | null {
@@ -61,8 +62,13 @@ export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Comma
     case "p":
     case "P":
       return { type: "replay" };
+    // Spanish keyboards: "?" can come through as "¿", and AltGr reports Ctrl+Alt.
     case "?":
+    case "¿":
+    case "/":
       return { type: "togglePanel", panel: "controls" };
+    case "Escape":
+      return { type: "togglePanel", panel: "controls", open: false };
     default:
       return null;
   }
@@ -78,9 +84,10 @@ export function usePresenterKeys(enabled = true): void {
   useEffect(() => {
     if (!enabled) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return;
+      if (e.metaKey || isTyping(e.target)) return;
       const cmd = commandForKey(e);
       if (!cmd) return;
+      if ((e.ctrlKey || e.altKey) && !(cmd.type === "togglePanel" && cmd.panel === "controls")) return;
       e.preventDefault();
       stage.dispatch(cmd);
     };

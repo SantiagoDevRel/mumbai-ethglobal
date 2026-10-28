@@ -15,3 +15,24 @@
 .presenter-bar.is-inline p{flex:1;margin:0;font-size:15px;color:var(--t-64)}
 .presenter-bar.is-inline button{height:40px;font-size:16px;opacity:1}
 .presenter-bar span{max-width:360px;padding:6px 10px;border-radius:var(--r-ctl);background:var(--arkiv-ink);color:var(--arkiv-orange);font-size:14px}
+/* The presenter card and the ? button that opens it (StageFrame.tsx). */
+.controls-button{position:fixed;left:8px;bottom:8px;z-index:45;width:28px;height:28px;border:1px solid var(--t-28);border-radius:50%;background:var(--glass);color:var(--t-84);font:600 15px/1 var(--font-mono);cursor:pointer;opacity:.55;transition:opacity .16s}
+.controls-button:hover,.controls-button:focus-visible,.controls-button[aria-expanded=true]{opacity:1}
+.controls-button:focus-visible,.controls-card button:focus-visible{outline:3px solid var(--arkiv-orange);outline-offset:3px}
+.controls-card{width:min(1040px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:28px 32px;border:1px solid var(--t-14);border-radius:16px;background:var(--arkiv-ink);color:var(--arkiv-sand);font-family:var(--font-sans);box-shadow:0 24px 64px rgba(0,0,0,.5)}
+.controls-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.controls-head h2{margin:0;font-size:24px;font-weight:600}
+.controls-head button{height:36px;padding:0 14px;border:1px solid var(--t-28);border-radius:var(--r-ctl);background:none;color:var(--t-84);font:600 15px var(--font-sans);cursor:pointer}
+.controls-card kbd{margin-left:6px;font:500 13px var(--font-mono);opacity:.64}
+.controls-session{margin:8px 0 20px;font-size:15px;color:var(--t-64)}
+.controls-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:32px}
+.controls-columns h3{margin:0 0 10px;font:600 13px var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--t-64)}
+.controls-scenes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0;padding:0;list-style:none}
+.controls-scenes button{display:flex;align-items:baseline;gap:8px;width:100%;min-height:36px;padding:6px 10px;border:1px solid var(--t-14);border-radius:8px;background:none;color:var(--t-84);font:500 14px/1.25 var(--font-sans);text-align:left;cursor:pointer}
+.controls-scenes button:hover{border-color:var(--t-50)}
+.controls-scenes button[aria-current]{border-color:var(--arkiv-orange);color:var(--arkiv-sand);background:rgba(254,116,70,.12)}
+.controls-scenes span{flex:none;width:26px;font:600 12px var(--font-mono);color:var(--arkiv-orange)}
+.controls-card table{border-collapse:collapse;font-size:15px}
+.controls-card td{padding:4px 0;vertical-align:top}
+.controls-card td:first-child{padding-right:18px;white-space:nowrap;font-family:var(--font-mono);color:var(--arkiv-orange)}
+@media(max-width:760px){.controls-columns{grid-template-columns:1fr}}

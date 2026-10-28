@@ -18,7 +18,7 @@ under it shows the query that ran. Expired dots stay on the map in grey, and can
 
 Present from `/map` full screen: one thing at a time, map scenes and slides in one window
 (scene order in `shared/scenes.ts`). `/slides` can still sit beside it on a split screen; the arrow
-keys work in either window and move both. Reset (bottom right on /slides; on /map press ? to show it; click twice) starts a new session: an empty
+keys work in either window and move both. The presenter card opens with the small ? button at the bottom left, or the ? key (¿ and / work too; Esc closes it). It lists every scene to jump to, the keys, and Reset (also bottom right on /slides; click twice), which starts a new session: an empty
 map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
 the QR slide.
 

@@ -21,8 +21,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
 import { KEY_HELP } from "../../lib/stage/keyboard";
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
-import type { SceneDef } from "../../shared/scenes";
-import { useScene, useStage } from "../../lib/stage/store";
+import { SCENES, type SceneDef } from "../../shared/scenes";
+import { stage, useScene, useStage } from "../../lib/stage/store";
 
 export const STAGE_W = 1920;
 export const STAGE_H = 1080;
@@ -138,26 +138,56 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
   );
 }
 
+/** The presenter card: a visible ? button (bottom left) or the ? key opens it; Esc, the backdrop or
+ * Close shuts it. It jumps to any scene and holds Reset, so a lost presenter is never stuck. */
 function ControlsOverlay({ extra }: { extra?: ReactNode }) {
   const controls = useStage((s) => s.panels.controls);
-  if (!controls) return null;
+  const session = useStage((s) => s.session);
+  const { index } = useScene();
+  const close = () => stage.dispatch({ type: "togglePanel", panel: "controls", open: false });
   return (
-    <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60">
-      <div className="rounded-2xl bg-[var(--panel-bg)] p-8 text-[var(--panel-fg)] shadow-2xl">
-        <h2 className="mb-4 text-xl font-semibold">Presenter controls</h2>
-        <table className="text-base">
-          <tbody>
-            {KEY_HELP.map((k) => (
-              <tr key={k.keys}>
-                <td className="py-1 pr-6 font-mono">{k.keys}</td>
-                <td className="py-1">{k.action}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {extra}
-      </div>
-    </div>
+    <>
+      <button type="button" className="controls-button" aria-label="Presenter controls" title="Presenter controls (?)" aria-expanded={controls} onClick={() => stage.dispatch({ type: "togglePanel", panel: "controls" })}>?</button>
+      {controls ? (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/60 p-4" onClick={(event) => { if (event.target === event.currentTarget) close(); }}>
+          <div className="controls-card" role="dialog" aria-label="Presenter controls">
+            <div className="controls-head">
+              <h2>Presenter controls</h2>
+              <button type="button" onClick={close}>Close <kbd>Esc</kbd></button>
+            </div>
+            <p className="controls-session">{session ? <>Session running · phones that scan now land on this map</> : <>No session yet: Reset starts one</>}</p>
+            <div className="controls-columns">
+              <section>
+                <h3>Go to</h3>
+                <ol className="controls-scenes">
+                  {SCENES.map((scene, i) => (
+                    <li key={scene.id}>
+                      <button type="button" aria-current={i === index ? "step" : undefined} onClick={() => { stage.dispatch({ type: "goto", index: i }); close(); }}>
+                        <span>{scene.id}</span>{scene.title}
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+              <section>
+                <h3>Keys</h3>
+                <table>
+                  <tbody>
+                    {KEY_HELP.map((k) => (
+                      <tr key={k.keys}>
+                        <td>{k.keys}</td>
+                        <td>{k.action}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {extra}
+              </section>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
