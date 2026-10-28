@@ -4,8 +4,8 @@
 // the session sync with the writer.
 
 import Image from "next/image";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { PresenterStatus, SessionStartResponse } from "../../shared/writer-api";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
+import { PresenterStatus, SessionStartResponse, WritingResponse } from "../../shared/writer-api";
 import { WRITER_ROUTES, WRITER_CONNECTED, WriterRequestError } from "../../lib/data/writer-client";
 import { waitVisible } from "../../lib/data/visible-poll";
 import { presenterLogin, presenterRequest, usePresenterToken } from "../../lib/data/presenter-auth";
@@ -63,6 +63,41 @@ export function PresenterBar({ inline = false }: { inline?: boolean }) {
   </div>;
 }
 
+// Whether phones can write right now, as the last status poll saw it (null before the first poll).
+let writing: boolean | null = null;
+const writingListeners = new Set<() => void>();
+function setWritingState(value: boolean | null) {
+  if (value === writing) return;
+  writing = value;
+  for (const listener of writingListeners) listener();
+}
+const subscribeWriting = (listener: () => void) => { writingListeners.add(listener); return () => { writingListeners.delete(listener); }; };
+const isOpen = (status: PresenterStatus) => Boolean(status.session) && status.doors === "open" && status.phase === "talk" && !status.replay;
+
+/** The /map ON|OFF switch, bottom left beside "?": ON lets phones write entities (it starts a session
+ * if none is running), OFF pauses writes and keeps the map. */
+export function WritingSwitch() {
+  const on = useSyncExternalStore(subscribeWriting, () => writing, () => null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function set(next: boolean) {
+    if (busy) return;
+    setBusy(true); setError(null);
+    try {
+      const { code } = WritingResponse.parse(await presenterRequest(WRITER_ROUTES.presenter.writing, { on: next }));
+      setWritingState(next);
+      if (code && stage.getState().session !== code) stage.dispatch({ type: "session", code });
+    } catch (err) { setError(err instanceof Error ? err.message : "The switch failed. Try again."); }
+    finally { setBusy(false); }
+  }
+  return <div className="writing-switch" role="group" aria-label="Phone writing">
+    <span>Writing</span>
+    <button type="button" aria-pressed={on === true} disabled={busy} onClick={() => void set(true)}>ON</button>
+    <button type="button" aria-pressed={on === false} disabled={busy} onClick={() => void set(false)}>OFF</button>
+    {error && <em role="alert">{error}</em>}
+  </div>;
+}
+
 /** /map keeps the stage on the writer's running session and starts one if there is none, so the
  * QR works from the first slide. */
 export function usePresenterSession() {
@@ -71,8 +106,10 @@ export function usePresenterSession() {
     const controller = new AbortController();
     async function poll() {
       try {
-        let { session } = PresenterStatus.parse(await presenterRequest(WRITER_ROUTES.presenter.status));
-        if (!session) session = SessionStartResponse.parse(await presenterRequest(WRITER_ROUTES.presenter.sessionStart, {})).code;
+        const status = PresenterStatus.parse(await presenterRequest(WRITER_ROUTES.presenter.status));
+        let { session } = status;
+        setWritingState(isOpen(status));
+        if (!session) { session = SessionStartResponse.parse(await presenterRequest(WRITER_ROUTES.presenter.sessionStart, {})).code; setWritingState(true); }
         if (!controller.signal.aborted && stage.getState().session !== session) stage.dispatch({ type: "session", code: session });
       } catch { /* The next poll retries; a rejected login brings the password form back. */ }
       // A hidden /map stops polling the writer until it is shown again.

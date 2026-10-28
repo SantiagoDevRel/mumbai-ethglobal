@@ -86,18 +86,26 @@ try {
     await tick(240000);
     const over = page.getByText("Time’s up. Unless someone extended it, your entity has expired: that’s Entity Expiration.", { exact: true });
     await fits(over);
-    await expect(page.getByRole("button", { name: "Write another", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Create new entity", exact: true })).toBeVisible();
+    await expect(page.locator(".phone-mine li")).toHaveCount(1);
+    await expect(page.locator(".phone-mine h2")).toContainText("1 of 10");
+    await expect(page.locator(".phone-mine-time")).toHaveText("expired");
     await snapshot("expired");
     assert.equal(api.length, before + 1, "Writing the entity is one request.");
     // Done: no more requests of any kind, however long the phone stays open.
     await tick(120000);
     assert.equal(api.length, before + 1, "After written the phone makes no requests.");
     // An answer that comes back before the block is in still ends the phone's part.
-    await page.getByRole("button", { name: "Write another", exact: true }).click();
+    await page.getByRole("button", { name: "Create new entity", exact: true }).click();
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("SE again");
     phase = "queued";
     await write.click();
     await expect(page.getByText("Your dot is on its way. Watch the map.", { exact: true })).toBeVisible();
+    await expect(page.locator(".phone-mine li")).toHaveCount(2);
+    // A refresh keeps the list and the phone can write again.
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(write).toBeEnabled();
+    await expect(page.locator(".phone-mine li")).toHaveCount(2);
     await tick(60000);
     assert.equal(api.length, before + 2, "A queued answer is not followed by polling.");
     assert.deepEqual(rpc, [], "The phone must never attempt an RPC.");

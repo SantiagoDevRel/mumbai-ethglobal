@@ -5,7 +5,7 @@ export function phoneWriteMessage(code?: string): string {
     bad_session: "The map was reset. Try again.",
     doors_closed: "Not open yet. Try again in a moment.",
     name_blocked: "Try another name.",
-    device_live: "You already have a live entity.",
+    device_live: "Your last entity is still on its way. Try again in a moment.",
     device_limit: "You’ve reached the limit for this session.",
     map_full: "The map is full!",
     network_not_configured: "Network not configured",

@@ -85,7 +85,10 @@ test("presenter auth, CORS, session state and per-device queuing", opts, async (
     assert.equal(accepted.data.position, 1);
     assert.equal(accepted.headers.get("access-control-allow-origin"), null, "Same-origin calls need no CORS.");
     assert.match(accepted.headers.get("set-cookie") ?? "", /workshop_device=/);
-    assert.equal((await call("/api/submit", draft, device)).data.error, "device_live");
+    // A phone can keep writing: a second entity from the same device is accepted.
+    const second = await call("/api/submit", { ...draft, name: "Asha two" }, device);
+    assert.equal(second.status, 200, JSON.stringify(second.data));
+    assert.equal(second.data.position, 2);
     const local = await call("/api/submit", { ...draft, name: "Ravi" }, { "x-device-token": "test-device-token-5678", "content-type": "application/json", origin: "http://localhost:3000" });
     assert.equal(local.headers.get("access-control-allow-origin"), "http://localhost:3000");
     const ticket = await call(`/api/ticket/${accepted.data.ticket}`, undefined, {});
@@ -94,7 +97,7 @@ test("presenter auth, CORS, session state and per-device queuing", opts, async (
     assert.equal("device" in ticket.data, false);
     const status = (await call("/api/presenter/status")).data;
     assert.equal(status.held, true);
-    assert.equal(status.queued, 2);
+    assert.equal(status.queued, 3);
     await call("/api/presenter/replay", { on: true });
     assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed");
     await call("/api/presenter/session/end", {});
@@ -103,6 +106,31 @@ test("presenter auth, CORS, session state and per-device queuing", opts, async (
     assert.equal(ended.code, null);
     assert.equal((await call(`/api/ticket/${accepted.data.ticket}`, undefined, {})).data.status, "failed");
     assert.equal(calls.some(rpc => rpc.method.startsWith("eth_send")), false);
+  } finally { await dispose(); }
+});
+
+test("the /map ON|OFF switch opens and pauses writes, and starts a session when none runs", opts, async () => {
+  const { call, dispose } = await fixture();
+  try {
+    const device = { "x-device-token": "test-device-token-switch", "content-type": "application/json", origin: "https://app.example" };
+    const draft = { name: "Switch", color: "#fe7446", country: "IN", lifetimeSec: 300 };
+    assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed", "No session yet.");
+    const on = await call("/api/presenter/writing", { on: true });
+    assert.equal(on.status, 200);
+    assert.match(on.data.code, /^[A-F0-9]{8}$/);
+    // A session stuck in the build phase (as production was on October 28) opens again with ON.
+    await call("/api/presenter/phase", { phase: "build" });
+    assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed");
+    assert.equal((await call("/api/presenter/writing", { on: true })).data.code, on.data.code, "ON keeps the running session.");
+    assert.equal((await call("/api/presenter/hold", {})).data.idle, true);
+    assert.equal((await call("/api/submit", draft, device)).status, 200);
+    const off = await call("/api/presenter/writing", { on: false });
+    assert.equal(off.data.code, on.data.code, "OFF keeps the session.");
+    assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed");
+    const status = (await call("/api/presenter/status")).data;
+    assert.equal(status.doors, "closed");
+    assert.equal(status.session, on.data.code);
+    assert.equal((await call("/api/presenter/writing", { on: "yes" })).data.error, "invalid");
   } finally { await dispose(); }
 });
 

@@ -285,6 +285,15 @@ try {
   // The reset closes the card (and its "Resetting…" button) along with everything else.
   await expect(page.getByRole("heading", { name: "Presenter controls", exact: true })).toHaveCount(0);
   await expect(page.locator(".presenter-bar")).toHaveCount(0);
+  // The ON|OFF switch beside "?" opens and pauses phone writes; it shows what the status poll saw.
+  const writingSwitch = page.getByRole("group", { name: "Phone writing" });
+  await expect(writingSwitch.getByRole("button", { name: "ON", exact: true })).toHaveAttribute("aria-pressed", "true");
+  const writing = [];
+  await context.route(`${writer}/api/presenter/writing`, (route) => { writing.push(route.request().postDataJSON().on); return route.fulfill({ json: { code: "RESET-01" } }); });
+  await writingSwitch.getByRole("button", { name: "OFF", exact: true }).click();
+  await expect.poll(() => writing).toEqual([false]);
+  await writingSwitch.getByRole("button", { name: "ON", exact: true }).click();
+  await expect.poll(() => writing).toEqual([false, true]);
   // A presenter who can't find the ? key clicks the ? button; a Spanish keyboard's ¿ works too, Esc
   // closes, and the scene list jumps anywhere.
   const card = page.getByRole("dialog", { name: "Presenter controls" });

@@ -7,7 +7,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { MapFrame, StageBox } from "../../components/stage/StageFrame";
-import { PresenterBar, PresenterGate, usePresenterSession } from "../../components/stage/Presenter";
+import { PresenterBar, PresenterGate, usePresenterSession, WritingSwitch } from "../../components/stage/Presenter";
 import { usePresenterKeys } from "../../lib/stage/keyboard";
 import { initialState, stage } from "../../lib/stage/store";
 import { useLiveData } from "../../lib/data/useLiveData";
@@ -72,5 +72,6 @@ function MapStage() {
     hud={live && <StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} />{status}</div></StageBox>}
     qr={<StageBox><JoinQR screen="map" />{!live && status ? <div className="slide-notice">{status}</div> : null}</StageBox>}
     bar={<PresenterBar inline />}
+    writing={<WritingSwitch />}
   />;
 }

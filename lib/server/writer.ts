@@ -13,13 +13,12 @@
 import { decodeEventLog, keccak256, parseTransaction, recoverTransactionAddress, type TransactionSerialized } from "viem";
 import { ENTITY_EVENTS_ABI } from "@arkiv-network/sdk/entity";
 import { eq } from "@arkiv-network/sdk/query";
-import { key as keyValue } from "@arkiv-network/sdk/attr";
 import { createSdkClients, keyQuotaExhausted, postKeyed, type RpcObserver } from "../../shared/arkiv/clients-0.8";
 import { dotToCreate } from "../../shared/arkiv/sdk-0.8";
 import { getProfile, NetworkNotConfiguredError } from "../../shared/arkiv/profiles";
 import type { DotCreate } from "../../shared/arkiv/adapter";
 import { APP_ID, MAX_ENTITIES_PER_SESSION, type Hex } from "../../shared/types";
-import { DEVICE_HEADER, DoorsRequest, LoginRequest, PhaseRequest, ReplayRequest, RPC_READ_ALLOWLIST, SubmitRequest, WRITER_ROUTES, type ErrorCode, type PresenterStatus, type TicketResponse } from "../../shared/writer-api";
+import { DEVICE_HEADER, DoorsRequest, LoginRequest, PhaseRequest, ReplayRequest, RPC_READ_ALLOWLIST, SubmitRequest, WritingRequest, WRITER_ROUTES, type ErrorCode, type PresenterStatus, type TicketResponse } from "../../shared/writer-api";
 import { REJECTION_MESSAGE } from "../../shared/data/blocklist";
 import { admissionError, deviceToken, nameBlocked, placeDot } from "./policy";
 import { countdownTicket, type SessionSnapshot } from "./countdown";
@@ -478,30 +477,20 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     const ticketId = crypto.randomUUID();
     const point = placeDot(data.country, ticketId);
     if (!point) fail("invalid", 400, "Choose a supported country.");
-    const { reader } = await network();
+    await network();
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)))).map(b => b.toString(16).padStart(2, "0")).join("");
     const deviceId = `device:${session}:${hash}`;
-    // The chain check runs before the transaction; the transaction re-checks that nothing changed.
+    // A phone may keep several entities live (up to MAX_ENTITIES_PER_DEVICE per session).
     const [device] = await db.query<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1`, [deviceId]);
-    let live = false;
-    if (device?.last_ticket) {
-      const [previous] = await db.query<TicketRow>(`select ${TICKET_COLUMNS} from ${t("tickets")} where id = $1`, [device.last_ticket]);
-      live = previous?.status === "queued" || previous?.status === "sending";
-      if (previous?.status === "written" && previous.entity_key) {
-        const page = await reader.select({ key: true }).createdBy(writerAddress)
-          .where(eq("app", APP_ID), eq("$key", keyValue(previous.entity_key as Hex))).fetch();
-        live = page.entities.length > 0;
-      }
-    }
     const dot: DotCreate = { session, name: data.name, color: data.color.toLowerCase(), country: data.country, lifetimeSec: data.lifetimeSec, ...point };
     const position = await db.transaction(async q => {
       const meta = await lockMeta(q);
       if (session !== meta.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");
       if (meta.doors !== "open" || meta.phase !== "talk" || meta.replay) fail("doors_closed", 409, "Writing is paused. Try again in a moment.");
       const [locked] = await q<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1 for update`, [deviceId]);
-      // A second submit from the same phone raced this one: treat it as the live entity it is.
-      if ((locked?.last_ticket ?? null) !== (device?.last_ticket ?? null)) fail("device_live", 429, "Your device already has a live entity.");
-      const denied = admissionError(live, locked?.count ?? 0, meta.accepted);
+      // A second submit from the same phone raced this one (a double tap): keep only the first.
+      if ((locked?.last_ticket ?? null) !== (device?.last_ticket ?? null)) fail("device_live", 429, "Your last entity is still on its way.");
+      const denied = admissionError(false, locked?.count ?? 0, meta.accepted);
       if (denied) fail(denied, 429, denied === "map_full" ? "The map is full!" : denied === "device_live" ? "Your device already has a live entity." : "Your device has reached the session limit.");
       await q(`insert into ${t("tickets")} (id, session, device, status, dot, lat, lng, accepted_at) values ($1, $2, $3, 'queued', $4, $5, $6, $7)`,
         [ticketId, session, deviceId, JSON.stringify(dot), point.lat, point.lng, Date.now()]);
@@ -682,6 +671,21 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       return presenterChange(async (_q, meta) => {
         if (data.data.open && !meta.session) fail("bad_session", 403, "Start a session first.");
         meta.doors = data.data.open ? "open" : "closed";
+      });
+    }
+    if (path === "/api/presenter/writing") {
+      const data = WritingRequest.safeParse(await jsonBody(request));
+      if (!data.success) fail("invalid", 400, "Choose whether writing is on.");
+      if (data.data.on) await network(true);
+      return presenterChange(async (_q, meta) => {
+        if (data.data.on) {
+          if (!meta.session) {
+            meta.session = crypto.randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase();
+            meta.accepted = 0; meta.written = 0; meta.failed = 0; meta.lastBatch = null;
+          }
+          meta.doors = "open"; meta.phase = "talk"; meta.replay = false;
+        } else meta.doors = "closed";
+        return Response.json({ code: meta.session });
       });
     }
     if (path === "/api/presenter/phase") {

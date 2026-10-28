@@ -94,7 +94,7 @@ try {
   // phone's own countdown reaches zero.
   await expect(stage.locator(".inspector-panel")).toContainText("Select a dot on the map", { timeout: 360000 });
   const expired = await stage.locator(".source-label .refresh-detail").textContent();
-  await expect(phone.getByRole("button", { name: "Write another", exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(phone.getByRole("button", { name: "Create new entity", exact: true })).toBeVisible({ timeout: 30000 });
   // The phone's whole conversation with the writer is the one submit.
   assert.deepEqual(phoneWriterRequests.map((request) => request.path), ["/api/submit"], "A phone makes exactly one request.");
   assert.equal(phoneRpcReads, 0, "Phones never call an RPC.");

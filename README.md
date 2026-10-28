@@ -12,7 +12,7 @@ under it shows the query that ran. Expired dots stay on the map in grey, and can
 |---|---|---|
 | `/map` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
 | `/slides` | Optional second window | The slides alone, in step with `/map`. Presenter password. |
-| `/scan` | Phones | Join the map: write one entity, then watch it on the projector |
+| `/scan` | Phones | Join the map: write an entity (up to ten per phone per session), then watch it on the projector |
 
 `/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
 
@@ -21,6 +21,10 @@ Present from `/map` full screen: one thing at a time, map scenes and slides in o
 keys work in either window and move both. The presenter card opens with the small ? button at the bottom left, or the ? key (¿ and / work too; Esc closes it). It lists every scene to jump to, the keys, and Reset (also bottom right on /slides; click twice), which starts a new session: an empty
 map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
 the QR slide.
+
+Phones can write only while the **Writing ON | OFF** switch (bottom left, beside ?) is ON. ON starts a
+session if none is running and opens writes; OFF pauses them and keeps the map. Phones that write
+while it is OFF see "Not open yet" or "Writing is paused".
 
 ## How it works
 
@@ -50,7 +54,7 @@ rollback.
 
 ## Requests and limits
 
-A phone makes one request:
+Each entity a phone writes is one request:
 
 1. It loads `/scan` (page files only; it asks the writer nothing).
 2. "Write my entity" sends the form once (`POST /api/submit?wait=1`). The writer puts the entity in
@@ -59,6 +63,9 @@ A phone makes one request:
 3. The phone shows the block, the explorer link and a countdown of the lifetime the person chose. The
    countdown runs on the phone's own clock and fetches nothing, so it can't see a Lifetime Extension:
    at zero it says the entity has expired unless someone extended it.
+4. "Create new entity" brings the form back; a refresh does too. A phone can write up to
+   `MAX_ENTITIES_PER_DEVICE` (10) entities per session, and its list ("Your entities") keeps a local
+   countdown for each. The session takes at most `MAX_ENTITIES_PER_SESSION` (400).
 
 The live countdown, the extension and the expiration are on `/map`, which queries the DB-Chain once
 per block through the writer's read proxy; the dot next to "Live · Arkiv DB-Chain" flashes each time a
@@ -68,9 +75,10 @@ query lands. `/map` stops reading while hidden or after 20 minutes without input
 | --- | ---: | ---: |
 | Rehearsal: 5 phones, 20 min | about 2,000 | about 2,000 |
 | Workshop: 50 phones, 20 min | about 2,700 | about 2,000 |
+| Workshop, every phone at its limit (400 entities, the session cap) | about 3,100 | about 2,400 |
 
 Most of it is `/map` (about 60 reads a minute); each phone adds about 16 requests, page files
-included, and one function invocation. On Vercel Pro that is well under 1% of the 1M CDN requests
+included, and one function invocation per entity. On Vercel Pro that is well under 1% of the 1M CDN requests
 included each month; the database runs on Neon's free plan. The load tests ran 200 phones:
 [writer/vercel-loadtest.md](./writer/vercel-loadtest.md).
 

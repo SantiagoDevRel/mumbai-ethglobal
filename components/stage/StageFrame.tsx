@@ -82,7 +82,7 @@ const slideFade = (duration: number) => ({
   hidden: (covered: boolean) => covered ? { opacity: 0, zIndex: 25, transition: { delay: duration, duration: 0 } } : { opacity: 0, zIndex: 25, transition: { duration, ease: [0.22, 1, 0.36, 1] as const } },
 });
 
-export function MapFrame({ map, overlay, hud, slide, qr, bar }: { map: ReactNode; overlay?: ReactNode; hud?: ReactNode; slide?: ReactNode; qr?: ReactNode; bar?: ReactNode }) {
+export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: ReactNode; overlay?: ReactNode; hud?: ReactNode; slide?: ReactNode; qr?: ReactNode; bar?: ReactNode; writing?: ReactNode }) {
   const { scene } = useScene();
   const reduced = usePrefersReducedMotion();
   return (
@@ -104,6 +104,7 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar }: { map: ReactNode
         {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
         {/* The map has no free corner for Reset, so it sits in the "?" presenter card. */}
         <ControlsOverlay extra={bar} />
+        {writing}
       </div>
     </FitContext.Provider>
   );

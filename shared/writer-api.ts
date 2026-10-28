@@ -59,8 +59,8 @@ export const ErrorCode = z.enum([
   "bad_session", // 403: wrong or ended session code
   "doors_closed", // 409: writing is paused (balance floor, seed or load test)
   "name_blocked", // 422: "Try another name."
-  "device_live", // 429: this device already has a live entity
-  "device_limit", // 429: three per device per session
+  "device_live", // 429: a double tap: this device's previous submit is still being accepted
+  "device_limit", // 429: MAX_ENTITIES_PER_DEVICE per device per session
   "map_full", // 429: "The map is full!"
   "network_not_configured", // 503
   "unauthorized", // 401 presenter endpoints and a wrong password
@@ -126,6 +126,10 @@ export const SessionStartResponse = z.object({ code: z.string() });
 /** POST /api/presenter/session/end → {} */
 /** POST /api/presenter/doors: pause or resume writes (scripts only: seed, load test). */
 export const DoorsRequest = z.object({ open: z.boolean() });
+/** POST /api/presenter/writing: the /map ON|OFF switch. ON starts a session if none is running and
+ * opens writes (doors open, talk phase, replay off); OFF pauses writes and keeps the session. */
+export const WritingRequest = z.object({ on: z.boolean() });
+export const WritingResponse = z.object({ code: z.string().nullable() });
 /** POST /api/presenter/phase */
 export const PhaseRequest = z.object({ phase: z.enum(["talk", "build"]) });
 /** POST /api/presenter/replay */
@@ -185,6 +189,7 @@ export const WRITER_ROUTES = {
     sessionEnd: "/api/presenter/session/end",
     doors: "/api/presenter/doors",
     phase: "/api/presenter/phase",
+    writing: "/api/presenter/writing",
     replay: "/api/presenter/replay",
     hold: "/api/presenter/hold",
     resume: "/api/presenter/resume",

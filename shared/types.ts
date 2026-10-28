@@ -17,7 +17,7 @@ export const LIFETIME_DEFAULT_SEC = LIFETIME_MAX_SEC;
 
 export const NAME_MAX_CHARS = 24;
 export const MAX_ENTITIES_PER_SESSION = 400;
-export const MAX_ENTITIES_PER_DEVICE = 3;
+export const MAX_ENTITIES_PER_DEVICE = 10;
 
 /** Seconds added by Santiago's live extension on stage (L2: "+20 minutes"). */
 export const STAGE_EXTENSION_SEC = 20 * 60;

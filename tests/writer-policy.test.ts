@@ -4,9 +4,10 @@ import { admissionError, deviceToken, nameBlocked, placeDot, validDraft } from "
 import countries from "../shared/geo/countries.json" with { type: "json" };
 import { countryByIso2, pointInPolygon, type CountryShape } from "../shared/geo/place.ts";
 
-test("one live entity, three per device, and four hundred per session", () => {
+test("ten per device and four hundred per session", () => {
   assert.equal(admissionError(true, 0, 0), "device_live");
-  assert.equal(admissionError(false, 3, 0), "device_limit");
+  assert.equal(admissionError(false, 10, 0), "device_limit");
+  assert.equal(admissionError(false, 9, 0), null);
   assert.equal(admissionError(false, 0, 400), "map_full");
   assert.equal(admissionError(false, 2, 399), null);
 });
