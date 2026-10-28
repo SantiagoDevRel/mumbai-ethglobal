@@ -417,41 +417,54 @@ try {
       for (const target of [page, slides]) await expect(target.locator('[data-scene="S7"]')).toBeVisible();
       evidence.push({ surface: "five-steps", driver: name, rowsShown: 5, leavesOnSixth: true });
     }
-    // A scene change: from the moment the new scene is on the page, one layer is left in about a third
-    // of a second (0.22 s fade, then the old one goes; about 0.7 s before), and nothing stays doubled.
-    // The time before the new scene appears is the leader's round trip, slow on a CI runner.
-    // Both from-scenes have one step, so the → changes the scene. Each pair runs three times, each
-    // after the previous scene has settled (QR card, camera), and the median is checked: one sample on
-    // a shared runner, with the other window drawing the globe in software, swung from 349 to 815 ms
-    // for the same change (October 29).
+    // A scene change: the new scene fades in over 0.22 s while the old one waits under it and goes in
+    // 0.11 s (0.33 s in all; it was 0.45 s plus a 0.23 s exit). The fades run as Web Animations, so
+    // the test reads their timings from the browser, and checks on the clock only that one layer is
+    // left within 3 s. A clock threshold could not hold on the shared runner: with the other window
+    // drawing the globe in software, three changes in one run took 347, 788 and 1507 ms, while on a
+    // laptop against production six changes per window took 337-383 ms (October 29). The clock times
+    // are kept in the evidence. Both from-scenes have one step, so the → changes the scene.
     const sample = async (target, from, to) => {
       await commands(page, [go(from)]);
       await expect(target.locator(`[data-scene-layer="${from}"]`)).toHaveCount(1);
       await expect(target.locator("[data-scene-layer]")).toHaveCount(1);
       await target.waitForTimeout(800);
-      return target.evaluate((id) => new Promise((resolve) => {
+      return target.evaluate(([oldId, id]) => new Promise((resolve) => {
         const begin = performance.now();
         let mounted = null;
+        // Every opacity animation started on a scene layer, recorded as it starts, so a slow frame
+        // can't miss one.
+        const fades = {};
+        const animate = Element.prototype.animate;
+        Element.prototype.animate = function (keyframes, options) {
+          const layer = this.getAttribute?.("data-scene-layer");
+          const frames = Array.isArray(keyframes) ? keyframes : [keyframes];
+          if (layer && frames.some((frame) => frame && "opacity" in frame)) fades[layer] = { duration: Number(options?.duration ?? 0), delay: Number(options?.delay ?? 0) };
+          return animate.call(this, keyframes, options);
+        };
+        const done = (result) => { Element.prototype.animate = animate; resolve(result); };
         const check = () => {
           const now = performance.now();
           const layers = [...document.querySelectorAll("[data-scene-layer]")];
           if (mounted === null && layers.some((layer) => layer.getAttribute("data-scene-layer") === id)) mounted = now;
-          if (layers.length === 1 && layers[0].getAttribute("data-scene-layer") === id && Number(getComputedStyle(layers[0]).opacity) === 1) resolve({ total: now - begin, change: now - mounted });
-          else if (now - begin > 5000) resolve({ total: Infinity, change: Infinity });
+          if (layers.length === 1 && layers[0].getAttribute("data-scene-layer") === id && Number(getComputedStyle(layers[0]).opacity) === 1) done({ total: now - begin, change: now - mounted, enter: fades[id] ?? null, exit: fades[oldId] ?? null });
+          else if (now - begin > 5000) done({ total: Infinity, change: Infinity, enter: fades[id] ?? null, exit: fades[oldId] ?? null });
           else requestAnimationFrame(check);
         };
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
         requestAnimationFrame(check);
-      }), to);
+      }), [from, to]);
     };
     for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W2", "W3"]]) {
       assert.equal(SCENES[sceneIndex(from)].steps, 1);
       const samples = [];
       for (let i = 0; i < 3; i++) samples.push(await sample(target, from, to));
-      const changes = samples.map((timing) => timing.change).sort((a, b) => a - b);
-      for (const timing of samples) assert.ok(timing.total < 3000, `${from} → ${to} settles in ${Math.round(timing.total)} ms`);
-      assert.ok(changes[1] < 600, `${from} → ${to}: one layer ${Math.round(changes[1])} ms (median of ${changes.map(Math.round).join(", ")}) after the new scene appeared`);
-      evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, changeMs: samples.map((timing) => Math.round(timing.change)), totalMs: samples.map((timing) => Math.round(timing.total)) });
+      for (const timing of samples) {
+        assert.ok(timing.total < 3000, `${from} → ${to} settles in ${Math.round(timing.total)} ms`);
+        assert.ok(timing.enter && timing.enter.delay === 0 && timing.enter.duration <= 250, `${to} fades in within 0.25 s: ${JSON.stringify(timing.enter)}`);
+        assert.ok(timing.exit && timing.exit.delay + timing.exit.duration <= 400, `${from} is gone within 0.4 s: ${JSON.stringify(timing.exit)}`);
+      }
+      evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, enter: samples[0].enter, exit: samples[0].exit, clockChangeMs: samples.map((timing) => Math.round(timing.change)), clockTotalMs: samples.map((timing) => Math.round(timing.total)) });
     }
     // Boxes: only a right-drag draws one, on a slide and on the map; a right-click clears them; a
     // left-drag selects text or moves the globe and draws nothing.
