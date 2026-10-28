@@ -288,7 +288,7 @@ try {
   await expect(slides.getByText("ON THE MAP →")).toBeVisible();
   await expect(slides.getByRole("heading", { name: "Write it: your entities, live", exact: true })).toBeVisible();
   // The live card explains the map in plain words, with the 3D mascot.
-  await expect(slides.getByText("Your phone sent one request.")).toBeVisible();
+  await expect(slides.getByText("Your phone sends one request.")).toBeVisible();
   await expect(slides.getByRole("img", { name: "Arkiv mascot typing on a laptop" })).toBeVisible();
   await expect(page.getByText("Write it. Every dot is an entity you just wrote.").first()).toBeVisible();
   // /slides shows the same outline bar, on the same part.
