@@ -6,7 +6,9 @@ The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026). The room
 first: everyone scans a QR code, picks a name, a color, a country and a lifetime (5 to 15 minutes, 15
 by default), and their Arkiv entity drops onto a live 3D globe, where it counts down and expires. Then
 an agenda and a few minutes of Arkiv 101, and back to the map. The map is just a query, and the panel
-under it shows the query that ran. Expired dots stay on the map in grey, and can't be clicked.
+under it shows the query that ran (Code: the SDK call the app runs; Query: the query text the SDK sends
+to the DB-Chain). Expired dots leave the map. After the map scenes come the data-modeling slides (with
+deleting an entity), the map once more, your agent's tools (MCP, skills, plugin) and Arkiv's prizes.
 
 | Route | Who | What |
 |---|---|---|
@@ -21,6 +23,18 @@ Present from `/map` full screen: one thing at a time, map scenes and slides in o
 keys work in either window and move both. The presenter card opens with the small ? button at the bottom left, or the ? key (¿ and / work too; Esc closes it). It lists every scene to jump to, the keys, and Reset (also bottom right on /slides; click twice), which starts a new session: an empty
 map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
 the QR slide.
+
+Every reveal is one →; nothing moves on a timer. The dots at the bottom right show the steps of the
+current scene. Drag with the left button on a slide (Alt + drag on the map) to draw a rectangle that
+points at something; it disappears on the next step or scene.
+
+On the map: the filter bar along the top filters by name (starts with), country and owner (a full 0x
+address), plus a business category; it counts the results and the query panel updates as you type.
+Click a dot to open its entity: Extend, Data explorer (the entity on the DB-Chain explorer), and
+Transfer ownership, which asks for the new owner's wallet address and signs with Rabby. Rabby must use
+the writer wallet (the account named MUMBAI): only the current owner can transfer. A click on the
+globe away from any dot closes the card. Dots in one country are spread apart, and each dot is a cafe,
+restaurant, bookstore or parking, picked by the writer.
 
 Phones can write only while the **Writing ON | OFF** switch (bottom left, beside ?) is ON. ON starts a
 session if none is running and opens writes; OFF pauses them and keeps the map. Phones that write

@@ -8,7 +8,24 @@ import { NOTES } from "./notes";
 import { AG } from "./scenes/AG";
 import { L7 } from "./scenes/L7";
 import { L8 } from "./scenes/L8";
-import { L1, L2, L3, L4, L5, L6, L9 } from "./scenes/live";
+import { A1 } from "./scenes/ai/A1";
+import { A1b } from "./scenes/ai/A1b";
+import { A2 } from "./scenes/ai/A2";
+import { A2b } from "./scenes/ai/A2b";
+import { A3 } from "./scenes/ai/A3";
+import { A3b } from "./scenes/ai/A3b";
+import { A3c } from "./scenes/ai/A3c";
+import { A4 } from "./scenes/ai/A4";
+import { Prizes } from "./scenes/ai/Prizes";
+import { D1 } from "./scenes/data/D1";
+import { D2 } from "./scenes/data/D2";
+import { D3 } from "./scenes/data/D3";
+import { D4 } from "./scenes/data/D4";
+import { D5 } from "./scenes/data/D5";
+import { D6 } from "./scenes/data/D6";
+import { D7 } from "./scenes/data/D7";
+import { D8 } from "./scenes/data/D8";
+import { L1, L2, L3, L4, L5, L6, L9, LM } from "./scenes/live";
 import { S0 } from "./scenes/S0";
 import { S1 } from "./scenes/S1";
 import { S2 } from "./scenes/S2";
@@ -35,6 +52,24 @@ export const deck: DeckRegistry = {
   L5: { Overlay: L5, notes: NOTES.L5 },
   L6: { Overlay: L6, notes: NOTES.L6 },
   L7: { Slide: L7, notes: NOTES.L7 },
+  D1: { Slide: D1, notes: NOTES.D1 },
+  D2: { Slide: D2, notes: NOTES.D2 },
+  D3: { Slide: D3, notes: NOTES.D3 },
+  D4: { Slide: D4, notes: NOTES.D4 },
+  D5: { Slide: D5, notes: NOTES.D5 },
+  D6: { Slide: D6, notes: NOTES.D6 },
+  D7: { Slide: D7, notes: NOTES.D7 },
+  D8: { Slide: D8, notes: NOTES.D8 },
+  LM: { Overlay: LM, notes: NOTES.LM },
+  A1: { Slide: A1, notes: NOTES.A1 },
+  A1b: { Slide: A1b, notes: NOTES.A1b },
+  A2: { Slide: A2, notes: NOTES.A2 },
+  A2b: { Slide: A2b, notes: NOTES.A2b },
+  A3: { Slide: A3, notes: NOTES.A3 },
+  A3b: { Slide: A3b, notes: NOTES.A3b },
+  A3c: { Slide: A3c, notes: NOTES.A3c },
+  A4: { Slide: A4, notes: NOTES.A4 },
   L8: { Slide: L8, notes: NOTES.L8 },
+  PZ: { Slide: Prizes, notes: NOTES.PZ },
   L9: { Overlay: L9, notes: NOTES.L9 },
 };

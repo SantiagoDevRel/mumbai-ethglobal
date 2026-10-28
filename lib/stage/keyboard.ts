@@ -10,7 +10,6 @@ export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "D", action: "3 · 2 · 1 · write! countdown (S7)" },
   { keys: "E / Shift+E", action: "Extend the selected dots / every live dot (Rabby)" },
   { keys: "B", action: "Business view" },
-  { keys: "O / T", action: "Owner view / transfer animation" },
   { keys: "F, I, Q", action: "Filters, inspector, query panel" },
   { keys: "H", action: "Hide the selected dot (local)" },
   { keys: "R", action: "Reset the camera" },
@@ -38,12 +37,6 @@ export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Comma
     case "b":
     case "B":
       return { type: "setMap", map: "business" };
-    case "o":
-    case "O":
-      return { type: "setMap", map: "owner" };
-    case "t":
-    case "T":
-      return { type: "transfer" };
     case "f":
     case "F":
       return { type: "togglePanel", panel: "filters" };

@@ -23,7 +23,9 @@ writes Arkiv entities from their phones, and watches them land, count down and e
 Change a contract only through the orchestrator. Every user-facing string is English.
 
 The talk runs on one screen, `/map`: the room writes first (S0, S7, L1), then the agenda (AG) and the
-slides, then back to the map. A new scene goes into `SCENES` (`shared/scenes.ts`) with a `section`, so
+slides, then back to the map, the data-modeling slides (D1-D8), the map again (LM), your agent's
+tools (A1-A4) and the prizes (PZ). Every reveal is one → (`steps` in `SCENES`): nothing moves on a timer.
+`tests/deck-walk.mjs` walks every scene and step. A new scene goes into `SCENES` (`shared/scenes.ts`) with a `section`, so
 the agenda lists it, and a `qr.placement` (`corner`, `center` or `none`); add its slide or overlay and
 notes in `app/deck/`.
 

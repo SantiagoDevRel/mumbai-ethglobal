@@ -20,6 +20,7 @@ const CATEGORY_PATHS = {
   gym: "M6 5v14M3 8v8M18 5v14M21 8v8M6 12h12",
   market: "M3 8h18l-2 13H5ZM7 8l3-6M17 8l-3-6M9 12v5M15 12v5",
   bar: "M5 3h14v4a7 7 0 0 1-14 0ZM12 14v8M7 22h10",
+  parking: "M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM9 17V7h4a3 3 0 0 1 0 6H9",
 };
 
 /** `ghosts`: expired dots the screen remembers, drawn grey under the live ones and never selectable. */
@@ -80,6 +81,10 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
         if (hit && hit.distance < 26) {
           stage.dispatch({ type: "select", keys: [hit.entity.key], mode: event.originalEvent.shiftKey ? "toggle" : "set" });
           stage.dispatch({ type: "inspect", key: hit.entity.key });
+        } else if (current.current.state.panels.inspector) {
+          // A click on the globe itself closes the entity card so it no longer covers other dots.
+          stage.dispatch({ type: "inspect", key: null });
+          stage.dispatch({ type: "select", keys: [], mode: "set" });
         }
       });
       resize = new ResizeObserver(() => map.resize());
@@ -187,7 +192,7 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
           }
           ctx.restore();
           if (!exit) {
-            const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.name;
+            const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.kind === "dot" ? `${a.name} · ${business.category}` : a.name;
             const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
             const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : seconds >= 60 ? `${Math.floor(Math.ceil(seconds) / 60)}:${String(Math.ceil(seconds) % 60).padStart(2, "0")}` : `${Math.ceil(seconds)} s`;
             ctx.font = `600 16px ${fontFamily}`;

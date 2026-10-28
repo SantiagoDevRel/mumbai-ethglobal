@@ -104,6 +104,31 @@ export function placeInCountry(country: CountryShape, seed: string): PlacedPoint
   return { lng: round5(lng), lat: round5(lat) };
 }
 
+/**
+ * Like placeInCountry, but spreads a crowd: of `candidates` random points inside the country it
+ * keeps the one farthest from the points already placed (best-candidate sampling). With no
+ * existing points it returns the first candidate. Deterministic for the same seed and points.
+ */
+export function spreadInCountry(country: CountryShape, seed: string, existing: readonly PlacedPoint[], candidates = 16): PlacedPoint {
+  let best = placeInCountry(country, seed);
+  if (!existing.length) return best;
+  const gap = (p: PlacedPoint) => {
+    let nearest = Infinity;
+    for (const q of existing) {
+      const dLng = (p.lng - q.lng) * Math.cos(((p.lat + q.lat) / 2) * Math.PI / 180);
+      nearest = Math.min(nearest, Math.hypot(p.lat - q.lat, dLng));
+    }
+    return nearest;
+  };
+  let bestGap = gap(best);
+  for (let i = 1; i < candidates; i++) {
+    const p = placeInCountry(country, `${seed}:${i}`);
+    const g = gap(p);
+    if (g > bestGap) { best = p; bestGap = g; }
+  }
+  return best;
+}
+
 export function countryByIso2<T extends { iso2: string }>(list: readonly T[], iso2: string): T | undefined {
   const code = iso2.trim().toUpperCase();
   return list.find((c) => c.iso2 === code);

@@ -1,8 +1,8 @@
 // What each scene and reveal step does to the stage. Contract owned by the orchestrator.
 //
 // Applied by the store on every scene change and every → / ←, so stepping back undoes a step.
-// Only pure state lives here: panels, filters, map layer, camera and the demo transfer.
-// Chain writes (extend, make business) stay on presenter keys; the effect handlers run them.
+// Only pure state lives here: panels, filters, map layer and camera.
+// Chain writes (extend, transfer) run from the inspector; the effect handlers run them.
 
 import type { SceneId } from "../../shared/scenes.ts";
 import { WRITER_ADDRESS } from "../../shared/arkiv/profiles.ts";
@@ -20,6 +20,8 @@ const SCENE_PANELS: Partial<Record<SceneId, Panels>> = {
   L3: { query: true, filters: true },
   L4: { inspector: true },
   L5: { query: true },
+  L6: { inspector: true },
+  LM: { query: true },
 };
 
 /** L3 view of India for "inside this map view" (a latitude/longitude range). */
@@ -58,8 +60,6 @@ export function choreograph(state: StageState, sceneId: SceneId, entered: boolea
         : next.camera;
       return { ...next, map: business ? "business" : "dots", camera };
     }
-    case "L6":
-      return { ...next, map: "owner", transferred: next.step >= 1 };
     default:
       return next;
   }

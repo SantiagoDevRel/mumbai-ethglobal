@@ -68,7 +68,7 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
           if (source === "live") await presenter(WRITER_ROUTES.presenter.replay, { on: state.replay });
           notify("Replay requested. A recorded rehearsal must be loaded before playback.");
         }
-        if (command.type !== "extend" && command.type !== "makeBusiness") return;
+        if (command.type !== "extend" && command.type !== "makeBusiness" && command.type !== "transferTo") return;
         if (!adapter) throw new Error("Network not configured");
         if (busy) throw new Error("Wait for the current transaction to finish.");
         busy = true;
@@ -94,6 +94,7 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
           }
           notify(source === "mock" ? "Mock data · applying demo action" : "Confirm in Rabby…");
           if (command.type === "extend") await writer.extend(keys, STAGE_EXTENSION_SEC);
+          else if (command.type === "transferTo") await writer.changeOwner(command.key, command.newOwner);
           else {
             const entity = latest.current.find((item) => item.key === command.key);
             if (!entity || entity.attrs.kind === "review") throw new Error("Select a live dot first.");
@@ -101,7 +102,7 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
             stage.dispatch({ type: "setMap", map: "business" });
           }
           if (source === "live") awaitingQuery.current = true;
-          notify(source === "mock" ? "Mock data · action applied" : "Transaction confirmed. Waiting for the next query…");
+          notify(source === "mock" ? "Mock data · action applied" : command.type === "transferTo" ? "Ownership transferred. $owner changes on the next query; $creator stays." : "Transaction confirmed. Waiting for the next query…");
         } finally {
           clearInterval(heartbeat);
           if (held) {

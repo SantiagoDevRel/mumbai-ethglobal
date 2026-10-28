@@ -1,36 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Plus } from "lucide-react";
-import { DOT_COLOR_NAMES, DOT_PALETTE, type DotColor } from "../../shared/encoding";
-import { WRITER_ADDRESS } from "../../shared/arkiv/profiles";
+import { X } from "lucide-react";
+import { DOT_COLOR_NAMES, type DotColor } from "../../shared/encoding";
+import { DOT_CATEGORIES, type BusinessCategory, type Hex } from "../../shared/types";
 import { stage, type StageState } from "../../lib/stage/store";
-import { mapViewport } from "../../lib/map/viewport";
 import { countryOptions } from "../../lib/data/countries";
 
 const countries = countryOptions();
-export function Filters({ state }: { state: StageState }) {
-  const [customName, setCustomName] = useState("vegan");
-  const [customValue, setCustomValue] = useState("yes");
-  const chain = state.chainFilters, app = state.appFilters;
-  const setChain = (filters: Partial<typeof chain>) => stage.dispatch({ type: "setChainFilters", filters: { ...chain, ...filters } });
-  const setApp = (filters: Partial<typeof app>) => stage.dispatch({ type: "setAppFilters", filters: { ...app, ...filters } });
-  const chip = (label: string, on: boolean, action: () => void, local = false) => <button key={`${label}:${on}`} className={`filter-chip${local ? " local-chip" : ""}`} aria-pressed={on} onClick={action}>{on ? <Check size={20} /> : <Plus size={20} />}<span>{label}</span>{local && <small>app-side</small>}</button>;
-  return <section className="filters-panel panel pointer-events-auto"><div className="panel-heading"><h2>Filter the map</h2><button aria-label="Close filters" onClick={() => stage.dispatch({ type: "togglePanel", panel: "filters", open: false })}>×</button></div>
-    <div className="filter-chips" aria-label="On-chain filters">
-      {chip(`Color · ${DOT_COLOR_NAMES[(chain.color?.toLowerCase() ?? "#fe7446") as DotColor] ?? chain.color}`, !!chain.color, () => setChain({ color: chain.color ? undefined : "#fe7446" }))}
-      {chip(`Country · ${countries.find((country) => country.code === (chain.country ?? "IN"))?.name ?? chain.country}`, !!chain.country, () => setChain({ country: chain.country ? undefined : "IN" }))}
-      {chip("Inside this map view", !!chain.viewport, () => setChain({ viewport: chain.viewport ? undefined : mapViewport.get() }))}
-      {chip("Owner · santiago", !!chain.owner, () => setChain({ owner: chain.owner ? undefined : WRITER_ADDRESS }))}
-    </div>
-    <div className="app-filter-group filter-chips">
-      {chip("Open now", !!app.openNow, () => setApp({ openNow: !app.openNow }), true)}
-      {chip(`Sort · ${app.sort ?? "name"}`, !!app.sort, () => setApp({ sort: app.sort ? undefined : "name" }), true)}
-    </div>
-    <details className="more-filters"><summary>More filters</summary><p className="filter-scope">Creator · santiago · workshop scope</p><div className="filter-color-options">{DOT_PALETTE.map((color) => <button key={color} aria-label={`Filter color ${DOT_COLOR_NAMES[color]}`} aria-pressed={chain.color === color} style={{ background: color }} onClick={() => setChain({ color: chain.color === color ? undefined : color })} />)}</div><label>Country<select value={chain.country ?? ""} onChange={(event) => setChain({ country: event.target.value || undefined })}><option value="">Any country</option>{countries.map((country) => <option value={country.code} key={country.code}>{country.name}</option>)}</select></label>
-      {chip(`Expiring within · ${chain.expiringWithinSec ?? 60} s`, chain.expiringWithinSec !== undefined, () => setChain({ expiringWithinSec: chain.expiringWithinSec === undefined ? 60 : undefined }))}
-      {state.map === "business" && <>{chip(`Category · ${chain.category ?? "cafe"}`, !!chain.category, () => setChain({ category: chain.category ? undefined : "cafe" }))}{chip(`Rating · ${chain.minRating ?? 4}+`, chain.minRating !== undefined, () => setChain({ minRating: chain.minRating === undefined ? 4 : undefined }))}</>}
-      <div className="app-filter-group"><p className="filter-caption">app-side</p><div className="filter-chips">{(["name", "expiry", "rating"] as const).map((sort) => chip(`Sort · ${sort}`, app.sort === sort, () => setApp({ sort: app.sort === sort ? undefined : sort }), true))}</div><div className="overlay-inputs"><input aria-label="Custom attribute" value={customName} maxLength={24} onChange={(event) => setCustomName(event.target.value)} /><input aria-label="Custom value" value={customValue} maxLength={32} onChange={(event) => setCustomValue(event.target.value)} /></div><button disabled={!state.selected.length || !customName.trim()} onClick={() => { for (const key of state.selected) stage.dispatch({ type: "setOverlay", key, name: customName.trim(), value: customValue }); }}>Add to selected · app-side</button>{chip("Filter custom attribute", !!app.custom, () => setApp({ custom: app.custom ? undefined : { name: customName.trim(), value: customValue } }), true)}</div>
-    </details>
+const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+
+function countryFrom(text: string): string | undefined {
+  const value = text.trim().toLowerCase();
+  if (!value) return undefined;
+  return countries.find((country) => country.name.toLowerCase() === value || country.code.toLowerCase() === value)?.code;
+}
+
+/** The map's filter bar, along the top so it never covers the globe. Every field is an on-chain
+ * predicate: typing changes the query at once (the query panel below shows it) and the next block's
+ * read returns the matching entities, counted live. */
+export function Filters({ state, results }: { state: StageState; results: number }) {
+  const chain = state.chainFilters;
+  const setChain = (filters: Partial<typeof chain>) => stage.dispatch({ type: "setChainFilters", filters: { ...stage.getState().chainFilters, ...filters } });
+  const [country, setCountry] = useState(() => countries.find((option) => option.code === chain.country)?.name ?? "");
+  const [owner, setOwner] = useState(chain.owner ?? "");
+  // Scenes set the country too (L3): show it unless the presenter is typing a different one.
+  const shownCountry = chain.country && countryFrom(country) !== chain.country ? countries.find((option) => option.code === chain.country)?.name ?? chain.country : country;
+  const ownerValid = !owner.trim() || ADDRESS.test(owner.trim());
+  const extra: { label: string; clear: () => void }[] = [];
+  if (chain.color) extra.push({ label: `Color · ${DOT_COLOR_NAMES[chain.color.toLowerCase() as DotColor] ?? chain.color}`, clear: () => setChain({ color: undefined }) });
+  if (chain.viewport) extra.push({ label: "Inside this map view", clear: () => setChain({ viewport: undefined }) });
+  if (chain.expiringWithinSec !== undefined) extra.push({ label: `Expiring within ${chain.expiringWithinSec} s`, clear: () => setChain({ expiringWithinSec: undefined }) });
+  if (chain.minRating !== undefined) extra.push({ label: `Rating ${chain.minRating}+`, clear: () => setChain({ minRating: undefined }) });
+  return <section className="filter-bar panel pointer-events-auto" aria-label="Filter the map">
+    <label className="filter-field"><span>Name</span><input type="search" placeholder="Starts with…" value={chain.namePrefix ?? ""} maxLength={24} onChange={(event) => setChain({ namePrefix: event.target.value || undefined })} /></label>
+    <label className="filter-field"><span>Country</span><input type="search" list="filter-countries" placeholder="Any country" value={shownCountry} onChange={(event) => { setCountry(event.target.value); setChain({ country: countryFrom(event.target.value) }); }} /></label>
+    <datalist id="filter-countries">{countries.map((option) => <option key={option.code} value={option.name} />)}</datalist>
+    <label className="filter-field filter-owner" data-invalid={!ownerValid}><span>Owner</span><input type="search" placeholder="0x… wallet" value={owner} spellCheck={false} onChange={(event) => { const text = event.target.value; setOwner(text); setChain({ owner: ADDRESS.test(text.trim()) ? text.trim() as Hex : undefined }); }} /></label>
+    <label className="filter-field filter-category"><span>Category</span><select value={chain.category ?? ""} onChange={(event) => setChain({ category: (event.target.value || undefined) as BusinessCategory | undefined })}><option value="">Any</option>{DOT_CATEGORIES.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+    <p className="filter-results" aria-live="polite"><strong>{results}</strong> {results === 1 ? "result" : "results"}</p>
+    <button className="filter-close" aria-label="Close filters" onClick={() => stage.dispatch({ type: "togglePanel", panel: "filters", open: false })}><X size={22} /></button>
+    {(extra.length > 0 || !ownerValid) && <div className="filter-extra">{!ownerValid && <span className="filter-hint">Paste a full 0x address to filter by owner.</span>}{extra.map((item) => <button key={item.label} className="filter-chip" onClick={item.clear}>{item.label}<X size={16} /></button>)}</div>}
   </section>;
 }

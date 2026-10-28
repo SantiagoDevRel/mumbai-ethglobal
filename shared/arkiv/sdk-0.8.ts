@@ -1,6 +1,6 @@
 import { i32, key as entityKey, u64, type AttributeInputs } from "@arkiv-network/sdk/attr";
 import { ExpirationTime } from "@arkiv-network/sdk/utils";
-import { eq, gte, lte, or } from "@arkiv-network/sdk/query";
+import { eq, gte, lte, or, startsWith } from "@arkiv-network/sdk/query";
 import type { Entity } from "@arkiv-network/sdk/types";
 import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter.ts";
 import { createSdkClients } from "./clients-0.8.ts";
@@ -103,6 +103,7 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
     for (const name of ["session", "color", "country", "category"] as const) {
       if (filters[name] !== undefined) where(eq(name, filters[name]!), `eq(${JSON.stringify(name)}, ${JSON.stringify(filters[name])})`);
     }
+    if (filters.namePrefix) where(startsWith("name", filters.namePrefix), `startsWith("name", ${JSON.stringify(filters.namePrefix)})`);
     if (filters.owner) { builder.ownedBy(filters.owner); code.push(`  .ownedBy(${JSON.stringify(filters.owner)})`); }
     if (filters.business) where(eq("business", entityKey(filters.business)), `eq("business", key(${JSON.stringify(filters.business)}))`);
     if (filters.minRating !== undefined) where(gte("rating", i32(encodeRating(filters.minRating))), `gte("rating", i32(${encodeRating(filters.minRating)}))`);

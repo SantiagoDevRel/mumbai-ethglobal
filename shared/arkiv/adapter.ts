@@ -5,6 +5,7 @@
 import type {
   BlockInfo,
   BusinessAttrs,
+  BusinessCategory,
   ChainFilters,
   DotAttrs,
   EntityAttrs,
@@ -24,6 +25,7 @@ export interface DotCreate {
   country: string;
   lat: number;
   lng: number;
+  category?: BusinessCategory;
   lifetimeSec: number;
 }
 

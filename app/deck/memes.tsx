@@ -5,8 +5,7 @@
 
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
-import { useStage } from "../../lib/stage/store";
+import type { ReactNode } from "react";
 import { Mascot, type MascotPose } from "./Mascot";
 import { EASE, T } from "./ui";
 
@@ -14,26 +13,30 @@ type MemeCell = { text: string; visual: ReactNode };
 
 /**
  * Thumbs down / thumbs up on a 2x2 grid: the 3D mascot on the left of each row, the line and its
- * little animation on the right. Stone for the bad way, Sand for the good one; Ink rules between.
+ * still picture on the right. Stone for the bad way, Sand for the good one; Ink rules between.
+ * `rows` is how many rows show (the presenter's → reveals the thumbs-up row); both by default.
  */
-export function ThumbsMeme({ no, yes }: { no: MemeCell; yes: MemeCell }) {
+export function ThumbsMeme({ no, yes, rows = 2 }: { no: MemeCell; yes: MemeCell; rows?: number }) {
   const row = (good: boolean) => {
     const cell = good ? yes : no;
+    const shown = rows >= (good ? 2 : 1);
     return (
       <>
         <motion.div
           className={`flex items-end justify-center overflow-hidden border-r-[3px] border-[var(--arkiv-ink)] pt-4 ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] bg-[var(--arkiv-stone)]"}`}
           initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: good ? 0.5 : 0, ease: EASE }}
+          animate={shown ? { opacity: 1, x: 0 } : { opacity: 0, x: -24 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          aria-hidden={!shown}
         >
           <Mascot pose={good ? "thumbsUp" : "thumbsDown"} height={360} />
         </motion.div>
         <motion.div
           className={`flex flex-col justify-center gap-5 px-9 py-8 ${good ? "bg-[var(--arkiv-sand)]" : "border-b-[3px] border-[var(--arkiv-ink)] bg-[var(--arkiv-stone)]"}`}
           initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: good ? 0.6 : 0.1, ease: EASE }}
+          animate={shown ? { opacity: 1, x: 0 } : { opacity: 0, x: 24 }}
+          transition={{ duration: 0.5, ease: EASE }}
+          aria-hidden={!shown}
         >
           <span className="flex items-center gap-4">
             {good ? (
@@ -56,33 +59,31 @@ export function ThumbsMeme({ no, yes }: { no: MemeCell; yes: MemeCell }) {
   );
 }
 
-/** "Disaster" composition: the mascot scared in front of the company server on fire. */
-export function ServerOnFire() {
+/**
+ * "Disaster" composition: the mascot scared in front of the company server on fire. The three
+ * consequence lines show together when `lines` is true (one → in S4); they are on by default.
+ */
+export function ServerOnFire({ lines = true }: { lines?: boolean } = {}) {
   return (
     <div className="relative h-[700px] w-[1728px] overflow-hidden rounded-[24px] border border-[rgba(246,244,239,0.12)] bg-[var(--arkiv-ink)]">
       {/* eslint-disable-next-line @next/next/no-img-element -- fixed illustration, cropped by the frame */}
       <img src="/deck/mascot/arkiv-mascot-server-fire.webp" alt="The mascot, scared, in front of a burning server building" className="absolute inset-0 h-full w-full object-cover object-[50%_40%]" draggable={false} />
       <div className="absolute inset-x-0 bottom-0 h-[260px] bg-[linear-gradient(0deg,rgba(8,9,31,0.92)_0%,rgba(8,9,31,0)_100%)]" />
-      <motion.div
-        className="absolute left-[56px] top-[48px] flex items-center gap-4"
-        initial={{ opacity: 0, y: -12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6, ease: EASE }}
-      >
+      <div className="absolute left-[56px] top-[48px] flex items-center gap-4">
         <span className="rounded-full bg-[var(--arkiv-sand)] px-6 py-2.5 text-[34px] font-bold text-[var(--arkiv-ink)] shadow-[0_8px_24px_rgba(0,0,0,0.5)]">your centralized server</span>
         <svg width="120" height="80" viewBox="0 0 120 80" aria-hidden>
           <path d="M4 10 C 60 6 96 26 108 66" fill="none" stroke="#F6F4EF" strokeWidth="5" strokeLinecap="round" />
           <path d="M94 58 L108 70 L114 52" fill="none" stroke="#F6F4EF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-      </motion.div>
-      <div className="absolute bottom-[40px] left-[56px] flex gap-4">
+      </div>
+      <div className="absolute bottom-[40px] left-[56px] flex gap-4" aria-hidden={!lines}>
         {["Server down.", "Rules changed.", "Data gone."].map((line, i) => (
           <motion.span
             key={line}
             className="rounded-[12px] bg-[var(--arkiv-orange)] px-6 py-3 text-[40px] font-bold text-[var(--arkiv-ink)]"
             initial={{ opacity: 0, y: 16, rotate: 0 }}
-            animate={{ opacity: 1, y: 0, rotate: i === 1 ? 1.5 : -1.5 }}
-            transition={{ duration: 0.4, delay: 1 + i * 0.35, ease: EASE }}
+            animate={lines ? { opacity: 1, y: 0, rotate: i === 1 ? 1.5 : -1.5 } : { opacity: 0, y: 16, rotate: 0 }}
+            transition={{ duration: 0.4, ease: EASE }}
           >
             {line}
           </motion.span>
@@ -96,16 +97,18 @@ const SLOT_POSES: MascotPose[] = ["stand", "wave", "thumbsUp"];
 
 /**
  * Game-style select panel (handoff board "S7 · Doors open"): "Choose your lifespan." The Orange
- * frame hops slot to slot until the countdown starts; the bar shows the selected lifetime.
+ * frame sits on `selected` and only moves when the caller changes it (nothing moves on a timer);
+ * the bar shows the selected lifetime.
  */
-export function CharacterSelect({ lifespans, maxSec }: { lifespans: { label: string; sec: number }[]; maxSec: number }) {
-  const counting = useStage((s) => s.countdownAt !== null);
-  const [selected, setSelected] = useState(1);
-  useEffect(() => {
-    if (counting) return;
-    const id = setInterval(() => setSelected((s) => (s + 1) % lifespans.length), 900);
-    return () => clearInterval(id);
-  }, [counting, lifespans.length]);
+export function CharacterSelect({
+  lifespans,
+  maxSec,
+  selected = 1,
+}: {
+  lifespans: { label: string; sec: number }[];
+  maxSec: number;
+  selected?: number;
+}) {
   const current = lifespans[selected] ?? lifespans[0]!;
   return (
     <div className="flex w-[560px] flex-col gap-6 rounded-[20px] border-[3px] border-[var(--arkiv-sand)] bg-[var(--arkiv-ink)] p-7 shadow-[0_24px_64px_rgba(0,0,0,0.55)]">

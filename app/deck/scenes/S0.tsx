@@ -1,7 +1,8 @@
 "use client";
 
 // S0 · Title over the globe at full strength (handoff board "S0 · Title"): a wash on the left
-// only, the title at (96, 300), the mascot waving beside the logo row.
+// only, the title at (96, 300), the mascot waving beside the logo row. One step: everything enters
+// together once, with no staggered reveals; nothing moves after that.
 
 import { MotionConfig } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
@@ -37,13 +38,13 @@ export function S0(_props: SceneContentProps) {
               the Web3 database
             </h1>
           </Rise>
-          <Rise delay={0.3}>
+          <Rise delay={0.1}>
             <p className="text-[40px] leading-[1.25]" style={{ color: T.t64 }}>
               Write it. Query it. Own it. <span className="text-[var(--arkiv-orange)]">Expire it.</span>
             </p>
           </Rise>
         </div>
-        <Rise delay={0.5} className="absolute left-[1280px] top-[250px]">
+        <Rise delay={0.1} className="absolute left-[1280px] top-[250px]">
           <Mascot pose="wave" height={720} />
         </Rise>
       </div>

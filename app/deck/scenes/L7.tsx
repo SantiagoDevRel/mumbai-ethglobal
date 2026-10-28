@@ -1,7 +1,8 @@
 "use client";
 
 // L7 · Everything you just did. A plain-words recap of the four ideas, one row each with the
-// mascot pose from "That's the whole talk". No code on this slide.
+// mascot pose from "That's the whole talk". No code on this slide. One row per →: step 0 shows the
+// headline and "Write it"; each → adds the next row. Nothing moves on its own.
 
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
@@ -15,7 +16,7 @@ const ROWS: { title: string; line: string; pose: MascotPose }[] = [
   { title: "Expire it", line: "Every entity disappears on time, unless someone extends it.", pose: "hourglass" },
 ];
 
-export function L7(_props: SceneContentProps) {
+export function L7({ step }: SceneContentProps) {
   return (
     <Slide headline="Everything you just did" wash={0.86}>
       <div className="absolute left-[96px] top-[300px] grid w-[1728px] grid-cols-2 gap-6">
@@ -24,8 +25,9 @@ export function L7(_props: SceneContentProps) {
             key={title}
             className="flex h-[330px] items-center gap-8 overflow-hidden rounded-[20px] border border-[rgba(246,244,239,0.12)] bg-[rgba(17,17,17,0.78)] pl-4 pr-10"
             initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 + i * 0.12, ease: EASE }}
+            animate={step >= i ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            aria-hidden={step < i}
           >
             <div className="flex w-[280px] shrink-0 justify-center">
               <Mascot pose={pose} height={300} />

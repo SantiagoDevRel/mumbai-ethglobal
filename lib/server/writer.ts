@@ -17,7 +17,7 @@ import { createSdkClients, keyQuotaExhausted, postKeyed, type RpcObserver } from
 import { dotToCreate } from "../../shared/arkiv/sdk-0.8";
 import { getProfile, NetworkNotConfiguredError } from "../../shared/arkiv/profiles";
 import type { DotCreate } from "../../shared/arkiv/adapter";
-import { APP_ID, MAX_ENTITIES_PER_SESSION, type Hex } from "../../shared/types";
+import { APP_ID, DOT_CATEGORIES, MAX_ENTITIES_PER_SESSION, type Hex } from "../../shared/types";
 import { DEVICE_HEADER, DoorsRequest, LoginRequest, PhaseRequest, ReplayRequest, RPC_READ_ALLOWLIST, SubmitRequest, WritingRequest, WRITER_ROUTES, type ErrorCode, type PresenterStatus, type TicketResponse } from "../../shared/writer-api";
 import { REJECTION_MESSAGE } from "../../shared/data/blocklist";
 import { admissionError, deviceToken, nameBlocked, placeDot } from "./policy";
@@ -475,14 +475,18 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     const token = deviceToken(request.headers.get(DEVICE_HEADER), request.headers.get("cookie"));
     if (!token) fail("invalid", 400, "A valid device token is required.");
     const ticketId = crypto.randomUUID();
-    const point = placeDot(data.country, ticketId);
+    // Many phones pick the same country (India): keep each new dot away from the ones already there.
+    const placed = await db.query<{ lat: number; lng: number }>(`select lat, lng from ${t("tickets")} where session = $1 and dot->>'country' = $2 order by accepted_at desc limit 400`, [session, data.country]);
+    const point = placeDot(data.country, ticketId, placed);
     if (!point) fail("invalid", 400, "Choose a supported country.");
+    // Every entity is a business of a random kind (cafe, restaurant, bookstore, parking).
+    const category = DOT_CATEGORIES[parseInt(ticketId.slice(0, 8), 16) % DOT_CATEGORIES.length]!;
     await network();
     const hash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)))).map(b => b.toString(16).padStart(2, "0")).join("");
     const deviceId = `device:${session}:${hash}`;
     // A phone may keep several entities live (up to MAX_ENTITIES_PER_DEVICE per session).
     const [device] = await db.query<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1`, [deviceId]);
-    const dot: DotCreate = { session, name: data.name, color: data.color.toLowerCase(), country: data.country, lifetimeSec: data.lifetimeSec, ...point };
+    const dot: DotCreate = { session, name: data.name, color: data.color.toLowerCase(), country: data.country, category, lifetimeSec: data.lifetimeSec, ...point };
     const position = await db.transaction(async q => {
       const meta = await lockMeta(q);
       if (session !== meta.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");

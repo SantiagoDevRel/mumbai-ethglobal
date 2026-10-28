@@ -45,3 +45,17 @@ test("country placement stays inside the polygon, is deterministic, and spreads 
   assert.equal(positions.size, 50);
   assert.equal(placeDot("XX", "submission"), null);
 });
+
+test("many dots in one country spread out instead of piling up", () => {
+  const nearest = (points: { lat: number; lng: number }[]) => Math.min(...points.map((p, i) => Math.min(...points.filter((_, j) => j !== i).map((q) => Math.hypot(p.lat - q.lat, (p.lng - q.lng) * Math.cos(((p.lat + q.lat) / 2) * Math.PI / 180))))));
+  const spread: { lat: number; lng: number }[] = [];
+  const blind: { lat: number; lng: number }[] = [];
+  for (let i = 0; i < 40; i++) {
+    spread.push(placeDot("IN", `ticket-${i}`, spread)!);
+    blind.push(placeDot("IN", `ticket-${i}`)!);
+  }
+  const india = countryByIso2(countries as CountryShape[], "IN")!;
+  assert.ok(spread.every((point) => pointInPolygon([point.lng, point.lat], india.polygon)), "every spread dot stays inside India");
+  assert.ok(nearest(spread) > nearest(blind), "spreading keeps the closest pair further apart");
+  assert.ok(nearest(spread) > 0.5, "no two of 40 dots in India closer than half a degree");
+});

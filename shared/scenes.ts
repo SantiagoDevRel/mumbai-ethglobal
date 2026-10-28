@@ -20,7 +20,25 @@ export type SceneId =
   | "L6"
   | "L7"
   | "L8"
-  | "L9";
+  | "L9"
+  | "D1"
+  | "D2"
+  | "D3"
+  | "D4"
+  | "D5"
+  | "D6"
+  | "D7"
+  | "D8"
+  | "LM"
+  | "A1"
+  | "A1b"
+  | "A2"
+  | "A2b"
+  | "A3"
+  | "A3b"
+  | "A3c"
+  | "A4"
+  | "PZ";
 
 /** `slide`: the deck covers the stage (the globe may show behind it).
  * `live`: the map is the stage; the deck draws only an overlay (caption, cards). */
@@ -39,6 +57,7 @@ export const SECTIONS = [
   { id: "write", title: "Write it", line: "Scan, fill the form, and your entity lands on the map." },
   { id: "why", title: "Why Arkiv", line: "Storage and indexing, entities, and the DB-Chain behind them." },
   { id: "live", title: "Expire it. Query it. Own it.", line: "Back on the map, with the entities you just wrote." },
+  { id: "model", title: "Model it", line: "Attributes, types, ownership and deleting: the data behind your map." },
   { id: "build", title: "Build it this weekend", line: "Where to start, and your agent can help." },
 ] as const;
 
@@ -68,22 +87,40 @@ export const TALK_LENGTH_SEC = 20 * 60;
 // the slides explain what they just did, then the map again to expire, query and own it.
 export const SCENES: readonly SceneDef[] = [
   { id: "S0", title: "Title", at: 0, kind: "slide", steps: 1, qr: { label: "Scan now", placement: "corner" }, camera: "globe-idle", map: "dots", section: "write" },
-  { id: "S7", title: "Join the map", at: 40, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "center" }, camera: "globe", map: "dots", section: "write" },
+  { id: "S7", title: "Join the map", at: 40, kind: "slide", steps: 2, qr: { label: "Join the map", placement: "center" }, camera: "globe", map: "dots", section: "write" },
   { id: "L1", title: "Write it", at: 110, kind: "live", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "dots", section: "write" },
-  { id: "AG", title: "Agenda", at: 170, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots" },
-  { id: "S1", title: "Every app does two jobs", at: 190, kind: "slide", steps: 2, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
-  { id: "S2", title: "Open Google Maps. What do you see?", at: 240, kind: "slide", steps: 2, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
-  { id: "S3", title: "One pin = one entity", at: 290, kind: "slide", steps: 2, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
-  { id: "S4", title: "Queries like a database. Lives on a chain.", at: 340, kind: "slide", steps: 2, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
-  { id: "S5", title: "A chain built to be a database", at: 390, kind: "slide", steps: 2, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
-  { id: "S6", title: "That's the whole talk", at: 430, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
+  { id: "AG", title: "Agenda", at: 170, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots" },
+  { id: "S1", title: "Every app does two jobs", at: 190, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
+  { id: "S2", title: "Open Google Maps. What do you see?", at: 240, kind: "slide", steps: 3, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
+  { id: "S3", title: "One pin = one entity", at: 290, kind: "slide", steps: 3, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
+  { id: "S4", title: "Queries like a database. Lives on a chain.", at: 340, kind: "slide", steps: 6, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
+  { id: "S5", title: "A chain built to be a database", at: 390, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
+  { id: "S6", title: "That's the whole talk", at: 430, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "why" },
   { id: "L2", title: "Expire it", at: 460, kind: "live", steps: 2, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "dots", section: "live" },
   { id: "L3", title: "Query it", at: 550, kind: "live", steps: 5, qr: { label: "Join the map", placement: "corner" }, camera: "india", map: "dots", section: "live" },
   { id: "L4", title: "Inside one entity", at: 700, kind: "live", steps: 5, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots", section: "live", cutLine: "At 12:00, skip the badge-by-badge walk." },
   { id: "L5", title: "Update an entity", at: 800, kind: "live", steps: 3, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots", section: "live", cutLine: "At 15:30, skip the reviews." },
-  { id: "L6", title: "Own it", at: 980, kind: "live", steps: 2, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "owner", section: "live" },
-  { id: "L7", title: "Everything you just did", at: 1090, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "owner", section: "live", cutLine: "At 18:00, skip this scene." },
-  { id: "L8", title: "Your turn: build it this weekend", at: 1130, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots", section: "build" },
+  { id: "L6", title: "Own it", at: 980, kind: "live", steps: 2, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "dots", section: "live" },
+  { id: "L7", title: "Everything you just did", at: 1090, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "live", cutLine: "At 18:00, skip this scene." },
+  { id: "D1", title: "One business, one entity", at: 1100, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "D2", title: "Arkiv adds a few fields for you", at: 1105, kind: "slide", steps: 2, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "D3", title: "Each attribute has a type", at: 1110, kind: "slide", steps: 7, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "D4", title: "Indexed = you can filter on it", at: 1115, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "D5", title: "Creation flags: decide once", at: 1120, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "D6", title: "Private attributes", at: 1125, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "D7", title: "Transfer ownership", at: 1130, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "D8", title: "Deleting an entity", at: 1135, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "model" },
+  { id: "LM", title: "Back to the map", at: 1140, kind: "live", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "dots", section: "model" },
+  { id: "A1", title: "MCP: your agent asks Arkiv", at: 1145, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "A1b", title: "Inside the Arkiv MCP", at: 1147, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "A2", title: "Skills: recipes on demand", at: 1149, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "A2b", title: "Inside a skill", at: 1151, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "A3", title: "Plugin: MCP + skills in one", at: 1153, kind: "slide", steps: 12, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "A3b", title: "Anatomy of a plugin", at: 1155, kind: "slide", steps: 8, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "A3c", title: "Plugin hooks", at: 1157, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "A4", title: "Superpowers: plugin + Playwright", at: 1159, kind: "slide", steps: 5, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
+  { id: "L8", title: "Your turn: build it this weekend", at: 1160, kind: "slide", steps: 4, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots", section: "build" },
+  { id: "PZ", title: "Arkiv prizes at ETHGlobal Mumbai", at: 1165, kind: "slide", steps: 7, qr: { label: "Join the map", placement: "none" }, camera: "keep", map: "dots", section: "build" },
   { id: "L9", title: "Close", at: 1170, kind: "live", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "dots", section: "build" },
 ];
 

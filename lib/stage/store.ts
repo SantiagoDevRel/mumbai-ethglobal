@@ -52,6 +52,8 @@ export type Command =
   | { type: "phase"; phase: "talk" | "build" }
   | { type: "extend"; scope: "selected" | "all" }
   | { type: "makeBusiness"; key: Hex }
+  /** A real changeOwnership of one entity, signed in Rabby by the workshop wallet. */
+  | { type: "transferTo"; key: Hex; newOwner: Hex }
   | { type: "setMap"; map: MapMode }
   | { type: "transfer" }
   | { type: "undoTransfer" }
@@ -191,6 +193,7 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
     // Pure side-effect commands: the reducer leaves state alone; handlers do the work.
     case "extend":
     case "makeBusiness":
+    case "transferTo":
       return state;
   }
 }

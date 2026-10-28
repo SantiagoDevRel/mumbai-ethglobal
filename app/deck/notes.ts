@@ -3,6 +3,23 @@
 // the talk runs from /map and /slides only.
 
 import type { SceneId } from "../../shared/scenes";
+import { A1_NOTES } from "./scenes/ai/A1";
+import { A1B_NOTES } from "./scenes/ai/A1b";
+import { A2_NOTES } from "./scenes/ai/A2";
+import { A2B_NOTES } from "./scenes/ai/A2b";
+import { A3_NOTES } from "./scenes/ai/A3";
+import { A3B_NOTES } from "./scenes/ai/A3b";
+import { A3C_NOTES } from "./scenes/ai/A3c";
+import { A4_NOTES } from "./scenes/ai/A4";
+import { PRIZES_NOTES } from "./scenes/ai/Prizes";
+import { D1_NOTES } from "./scenes/data/D1";
+import { D2_NOTES } from "./scenes/data/D2";
+import { D3_NOTES } from "./scenes/data/D3";
+import { D4_NOTES } from "./scenes/data/D4";
+import { D5_NOTES } from "./scenes/data/D5";
+import { D6_NOTES } from "./scenes/data/D6";
+import { D7_NOTES } from "./scenes/data/D7";
+import { D8_NOTES } from "./scenes/data/D8";
 
 export const NOTES: Record<SceneId, string[]> = {
   S0: [
@@ -10,37 +27,39 @@ export const NOTES: Record<SceneId, string[]> = {
     "Start the session first (presenter controls, ?). Phones can write as soon as it runs. → starts the timer.",
   ],
   S1: [
-    "Storage keeps the heavy files: videos scroll past one by one. Indexing is the tiny cards, sorted so you can find things.",
-    "Step 2 · the thumbs meme on Google Maps: scroll a thousand places vs ask once, \"cafe, open now, 4.5 stars or more\", one answer.",
+    "Every app does two jobs. → Indexing on the left: tiny cards, sorted, so you can find things.",
+    "→ Storage on the right: the heavy files, one at a time. They stay still until you say so.",
+    "→ The meme on Google Maps: scroll a thousand places. → Or ask once, \"cafe, open now, 4.5 stars or more\", one answer.",
   ],
   S2: [
     "Open a place on Google Maps: photos and a video on top, name, rating and hours under them. When you filter, you search the small part, never the photos.",
-    "Step 2 · the card pulls apart: the small fields fly to Arkiv (indexing data), the photos and video to Swarm (storage).",
+    "→ The small fields move to Arkiv (indexing data). → The photos and video move to Swarm (storage).",
   ],
   S3: [
-    "Every entity starts with Arkiv's fields: its key, its owner and creator (both wallets) and when it expires.",
-    "Step 2 · then your attributes underneath: whatever your app needs. You already wrote one of these: name, color, country and lifetime.",
+    "One pin, one entity. → Arkiv's fields: its key, its owner and creator (both wallets) and when it expires.",
+    "→ Then your attributes underneath: whatever your app needs. You already wrote one of these: name, color, country and lifetime.",
   ],
   S4: [
-    "The problem first: your data sits on one company's server. Server down, rules changed, data gone.",
-    "Step 2 · the answer, on its own: you query Arkiv like a database, and the table lives on a DB-Chain. Every write is a transaction, anyone can query, owners are wallets.",
+    "The problem first: your data sits on one company's server. → Server down, rules changed, data gone.",
+    "→ The answer: query Arkiv like a database. → The table. → The query runs: filter here, sort in your app.",
+    "→ The table lives on a DB-Chain: every write is a transaction, anyone can query, owners are wallets.",
   ],
   S5: [
     "You don't write Solidity. You write entities, query them, and decide who owns them.",
-    "The green dot blinks with the real latest block.",
-    "Step 2 · own it, or give it to every user: the same four entities owned by your app's wallet, then each by its own user.",
+    "One layer per →: Ethereum, the Arkiv DB-Chain (the dot blinks with the real latest block), your app.",
+    "→ Own it: your app's wallet owns all four. → Give it to every user: each entity gets its own owner.",
   ],
   S6: [
-    "Four tiles, one per →, each with a tiny example under it: writing an entity, a simple query, the owner changing hands, an entity expiring.",
-    "You already did the first one. Back to the map for the other three.",
+    "One tile per →: write it, query it, own it, expire it, each with a still example under it.",
+    "→ \"You did the first one. The other three, live.\" Then back to the map.",
   ],
   S7: [
-    "Name. Color. Country. Lifetime: 5 to 15 minutes, 15 by default. Give them a few seconds to fill the form.",
+    "Name. Color. Country. Lifetime: 5 to 15 minutes, 15 by default. → shows the lifetime card. Give them a few seconds to fill the form.",
     "Press D: 3 · 2 · 1 · write! Everyone taps Write my entity together. Then → to the map.",
   ],
   AG: [
-    "Here is the rest of the talk. Part one is done: your entity is on the map.",
-    "Next, why it works. Then back to the map, where your entities are still waiting.",
+    "Here is the rest of the talk, one part per →. Part one is done: your entity is on the map.",
+    "Next, why it works. Then back to the map, how to model your data, and how to build it this weekend.",
   ],
   L1: [
     "Every dot is an entity you just wrote. This map has no backend database. It's one query, run again every block.",
@@ -75,41 +94,78 @@ export const NOTES: Record<SceneId, string[]> = {
     "Point at the business card footer: Photos: Swarm. Everything you filter on: Arkiv.",
   ],
   L6: [
-    "Step 1 · Owner view: every dot draws a line to one santiago badge. \"Santiago owns all the businesses' data.\" Pause. \"Sound familiar? That's every platform today.\"",
-    "Step 2 · The transfer (T works too): the lines cut, each business gets its own owner badge. \"Each business owns its own data.\"",
-    "Demo view: nothing on-chain changes. In your app: changeOwnership for each entity, or one executeBatch.",
+    "Step 1 · \"One wallet, santiago's, owns every entity on this map.\" Sound familiar? That's every platform today.",
+    "Step 2 · The real transfer: in the entity card, paste a wallet address and press Transfer ownership. Rabby (the MUMBAI account, the writer wallet) asks to sign. $owner changes on the next query; $creator stays santiago.",
   ],
   L7: [
-    "Everything you just did, in plain words: you wrote an entity, the map queried it, owners are wallets, and it expires on time.",
+    "Everything you just did, in plain words, one row per →: you wrote an entity, the map queried it, owners are wallets, and it expires on time.",
   ],
   L8: [
-    "Docs, the Hub, AI tools (your agent already knows Arkiv) and Prizes. Click Prizes to open it (empty until the prizes are final).",
+    "One card per →: Docs, the Hub, AI tools (your agent already knows Arkiv) and Prizes.",
     "The corner QR still opens /scan: anyone who arrives late can still write an entity.",
   ],
   L9: [
     "Write it. Query it. Own it. Expire it. Thank you.",
     "Phones count down the lifetime each person chose; the map shows the real expiration and any extension.",
   ],
+  D1: D1_NOTES,
+  D2: D2_NOTES,
+  D3: D3_NOTES,
+  D4: D4_NOTES,
+  D5: D5_NOTES,
+  D6: D6_NOTES,
+  D7: D7_NOTES,
+  D8: D8_NOTES,
+  LM: [
+    "Back to the map: everything you just saw is what these dots are. Still live, still counting down.",
+  ],
+  A1: A1_NOTES,
+  A1b: A1B_NOTES,
+  A2: A2_NOTES,
+  A2b: A2B_NOTES,
+  A3: A3_NOTES,
+  A3b: A3B_NOTES,
+  A3c: A3C_NOTES,
+  A4: A4_NOTES,
+  PZ: PRIZES_NOTES,
 };
 
 /** What → reveals from each step, for every step but the last (the last → goes to the next scene). */
 export const REVEALS: Record<SceneId, string[]> = {
   S0: [],
-  S1: ["the thumbs meme: scroll a thousand places vs one query"],
-  S2: ["the place card pulled apart: indexing data to Arkiv, storage to Swarm"],
-  S3: ["your attributes under Arkiv's fields"],
-  S4: ["the answer: query like a database, the table on a DB-Chain"],
-  S5: ["own it, or give it to every user"],
-  S6: ["tile 2 · Query it", "tile 3 · Own it", "tile 4 · Expire it, and \"You did the first one\""],
-  S7: [],
-  AG: [],
+  S7: ["the lifetime card"],
   L1: [],
+  AG: ["part 2 · Why Arkiv", "part 3 · Expire it. Query it. Own it.", "part 4 · Model it", "part 5 · Build it this weekend"],
+  S1: ["the Indexing column", "the Storage column (still)", "the meme: scroll a thousand places", "the answer: one query"],
+  S2: ["the fields move to Arkiv", "the media move to Swarm"],
+  S3: ["Arkiv's fields", "your attributes"],
+  S4: ["Server down. Rules changed. Data gone.", "the answer: query it like a database", "the table", "the query runs", "the table lives on a DB-Chain"],
+  S5: ["the Arkiv DB-Chain layer", "the Your app layer", "own it: one app wallet", "give it to every user"],
+  S6: ["tile 2 · Query it", "tile 3 · Own it", "tile 4 · Expire it", "\"You did the first one\""],
   L2: ["the caption: Expire it. Or extend it."],
   L3: ["filter: color is orange", "filter: country is India", "filter: inside this map view", "filter: owner is santiago"],
   L4: ["the $key badge", "the $creator badge", "the $owner badge", "the $expiresAt badge"],
   L5: ["the answer: business view, flying to Mumbai street level", "the reviews and the caption \"Each review is its own entity.\""],
-  L6: ["the transfer (demo view): each business owns its data"],
-  L7: [],
-  L8: [],
+  L6: ["the transfer: paste a wallet, Transfer ownership, Rabby"],
+  L7: ["Query it", "Own it", "Expire it"],
+  D1: ["attributes", "name · type · value", "every pin is one"],
+  D2: ["Arkiv's fields"],
+  D3: ["yes or no", "numbers", "text", "Ethereum", "files", "the closing line"],
+  D4: ["a query that works", "a query that fails", "the closing line"],
+  D5: ["readonly ON", "permissionlessExtension ON", "the closing line"],
+  D6: ["the phone is public", "encrypt", "decrypt, or only bytes", "the closing line"],
+  D7: ["the owner asks", "the first transfer", "the other three", "who can do what"],
+  D8: ["deleted: the query returns nothing", "the create transaction still holds the data", "a query at that block still returns it", "the takeaway"],
+  LM: [],
+  A1: ["the agent's answer", "out of date", "With MCP: network_status", "Add it once"],
+  A1b: ["tools", "prompts", "documents"],
+  A2: ["data modeling", "app integration", "query", "troubleshooting"],
+  A2b: ["arkiv-query, level 1", "level 2", "level 3", "back to the map"],
+  A3: ["install line 1", "install line 2", "install line 3", "install line 4", "the ask", "what your agent uses 1", "what your agent uses 2", "what your agent uses 3", "what your agent uses 4", "ready", "which one to use"],
+  A3b: ["Arkiv's parts", "plugin.json", "skills/", "hooks/", ".mcp.json", "evals/", "dashed parts and install line"],
+  A3c: ["what it does at each moment", "Claude Code vs Codex", "what your agent sees"],
+  A4: ["your agent clicks Save", "the wallet asks to sign", "your agent signs", "the pin lands, verify_tx confirms"],
+  L8: ["Hub", "AI tools", "Prizes"],
+  PZ: ["Mirror", "Build on Arkiv from scratch", "Continuity", "Node tooling", "Arkiv + Swarm bonus", "the total"],
   L9: [],
 };

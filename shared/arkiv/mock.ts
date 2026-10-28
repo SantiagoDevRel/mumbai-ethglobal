@@ -14,7 +14,7 @@ import type {
   RawAttribute,
   WriteResult,
 } from "../types";
-import { APP_ID, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC } from "../types";
+import { APP_ID, DOT_CATEGORIES, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC } from "../types";
 import { DOT_PALETTE, encodeCoord, encodeRating } from "../encoding";
 
 export interface MockOptions {
@@ -51,6 +51,7 @@ export function describeFilters(filters: ChainFilters, creator: Hex): QueryDescr
     q.push(`kind = "${filters.kinds[0]}"`);
   }
   if (filters.session) { where.push(`eq("session", "${filters.session}")`); q.push(`session = "${filters.session}"`); }
+  if (filters.namePrefix) { where.push(`startsWith("name", ${JSON.stringify(filters.namePrefix)})`); q.push(`name STARTSWITH ${JSON.stringify(filters.namePrefix)}`); }
   if (filters.color) { where.push(`eq("color", "${filters.color}")`); q.push(`color = "${filters.color}"`); }
   if (filters.country) { where.push(`eq("country", "${filters.country}")`); q.push(`country = "${filters.country}"`); }
   if (filters.viewport) {
@@ -104,6 +105,7 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
     const a = e.attrs as unknown as Record<string, unknown>;
     if (!f.kinds.includes(e.attrs.kind)) return false;
     if (f.session && a.session !== f.session) return false;
+    if (f.namePrefix && !String(a.name ?? "").startsWith(f.namePrefix)) return false;
     if (f.color && a.color !== f.color) return false;
     if (f.country && a.country !== f.country) return false;
     if (f.owner && e.owner.toLowerCase() !== f.owner.toLowerCase()) return false;
@@ -132,6 +134,7 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
         name: names[Math.floor(Math.random() * names.length)]!,
         color: DOT_PALETTE[Math.floor(Math.random() * DOT_PALETTE.length)]!,
         country,
+        category: DOT_CATEGORIES[Math.floor(Math.random() * DOT_CATEGORIES.length)]!,
         lat: lat + (Math.random() - 0.5) * 3,
         lng: lng + (Math.random() - 0.5) * 3,
       },

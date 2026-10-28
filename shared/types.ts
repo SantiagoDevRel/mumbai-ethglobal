@@ -41,6 +41,8 @@ export interface DotAttrs {
   country: string;
   lat: number;
   lng: number;
+  /** Business category the writer picks at random (DOT_CATEGORIES); absent on older dots. */
+  category?: BusinessCategory;
 }
 
 export interface BusinessAttrs {
@@ -79,7 +81,11 @@ export type BusinessCategory =
   | "bookstore"
   | "gym"
   | "market"
-  | "bar";
+  | "bar"
+  | "parking";
+
+/** Every phone's entity is a business of one of these kinds, picked at random by the writer. */
+export const DOT_CATEGORIES = ["cafe", "restaurant", "bookstore", "parking"] as const satisfies readonly BusinessCategory[];
 
 export type EntityAttrs = DotAttrs | BusinessAttrs | ReviewAttrs;
 
@@ -117,6 +123,8 @@ export interface BlockInfo {
 export interface ChainFilters {
   kinds: EntityKind[];
   session?: string;
+  /** Names that start with this text (case-sensitive, on-chain STARTSWITH). */
+  namePrefix?: string;
   color?: string;
   country?: string;
   viewport?: { minLat: number; maxLat: number; minLng: number; maxLng: number };

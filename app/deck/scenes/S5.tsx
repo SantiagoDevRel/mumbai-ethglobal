@@ -1,18 +1,23 @@
 "use client";
 
-// S5 · A chain built to be a database. The stack (your app, the Arkiv DB-Chain, Ethereum) with the
-// real latest block beside a blinking green dot (a grey dot and "mock" with the mock source). →
-// shows what "own it, or give it to every user" means: the same four entities owned by the app's
-// wallet, then each by its own user's wallet. The user wallets are illustrative.
+// S5 · A chain built to be a database. The stack builds bottom-up, one layer per →, then "own it, or
+// give it to every user" plays one state per →. Nothing moves on a timer:
+//   step 0 · headline, the Ethereum layer and its "Ethereum-aligned" chip
+//   step 1 · the Arkiv DB-Chain layer with the real latest block, and "A new block every few seconds"
+//   step 2 · the Your app layer
+//   step 3 · own it: the four entities owned by your app's wallet
+//   step 4 · give it to every user: each entity's owner line moves to its own user's wallet
+// The block number is real data and updates with each block; its dot flashes once per new block
+// (grey and "mock" with the mock source). The user wallets are illustrative.
 
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useSourceMode } from "../../../lib/data/source-mode";
 import { useLiveBlock } from "../../../lib/data/useLiveBlock";
 import { WRITER_CONNECTED } from "../../../lib/data/writer-client";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { WRITER_ADDRESS } from "../../../shared/arkiv/profiles";
-import { Chip, EASE, PANEL_EASE, Reveal, Rise, Slide, T } from "../ui";
+import { Chip, EASE, PANEL_EASE, Reveal, Slide, T } from "../ui";
 
 /** The stage's resolved source: the same rule as useLiveData (live when chosen, or auto with a writer). */
 function useIsMock(): boolean {
@@ -26,10 +31,13 @@ function LiveBlock() {
   if (!block) return <span className="text-[rgba(246,244,239,0.64)]">Reading the chain…</span>;
   return (
     <span className="flex items-center gap-5">
+      {/* One short flash per new block (keyed by the number), then still: no looping pulse. */}
       <motion.span
-        className={`block h-[22px] w-[22px] rounded-full ${mock ? "bg-[rgba(246,244,239,0.4)]" : "bg-[#14f195] shadow-[0_0_18px_#14f195]"}`}
-        animate={mock ? { opacity: 1 } : { opacity: [1, 0.25, 1] }}
-        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+        key={block.number.toString()}
+        className={`block h-[22px] w-[22px] rounded-full ${mock ? "bg-[rgba(246,244,239,0.4)]" : "bg-[#14f195]"}`}
+        initial={mock ? false : { scale: 1.5, boxShadow: "0 0 22px #14f195" }}
+        animate={mock ? { scale: 1 } : { scale: 1, boxShadow: "0 0 0px rgba(20,241,149,0)" }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         aria-hidden
       />
       <span className="text-[rgba(246,244,239,0.64)]">block</span>
@@ -83,13 +91,11 @@ const CARD_W = 160;
 const GAP = 24;
 const centerX = (i: number) => i * (CARD_W + GAP) + CARD_W / 2;
 
-/** Own it, or give it to every user: the owner lines swap from one app wallet to four user wallets. */
-function OwnOrGive() {
-  const [given, setGiven] = useState(false);
-  useEffect(() => {
-    const id = setInterval(() => setGiven((g) => !g), 3200);
-    return () => clearInterval(id);
-  }, []);
+/**
+ * Own it, or give it to every user: the owner lines swap from one app wallet to four user wallets
+ * when `given` turns on (the presenter's →), and back on ←.
+ */
+function OwnOrGive({ given }: { given: boolean }) {
   const width = ENTITIES.length * CARD_W + (ENTITIES.length - 1) * GAP;
   const appX = width / 2;
   return (
@@ -184,12 +190,16 @@ function OwnOrGive() {
 export function S5({ step }: SceneContentProps) {
   return (
     <Slide headline="A chain built to be a database">
-      <Rise delay={0.15} className="absolute left-[96px] top-[284px] flex gap-4">
-        <Chip tone="blue">Ethereum-aligned</Chip>
-        <Chip tone="sand">A new block every few seconds</Chip>
-      </Rise>
+      <div className="absolute left-[96px] top-[284px] flex gap-4">
+        <Reveal step={step} at={0}>
+          <Chip tone="blue">Ethereum-aligned</Chip>
+        </Reveal>
+        <Reveal step={step} at={1}>
+          <Chip tone="sand">A new block every few seconds</Chip>
+        </Reveal>
+      </div>
       <div className="absolute left-[96px] top-[380px] flex w-[940px] flex-col gap-4">
-        <Rise delay={0.45}>
+        <Reveal step={step} at={2}>
           <Layer
             label="Your app"
             tone="app"
@@ -201,18 +211,18 @@ export function S5({ step }: SceneContentProps) {
               </>
             }
           />
-        </Rise>
-        <Rise delay={0.35}>
+        </Reveal>
+        <Reveal step={step} at={1}>
           <Layer label="Arkiv DB-Chain" tone="arkiv">
             <LiveBlock />
           </Layer>
-        </Rise>
-        <Rise delay={0.25}>
+        </Reveal>
+        <Reveal step={step} at={0}>
           <Layer label="Ethereum" tone="eth" />
-        </Rise>
+        </Reveal>
       </div>
-      <Reveal step={step} at={1} className="absolute left-[1112px] top-[380px]">
-        {step >= 1 ? <OwnOrGive /> : null}
+      <Reveal step={step} at={3} className="absolute left-[1112px] top-[380px]">
+        {step >= 3 ? <OwnOrGive given={step >= 4} /> : null}
       </Reveal>
     </Slide>
   );

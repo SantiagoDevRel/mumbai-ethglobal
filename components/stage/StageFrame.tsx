@@ -18,7 +18,7 @@
 // screen the HUD reaches the top and bottom edges instead of floating in a letterbox.
 
 import { AnimatePresence, motion } from "motion/react";
-import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { KEY_HELP } from "../../lib/stage/keyboard";
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
 import { SCENES, type SceneDef } from "../../shared/scenes";
@@ -105,6 +105,8 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: 
         {/* The map has no free corner for Reset, so it sits in the "?" presenter card. */}
         <ControlsOverlay extra={bar} />
         {writing}
+        <StepDots />
+        <Annotations />
       </div>
     </FitContext.Provider>
   );
@@ -135,8 +137,63 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
       {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
       {bar}
       <ControlsOverlay />
+      <StepDots />
+      <Annotations />
     </div>
   );
+}
+
+/** Bottom right: one small dot per reveal step of this scene, filled up to the current one. */
+function StepDots() {
+  const { scene, step } = useScene();
+  if (scene.steps < 2) return null;
+  return <div className="step-dots" role="img" aria-label={`Step ${step + 1} of ${scene.steps}`}>
+    {Array.from({ length: scene.steps }, (_, i) => <i key={i} data-on={i <= step} data-current={i === step} />)}
+  </div>;
+}
+
+/** Drag to draw a rectangle that points at something: with the left mouse button on a slide, or
+ * Alt + drag on the map (a plain drag turns the globe). The rectangles clear on the next step or scene. */
+function Annotations() {
+  const { scene, index, step } = useScene();
+  const [boxes, setBoxes] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
+  const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const kind = scene.kind;
+  const [shown, setShown] = useState(`${index}:${step}`);
+  if (shown !== `${index}:${step}`) { setShown(`${index}:${step}`); setBoxes([]); setDraft(null); }
+  useEffect(() => {
+    const rect = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) });
+    const down = (event: PointerEvent) => {
+      if (event.button !== 0 || !(event.target instanceof Element)) return;
+      if (event.target.closest("button, a, input, select, textarea, label, summary, [role=dialog], .panel, .writing-switch")) return;
+      if (kind !== "slide" && !event.altKey) return;
+      // On the map, keep this drag away from the globe so it draws instead of turning it.
+      if (kind !== "slide") event.stopPropagation();
+      start.current = { x: event.clientX, y: event.clientY };
+    };
+    const hold = (event: MouseEvent) => { if (kind !== "slide" && event.altKey && event.button === 0) event.stopPropagation(); };
+    const move = (event: PointerEvent) => {
+      if (!start.current) return;
+      const box = rect(start.current, { x: event.clientX, y: event.clientY });
+      if (box.w > 6 || box.h > 6) { setDraft(box); event.preventDefault(); }
+    };
+    const up = (event: PointerEvent) => {
+      if (!start.current) return;
+      const box = rect(start.current, { x: event.clientX, y: event.clientY });
+      start.current = null;
+      setDraft(null);
+      if (box.w > 6 && box.h > 6) setBoxes((old) => [...old, box]);
+    };
+    window.addEventListener("pointerdown", down, true);
+    window.addEventListener("mousedown", hold, true);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => { window.removeEventListener("pointerdown", down, true); window.removeEventListener("mousedown", hold, true); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+  }, [kind]);
+  return <div className="annotations" aria-hidden="true" data-drawing={draft ? "true" : undefined}>
+    {[...boxes, ...(draft ? [draft] : [])].map((box, i) => <span key={i} style={{ left: box.x, top: box.y, width: box.w, height: box.h }} />)}
+  </div>;
 }
 
 /** The presenter card: a visible ? button (bottom left) or the ? key opens it; Esc, the backdrop or

@@ -1,7 +1,7 @@
 import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC, MAX_ENTITIES_PER_DEVICE, MAX_ENTITIES_PER_SESSION, type DotDraft } from "../../shared/types.ts";
 import { isNameAllowed } from "../../shared/data/blocklist.ts";
 import countries from "../../shared/geo/countries.json" with { type: "json" };
-import { countryByIso2, placeInCountry, type CountryShape } from "../../shared/geo/place.ts";
+import { countryByIso2, spreadInCountry, type CountryShape } from "../../shared/geo/place.ts";
 
 export type AdmissionError = "device_live" | "device_limit" | "map_full";
 export function admissionError(live: boolean, deviceCount: number, sessionCount: number): AdmissionError | null {
@@ -24,9 +24,10 @@ export function validDraft(value: DotDraft): boolean {
     && value.lifetimeSec <= LIFETIME_MAX_SEC && value.lifetimeSec % LIFETIME_STEP_SEC === 0;
 }
 
-export function placeDot(iso2: string, seed: string): { lat: number; lng: number } | null {
+/** `existing`: points already placed in this country this session, so a crowd spreads out. */
+export function placeDot(iso2: string, seed: string, existing: readonly { lat: number; lng: number }[] = []): { lat: number; lng: number } | null {
   const country = countryByIso2(countries as CountryShape[], iso2);
-  return country ? placeInCountry(country, seed) : null;
+  return country ? spreadInCountry(country, seed, existing) : null;
 }
 
 export function deviceToken(header: string | null, cookie: string | null): string | null {

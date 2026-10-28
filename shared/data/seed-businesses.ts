@@ -278,6 +278,7 @@ const CATEGORIES: readonly BusinessCategory[] = [
   "bookstore",
   "gym",
   "market",
+  "parking",
   "bar",
 ];
 

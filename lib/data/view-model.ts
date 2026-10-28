@@ -1,11 +1,11 @@
-import type { AppSideFilters, BusinessCategory, LiveEntity } from "../../shared/types.ts";
-
-const CATEGORIES: BusinessCategory[] = ["cafe", "restaurant", "street-food", "bakery", "bookstore", "gym", "market", "bar"];
+import { DOT_CATEGORIES, type AppSideFilters, type BusinessCategory, type LiveEntity } from "../../shared/types.ts";
 
 export function businessPresentation(entity: LiveEntity) {
   if (entity.attrs.kind === "business") return { name: entity.attrs.name, category: entity.attrs.category, rating: entity.attrs.rating, opens: entity.attrs.opens, closes: entity.attrs.closes, appSide: false };
   const seed = [...entity.key].reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return { name: "name" in entity.attrs ? entity.attrs.name : "Review", category: CATEGORIES[seed % CATEGORIES.length]!, rating: (35 + seed % 15) / 10, opens: 480, closes: 1320, appSide: true };
+  // The writer gives every phone entity a category; older dots without one get a stable pick.
+  const category: BusinessCategory = entity.attrs.kind === "dot" && entity.attrs.category ? entity.attrs.category : DOT_CATEGORIES[seed % DOT_CATEGORIES.length]!;
+  return { name: "name" in entity.attrs ? entity.attrs.name : "Review", category, rating: (35 + seed % 15) / 10, opens: 480, closes: 1320, appSide: true };
 }
 
 export function isOpen(opens: number, closes: number, minutes: number) {

@@ -1,17 +1,18 @@
 "use client";
 
 // S7 · Join the map (handoff boards "S7 · Doors open (QR)" and "S7 · 3 · 2 · 1 · write!"). /slides
-// draws the big QR in the left column; this slide adds the form line under it and the lifespan
-// select card on the right. When D starts the countdown (`state.countdownAt`), 3 · 2 · 1 · write!
+// draws the big QR in the left column; this slide adds the form line under it (step 0) and, on →,
+// the lifespan select card on the right (step 1), framed on the default lifetime and still: nothing
+// here moves on a timer. When D starts the countdown (`state.countdownAt`), 3 · 2 · 1 · write!
 // plays over the map column from that time: 1 s per step, an Orange ring draining each step.
 
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useEffect, useState } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { useStage } from "../../../lib/stage/store";
-import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC } from "../../../shared/types";
+import { LIFETIME_DEFAULT_SEC, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC } from "../../../shared/types";
 import { CharacterSelect } from "../memes";
-import { Logo, Rise } from "../ui";
+import { Logo, Reveal, Rise } from "../ui";
 
 const BEATS = ["3", "2", "1", "write!"] as const;
 const BEAT_MS = 1000;
@@ -97,10 +98,11 @@ function Countdown({ elapsed }: { elapsed: number }) {
   );
 }
 
-export function S7(_props: SceneContentProps) {
+export function S7({ step }: SceneContentProps) {
   const startedAt = useStage((s) => s.countdownAt);
   const elapsed = useCountdownElapsed(startedAt);
   const lifespans = [LIFETIME_MIN_SEC, (LIFETIME_MIN_SEC + LIFETIME_MAX_SEC) / 2, LIFETIME_MAX_SEC].map((sec) => ({ sec, label: formatLifetime(sec) }));
+  const defaultSlot = Math.max(0, lifespans.findIndex((l) => l.sec === LIFETIME_DEFAULT_SEC));
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
@@ -110,7 +112,7 @@ export function S7(_props: SceneContentProps) {
             <motion.div key="card" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
               <Logo height={28} className="absolute left-[96px] top-[72px]" />
               {/* The app's centered QR fills the left column above this line. */}
-              <Rise delay={0.2} className="absolute left-[140px] top-[880px] w-[1040px]">
+              <Rise delay={0.1} className="absolute left-[140px] top-[880px] w-[1040px]">
                 <p className="text-center text-[44px] font-semibold leading-[1.2]">
                   Name. Color. Country.
                   <br />
@@ -119,9 +121,9 @@ export function S7(_props: SceneContentProps) {
                   </span>
                 </p>
               </Rise>
-              <Rise delay={0.3} className="absolute left-[1260px] top-[300px]">
-                <CharacterSelect lifespans={lifespans} maxSec={LIFETIME_MAX_SEC} />
-              </Rise>
+              <Reveal step={step} at={1} className="absolute left-[1260px] top-[300px]">
+                <CharacterSelect lifespans={lifespans} maxSec={LIFETIME_MAX_SEC} selected={defaultSlot} />
+              </Reveal>
             </motion.div>
           ) : (
             <Countdown key="countdown" elapsed={elapsed} />

@@ -8,7 +8,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { useStage } from "../../../lib/stage/store";
 import { Mascot } from "../Mascot";
 import { Caption, EASE, OverlayShell, PANEL_EASE, Rise } from "../ui";
 
@@ -86,27 +85,35 @@ export function L5({ step }: SceneContentProps) {
   );
 }
 
-/** L6: "Own it." pill plus the big statement in the right column, under the owner panel. */
-export function L6(_props: SceneContentProps) {
-  const transferred = useStage((s) => s.transferred);
+/** L6: "Own it." The inspector holds a real transfer: a wallet address and Transfer ownership (Rabby). */
+export function L6({ step }: SceneContentProps) {
   return (
     <OverlayShell>
       <SwapCaption id="l6" wide>
         Own it.
       </SwapCaption>
-      <div className="absolute right-[32px] top-[440px] w-[424px]">
+      <div className="absolute left-[96px] top-[700px] w-[880px]">
         <AnimatePresence mode="wait">
           <motion.p
-            key={transferred ? "each" : "one"}
+            key={step >= 1 ? "each" : "one"}
             className="text-[48px] font-bold leading-[1.1] [text-shadow:0_4px_24px_rgba(0,0,0,0.8)]"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: PANEL_EASE } }}
             exit={{ opacity: 0, y: 12, transition: { duration: 0.16, ease: PANEL_EASE } }}
           >
-            {transferred ? "Each business owns its own data." : "Santiago owns all the businesses' data."}
+            {step >= 1 ? "Transfer it: the new wallet owns it. $creator still says santiago." : "One wallet, santiago's, owns every entity on this map."}
           </motion.p>
         </AnimatePresence>
       </div>
+    </OverlayShell>
+  );
+}
+
+/** LM: back to the map after the data-modeling slides; the entities are still live. */
+export function LM(_props: SceneContentProps) {
+  return (
+    <OverlayShell>
+      <SwapCaption id="lm">Still live.</SwapCaption>
     </OverlayShell>
   );
 }

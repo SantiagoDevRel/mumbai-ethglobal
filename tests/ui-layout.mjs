@@ -88,7 +88,9 @@ try {
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7-countdown.png") }); }
   await page.keyboard.press("d");
   await expect(page.locator(".join-qr-center")).toBeVisible();
-  // → from S7 lands on the map, where the room's entities arrive.
+  // → shows the lifetime card; the next → lands on the map, where the room's entities arrive.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-screen="map"][data-scene="S7"]')).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
   await expect(page.locator(".app-hud")).toHaveCount(1);
@@ -100,6 +102,10 @@ try {
   await expect(page.getByRole("heading", { name: "Where we're going" })).toBeVisible();
   await expect(page.getByLabel("Done")).toHaveCount(1);
   await expect(page.locator(".join-qr,.app-hud")).toHaveCount(0);
+  for (let part = 1; part < 5; part++) {
+    await page.keyboard.press("ArrowRight");
+    await expect(page.locator('[data-screen="map"][data-scene="AG"]')).toBeVisible();
+  }
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-AG.png") }); }
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="S1"]')).toBeVisible();
@@ -107,12 +113,13 @@ try {
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S1.png") }); }
   await commands(page, [{ type: "goto", index: 11 }, { type: "togglePanel", panel: "filters", open: true }]);
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
-  await expect(page.locator(".filters-panel")).toBeVisible();
+  await expect(page.locator(".filter-bar")).toBeVisible();
+  await expect(page.locator(".filter-results")).toContainText(/\d+ results?/);
   await commands(page, [{ type: "next" }]);
   await expect(page.locator('pre[aria-label="Executed query text"]')).toContainText('"color"');
   await expect(page.locator(".stage-toolbar")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Color · Orange", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".query-scope summary code")).not.toContainText(/,\s*(?:·|$)/);
+  await expect(page.getByRole("button", { name: "Color · Orange", exact: true })).toBeVisible();
+  await expect(page.locator(".query-scope code")).not.toContainText(/,\s*(?:·|$)/);
   await expect(page.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await expect(page.locator(".qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
   await page.evaluate(() => document.fonts.ready);
@@ -120,7 +127,7 @@ try {
   const measure = () => page.evaluate(() => {
     const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
     const url = document.querySelector(".qr-url");
-    return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), event: rect(".event-log"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filters-panel"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
+    return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), event: rect(".event-log"), urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filter-bar"), counter: rect(".stage-counter strong"), overflow: document.documentElement.scrollWidth > innerWidth };
   });
   for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720]]) {
     await page.setViewportSize({ width, height });
@@ -129,9 +136,9 @@ try {
     const scale = width / 1920;
     assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1);
     assert.ok(Math.abs(layout.qr.y - 32 * scale) < 1);
-    assert.ok(Math.abs(layout.query.y - 800 * scale) < 1);
+    assert.ok(Math.abs(layout.query.y - 864 * scale) < 1);
     assert.ok(layout.filters.y + layout.filters.height <= layout.query.y);
-    assert.equal(layout.code.fontSize, "21px");
+    assert.equal(layout.code.fontSize, "19px");
     assert.equal(layout.counter.fontSize, "64px");
     assert.equal(layout.url.whiteSpace, "nowrap");
     assert.equal(layout.url.fontSize, "20px");
@@ -195,15 +202,24 @@ try {
   }
   await page.setViewportSize({ width: 1280, height: 720 });
   await commands(page, [{ type: "goto", index: 14 }]);
-  await expect(page.locator(".owner-small-print")).toContainText("Demo view");
-  await expect(page.locator(".stage-counter small")).toHaveText("owner");
-  await expect(page.locator(".owner-count,.owner-statement")).toHaveCount(0);
+  await expect(page.locator(".inspector-actions")).toBeVisible({ timeout: 15000 });
+  await expect(page.locator(".explorer-link")).toHaveAttribute("href", /\/entity\/0x[0-9a-f]+$/i);
+  await page.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
+  await expect(page.locator(".transfer-form")).toBeVisible();
+  await expect(page.locator(".owner-panel,.owner-small-print")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Make it a business/ })).toHaveCount(0);
+  const transfer = page.getByRole("button", { name: "Transfer ownership", exact: true });
+  await expect(transfer).toBeDisabled();
+  await page.getByLabel("New owner wallet").fill("0x1234");
+  await expect(transfer).toBeDisabled();
+  await page.getByLabel("New owner wallet").fill("0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690");
+  await expect(transfer).toBeEnabled();
   await commands(page, [{ type: "next" }]);
-  await expect(page.getByRole("button", { name: "Undo", exact: true })).toHaveCount(0);
-  await expect(page.locator(".owner-panel")).toHaveCount(0);
-  await page.keyboard.press("ArrowLeft");
-  await expect(page.getByRole("button", { name: /Transfer ownership/ })).toBeVisible();
-  await commands(page, [{ type: "goto", index: 16 }]);
+  await expect(page.getByText("Transfer it: the new wallet owns it.")).toBeVisible();
+  // A click on the globe away from any dot closes the entity card.
+  await page.mouse.click(200, 250);
+  await expect(page.locator(".inspector-panel")).toHaveCount(0);
+  await commands(page, [{ type: "goto", index: 33 }]);
   // L8 keeps the same corner QR to /scan, clear of the event log below it.
   await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
@@ -211,7 +227,7 @@ try {
     const qr = await page.locator(".join-qr-corner").boundingBox();
     for (const panel of await page.locator(".event-log,.inspector-panel,.owner-panel").all()) assert.ok((await panel.boundingBox()).y >= qr.y + qr.height, "No panel sits behind the QR.");
   }
-  await commands(page, [{ type: "goto", index: 17 }]);
+  await commands(page, [{ type: "goto", index: 35 }]);
   await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
   // On one screen the closing lines sit on the map.
   await expect(page.getByText("Thank you.")).toBeVisible();
@@ -235,6 +251,7 @@ try {
   await slides.keyboard.press("d");
   await expect(slides.locator(".join-qr-center")).toBeVisible();
   await slides.keyboard.press("ArrowRight");
+  await slides.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
   await expect(slides.getByText("ON THE MAP →")).toBeVisible();
   await expect(slides.getByRole("heading", { name: "Write it", exact: true })).toBeVisible();
@@ -247,7 +264,7 @@ try {
   assert.equal(await slides.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   if (capture) await slides.screenshot({ path: path.join(capture, "slides-960x1080-L1.png") });
   // L8: slides take clicks, and Prizes opens and closes.
-  await commands(page, [{ type: "goto", index: 16 }]);
+  await commands(page, [{ type: "goto", index: 33 }, { type: "next" }, { type: "next" }, { type: "next" }]);
   const prizes = slides.getByRole("button", { name: "Prizes" });
   await expect(prizes).toHaveAttribute("aria-expanded", "false");
   await prizes.click();
@@ -264,8 +281,8 @@ try {
   await expect(secondMap.locator('[data-screen="map"][data-scene="L8"]')).toBeVisible();
   if (capture) { await secondMap.waitForTimeout(1200); await secondMap.screenshot({ path: path.join(capture, "map-1280-L8-follower.png") }); }
   await secondMap.keyboard.press("ArrowRight");
-  await expect(page.locator('[data-screen="map"][data-scene="L9"]')).toBeVisible();
-  await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible();
+  await expect(page.locator('[data-screen="map"][data-scene="PZ"]')).toBeVisible();
+  await expect(slides.locator('[data-screen="slides"][data-scene="PZ"]')).toBeVisible();
   await secondMap.close();
   // Reset: two clicks start a new writer session and take both windows back to S0.
   await slides.getByRole("button", { name: "Reset", exact: true }).click();

@@ -53,13 +53,12 @@ test("L5 asks on the dots, then answers in Mumbai business view", () => {
   assert.equal(state.map, "dots");
 });
 
-test("L6 step 2 runs the demo transfer; panels close", () => {
+test("L6 opens the entity card for the real transfer; the map stays on the dots", () => {
   let state = at("L6");
-  assert.equal(state.transferred, false);
+  assert.equal(state.panels.inspector, true);
   assert.equal(state.panels.query, false);
   state = next(state);
-  assert.equal(state.transferred, true);
-  state = prev(state);
+  assert.equal(state.map, "dots");
   assert.equal(state.transferred, false);
 });
 
