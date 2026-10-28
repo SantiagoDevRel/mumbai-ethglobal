@@ -10,7 +10,7 @@ import { deviceToken, writerRequest, WriterRequestError, WRITER_ROUTES, WRITER_C
 import { phoneWriteMessage } from "../../lib/data/phone-ticket";
 import { CountryPicker } from "./CountryPicker";
 import { LifetimeRing } from "./LifetimeRing";
-import { ArrowUpRight, BookOpen, Plug, Terminal, Gift } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import "./phone.css";
 
 type PhoneState = { status: "form" } | { status: "submitting" } | { status: "queued"; draft: DotDraft } |
@@ -24,7 +24,6 @@ export function JoinPhone() {
   const [draft, setDraft] = useState<DotDraft>({ name: "", color: DOT_PALETTE[0], country: "IN", lifetimeSec: LIFETIME_DEFAULT_SEC });
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [build, setBuild] = useState(false);
   const submitLock = useRef(false);
   const profile = useMemo(() => { try { return getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE); } catch { return null; } }, []);
 
@@ -32,8 +31,6 @@ export function JoinPhone() {
     let stopped = false;
     void Promise.resolve().then(() => {
       if (stopped) return;
-      // The L8 QR adds ?build: the same page opens the build resources.
-      setBuild(new URLSearchParams(location.search).has("build"));
       try { setDevice(deviceToken()); } catch { setError("Allow browser storage so we can keep your place on the map."); }
     });
     return () => { stopped = true; };
@@ -70,11 +67,11 @@ export function JoinPhone() {
   const entityLink = profile && state.status === "written" ? explorerUrl(profile, "entity", state.key) : null;
   const left = state.status === "written" ? Math.max(0, state.endsAt - now) / 1000 : 0;
   return <div className="phone-surface"><main className="phone-main">
-    <h1 className="phone-header">{build ? "Build on Arkiv this weekend" : "Join the map"}</h1>
+    <h1 className="phone-header">Join the map</h1>
     {!WRITER_CONNECTED && <p className="phone-notice">Not ready yet.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
     {error && <p className="phone-notice" role="alert">{error}</p>}
-    {build ? <BuildResources /> : state.status === "written" ? <section className="phone-entity" aria-live="polite">
+    {state.status === "written" ? <section className="phone-entity" aria-live="polite">
       <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={state.draft.color} progress={left / state.draft.lifetimeSec} muted={left === 0} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country)}</p>
       {left > 0 ? <p className="phone-countdown" aria-label="Time left">{formatClock(left)}</p> : <p className="phone-lifetime-status">Time’s up. Unless someone extended it, your entity has expired: that’s Entity Expiration.</p>}
       <code>{shortKey(state.key)}</code>
@@ -93,8 +90,4 @@ export function JoinPhone() {
 function formatClock(seconds: number): string {
   const total = Math.ceil(seconds);
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
-}
-
-function BuildResources() {
-  return <div className="build-resources"><a href="https://docs.arkiv.network/start-here/fundamentals/" target="_blank" rel="noreferrer"><BookOpen />Docs<ArrowUpRight /></a><a href="https://hub.arkiv.network/ai-tools" target="_blank" rel="noreferrer"><Plug />Arkiv AI plugin<ArrowUpRight /></a><a href="https://hub.arkiv.network/ai-tools#mcp" target="_blank" rel="noreferrer"><Terminal />Arkiv MCP<ArrowUpRight /></a><div className="resource-soon"><Gift /><span>Prizes<small>Announced soon</small></span></div><p>Your agent can help you build.</p></div>;
 }

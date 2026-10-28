@@ -1,6 +1,6 @@
 # App surfaces
 
-The projector's map uses viewport pixels. Its HUD and QR use `StageBox` and a single 1920x1080 coordinate system. The corner QR is top-right; S7 uses the left column and L8 uses a larger build QR. The QR and link encode the production `/scan` URL (L8 adds `?build`, which opens the build resources). Every card displays the full host and path on one line. Mock mode displays MOCK. The corner card is 424x216; right-side panels start at y252 and remain above the query panel.
+The projector's map uses viewport pixels. Its HUD and QR use `StageBox` and a single 1920x1080 coordinate system. The corner QR is top-right in every scene; S7 also shows it large in the left column of /slides. The QR and link always encode the production `/scan` URL, so anyone can still write an entity at any point of the talk. Every card displays the full host and path on one line. Mock mode displays MOCK. The corner card is 424x216; right-side panels start at y252 and remain above the query panel.
 
 There is no code to type and nothing to wait for. Opening `/scan` asks the writer nothing. "Write my entity" sends one `POST /api/submit?wait=1` without a session code; the writer puts the entity in the running session and answers once its block is in. With no session running the phone says "Not open yet. Try again in a moment."; /map starts a session when it opens, and Reset starts a new one. The phone offers seven fixed colors and is dark only, whatever the system theme.
 

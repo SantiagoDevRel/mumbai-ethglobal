@@ -31,7 +31,7 @@ export type CameraCue = "globe-idle" | "globe" | "india" | "mumbai-street" | "ke
 /** Which data layer the map shows. */
 export type MapMode = "dots" | "business" | "owner";
 
-export type QrLabel = "Scan now" | "Join the map" | "Start building";
+export type QrLabel = "Scan now" | "Join the map";
 
 export interface SceneDef {
   id: SceneId;
@@ -66,8 +66,8 @@ export const SCENES: readonly SceneDef[] = [
   { id: "L5", title: "Update an entity", at: 780, kind: "live", steps: 3, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots", cutLine: "At 15:00, skip the reviews." },
   { id: "L6", title: "Own it", at: 960, kind: "live", steps: 2, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "owner" },
   { id: "L7", title: "Everything you just did", at: 1080, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "owner", cutLine: "At 17:30, skip this scene." },
-  { id: "L8", title: "Your turn: build it this weekend", at: 1125, kind: "slide", steps: 1, qr: { label: "Start building", placement: "corner" }, camera: "keep", map: "dots" },
-  { id: "L9", title: "Close", at: 1170, kind: "live", steps: 1, qr: { label: "Start building", placement: "corner" }, camera: "globe", map: "dots" },
+  { id: "L8", title: "Your turn: build it this weekend", at: 1125, kind: "slide", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "keep", map: "dots" },
+  { id: "L9", title: "Close", at: 1170, kind: "live", steps: 1, qr: { label: "Join the map", placement: "corner" }, camera: "globe", map: "dots" },
 ];
 
 export function sceneIndex(id: SceneId): number {

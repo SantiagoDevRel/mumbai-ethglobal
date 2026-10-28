@@ -178,11 +178,13 @@ try {
   await expect(page.locator(".join-qr-center")).toHaveCount(0);
   await expect(page.locator(".join-qr-corner")).toBeVisible();
   await commands(page, [{ type: "goto", index: 15 }]);
-  await expect(page.locator(".join-qr-build .qr-image img")).toHaveAttribute("width", "320");
-  await expect(page.locator(".join-qr-build .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan?build");
-  await expect(page.locator(".join-qr-build .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan?build");
-  assert.ok((await page.locator(".join-qr-build").boundingBox()).y + (await page.locator(".join-qr-build").boundingBox()).height <= 782 * 1280 / 1920, "The L8 card must stay above the mascot.");
-  assert.equal(await page.locator(".join-qr-build .qr-url").evaluate((element) => getComputedStyle(element).whiteSpace === "nowrap" && element.scrollWidth <= element.clientWidth), true);
+  // L8 keeps the same corner QR to /scan, clear of the event log below it.
+  await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
+  {
+    const qr = await page.locator(".join-qr-corner").boundingBox();
+    for (const panel of await page.locator(".event-log,.inspector-panel,.owner-panel").all()) assert.ok((await panel.boundingBox()).y >= qr.y + qr.height, "No panel sits behind the QR.");
+  }
   await commands(page, [{ type: "goto", index: 16 }]);
   await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
   await expect(page.getByText("Thank you.")).toHaveCount(0);

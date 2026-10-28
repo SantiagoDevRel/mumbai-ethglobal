@@ -306,16 +306,11 @@ async function sceneWork(id, step) {
     assert.equal(after.owner, before.owner); assert.equal(after.creator, before.creator); assert.equal(report.transactions.length, sends);
     report.ownership = { ...report.ownership, key: phoneKey, ownerBefore: before.owner, ownerAfter: after.owner, creatorBefore: before.creator, creatorAfter: after.creator, walletSendsDuringDemo: report.transactions.length - sends };
   });
-  if (id === "L8") await op("build phase and fresh QR resources", async () => {
-    await expect.poll(async () => (await presenter("status")).phase, { timeout: 15000 }).toBe("build");
-    // Preserve the written phone's actual state without reloading it; also verify
-    // the fresh-scan route to the L8 resources.
-    report.l8WrittenPhoneHeading = await phone.locator("h1").textContent();
-    const resources = await phone.context().newPage(); observe(resources, "resources");
-    await resources.goto(`${ORIGIN}/scan?build`, { waitUntil: "domcontentloaded" });
-    await expect(resources.getByRole("heading", { name: "Build on Arkiv this weekend" })).toBeVisible({ timeout: 15000 });
-    await expect(resources.getByRole("link", { name: /Docs/ })).toBeVisible();
-    report.l8FreshScanResourcesVisible = true; await resources.close();
+  if (id === "L8") await op("QR still opens the phone form and writing stays open", async () => {
+    await expect(stage.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+    const status = await presenter("status");
+    assert.equal(status.phase, "talk"); assert.equal(status.doors, "open");
+    report.l8QrOpensScan = true;
   });
   if (id === "L9") await op("closing globe remains live", async () => { await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible(); assert.ok(proxyReads > 0); });
 }

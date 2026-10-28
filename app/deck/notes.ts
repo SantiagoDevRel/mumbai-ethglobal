@@ -80,7 +80,7 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   L8: [
     "Docs, the Hub, AI tools (your agent already knows Arkiv) and Prizes. Click Prizes to open it (empty until the prizes are final).",
-    "The QR now says Start building: the same URL opens the resources on their phones.",
+    "The corner QR still opens /scan: anyone who arrives late can still write an entity.",
   ],
   L9: [
     "Write it. Query it. Own it. Expire it. Thank you.",
