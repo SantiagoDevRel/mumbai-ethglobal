@@ -418,7 +418,9 @@ try {
       evidence.push({ surface: "five-steps", driver: name, rowsShown: 5, leavesOnSixth: true });
     }
     // A scene change leaves one layer on screen in about a third of a second (about 0.7 s before).
-    for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W1", "W2"]]) {
+    // Both from-scenes have one step, so the → changes the scene.
+    for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W2", "W3"]]) {
+      assert.equal(SCENES[sceneIndex(from)].steps, 1);
       await commands(page, [go(from)]);
       await expect(target.locator(`[data-scene-layer="${from}"]`)).toHaveCount(1);
       await expect(target.locator("[data-scene-layer]")).toHaveCount(1);
