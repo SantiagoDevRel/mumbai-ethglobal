@@ -80,9 +80,15 @@ export function StageBox({ children, interactive = false }: { children: ReactNod
   );
 }
 
+/** Seconds a slide takes to replace the one before it (October 28: 0.45 felt slow on the projector). */
+const SCENE_FADE = 0.22;
+
+/** Slide to slide, the new one fades in over the old one, which stays until it is covered and then
+ * fades out quickly, so the globe never shows through mid-way and the old slide doesn't pop off.
+ * Slide to map, the slide fades out. */
 const slideFade = (duration: number) => ({
   shown: { opacity: 1, zIndex: 26, transition: { duration, ease: [0.22, 1, 0.36, 1] as const } },
-  hidden: (covered: boolean) => covered ? { opacity: 0, zIndex: 25, transition: { delay: duration, duration: 0 } } : { opacity: 0, zIndex: 25, transition: { duration, ease: [0.22, 1, 0.36, 1] as const } },
+  hidden: (covered: boolean) => covered ? { opacity: 0, zIndex: 25, transition: { delay: duration, duration: duration / 2 } } : { opacity: 0, zIndex: 25, transition: { duration, ease: [0.22, 1, 0.36, 1] as const } },
 });
 
 export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: ReactNode; overlay?: ReactNode; hud?: ReactNode; slide?: ReactNode; qr?: ReactNode; bar?: ReactNode; writing?: ReactNode }) {
@@ -95,11 +101,9 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: 
         {overlay ? <div className="pointer-events-none absolute inset-0 z-10">{overlay}</div> : null}
         {hud ? <div className="pointer-events-none absolute inset-0 z-20">{hud}</div> : null}
         {/* Slides fit the screen like /slides does; while one shows, the map underneath takes no input. */}
-        {/* Slide to slide, the new one fades in over the old one, which stays until it is covered, so
-            the globe never shows through mid-way. Slide to map, the slide fades out. */}
         <AnimatePresence initial={false} custom={Boolean(slide)}>
           {slide ? (
-            <motion.div key={scene.id} className="absolute inset-0" custom={Boolean(slide)} variants={slideFade(reduced ? 0 : 0.45)} initial="hidden" animate="shown" exit="hidden">
+            <motion.div key={scene.id} data-scene-layer={scene.id} className="absolute inset-0" custom={Boolean(slide)} variants={slideFade(reduced ? 0 : SCENE_FADE)} initial="hidden" animate="shown" exit="hidden">
               <FitContext.Provider value="contain"><StageBox interactive>{slide}</StageBox></FitContext.Provider>
             </motion.div>
           ) : null}
@@ -124,16 +128,11 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
   const Content = scene.kind === "slide" ? entry.Slide : scene.id === "L9" ? entry.Overlay : null;
   return (
     <div className="stage-root fixed inset-0 overflow-hidden bg-[var(--stage-bg)] text-[var(--stage-fg)]" data-scene={scene.id} data-kind={scene.kind} data-screen="slides">
+      {/* Each scene gets an opaque backdrop (L9's lines have none of their own), so every change is
+          the map's slide-to-slide one: the new scene fades in over the old, never a double exposure. */}
       <div className="absolute inset-0 z-10">
-        <AnimatePresence initial={false}>
-          <motion.div
-            key={scene.id}
-            className="absolute inset-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: reduced ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
-          >
+        <AnimatePresence initial={false} custom>
+          <motion.div key={scene.id} data-scene-layer={scene.id} className="absolute inset-0 bg-[var(--stage-bg)]" custom variants={slideFade(reduced ? 0 : SCENE_FADE)} initial="hidden" animate="shown" exit="hidden">
             <StageBox interactive>{Content ? <Content scene={scene} step={step} /> : liveCard({ scene, step })}</StageBox>
           </motion.div>
         </AnimatePresence>
@@ -157,27 +156,30 @@ function StepDots() {
   </div>;
 }
 
-/** Drag to draw a rectangle that points at something: with the left mouse button on a slide, or
- * Alt + drag on the map (a plain drag turns the globe). The rectangles clear on the next step or scene. */
+/** Right-drag to draw a rectangle that points at something, on a slide or on the map; a right-click
+ * without a drag clears them. Only the right button draws (Santiago, October 28: a left drag also
+ * drew while he selected text or clicked). The rectangles clear on the next step or scene. */
 function Annotations() {
-  const { scene, index, step } = useScene();
+  const { index, step } = useScene();
   const [boxes, setBoxes] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const start = useRef<{ x: number; y: number } | null>(null);
-  const kind = scene.kind;
   const [shown, setShown] = useState(`${index}:${step}`);
   if (shown !== `${index}:${step}`) { setShown(`${index}:${step}`); setBoxes([]); setDraft(null); }
   useEffect(() => {
     const rect = (a: { x: number; y: number }, b: { x: number; y: number }) => ({ x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(a.x - b.x), h: Math.abs(a.y - b.y) });
+    // The right button's own menu stays only where it does something: fields (paste) and links.
+    let ownMenu = false;
     const down = (event: PointerEvent) => {
-      if (event.button !== 0 || !(event.target instanceof Element)) return;
+      if (event.button !== 2 || !(event.target instanceof Element)) return;
+      ownMenu = Boolean(event.target.closest("input, textarea, select, a, [contenteditable]"));
       if (event.target.closest("button, a, input, select, textarea, label, summary, [role=dialog], .panel, .writing-switch")) return;
-      if (kind !== "slide" && !event.altKey) return;
-      // On the map, keep this drag away from the globe so it draws instead of turning it.
-      if (kind !== "slide") event.stopPropagation();
+      // Keep the drag away from the globe so it draws instead of moving the map.
+      event.stopPropagation();
       start.current = { x: event.clientX, y: event.clientY };
     };
-    const hold = (event: MouseEvent) => { if (kind !== "slide" && event.altKey && event.button === 0) event.stopPropagation(); };
+    const hold = (event: MouseEvent) => { if (event.button === 2 && start.current) event.stopPropagation(); };
+    const menu = (event: MouseEvent) => { if (!ownMenu) event.preventDefault(); };
     const move = (event: PointerEvent) => {
       if (!start.current) return;
       const box = rect(start.current, { x: event.clientX, y: event.clientY });
@@ -189,13 +191,15 @@ function Annotations() {
       start.current = null;
       setDraft(null);
       if (box.w > 6 && box.h > 6) setBoxes((old) => [...old, box]);
+      else if (box.w <= 6 && box.h <= 6) setBoxes([]);
     };
     window.addEventListener("pointerdown", down, true);
     window.addEventListener("mousedown", hold, true);
+    window.addEventListener("contextmenu", menu, true);
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
-    return () => { window.removeEventListener("pointerdown", down, true); window.removeEventListener("mousedown", hold, true); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-  }, [kind]);
+    return () => { window.removeEventListener("pointerdown", down, true); window.removeEventListener("mousedown", hold, true); window.removeEventListener("contextmenu", menu, true); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+  }, []);
   return <div className="annotations" aria-hidden="true" data-drawing={draft ? "true" : undefined}>
     {[...boxes, ...(draft ? [draft] : [])].map((box, i) => <span key={i} style={{ left: box.x, top: box.y, width: box.w, height: box.h }} />)}
   </div>;

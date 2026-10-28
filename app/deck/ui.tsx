@@ -25,16 +25,25 @@ export const T = {
   t08: "rgba(246,244,239,0.08)",
 } as const;
 
-/** The `.panel` glass of the handoff, as Tailwind classes. */
+/** The `.panel` card of the handoff, as Tailwind classes. Slides draw it without a backdrop blur: the
+ * wash under it is already dark, and a blur over the globe made every slide change and reveal
+ * redraw the blur on each frame (October 28: transitions lagged on /map). */
 export const PANEL =
-  "rounded-[16px] border border-[rgba(246,244,239,0.12)] bg-[rgba(17,17,17,0.78)] shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-[16px]";
+  "rounded-[16px] border border-[rgba(246,244,239,0.12)] bg-[rgba(17,17,17,0.78)] shadow-[0_12px_40px_rgba(0,0,0,0.45)]";
+
+/** The same card over the live map (captions, L9's links), where the blur keeps text readable. */
+export const GLASS = `${PANEL} backdrop-blur-[16px]`;
+
+/** How long a reveal takes to land on its → (seconds). The slide change itself is StageFrame's. */
+export const REVEAL_TIME = 0.3;
 
 /** Fade-and-rise entrance. Respects reduced motion through the MotionConfig in `Slide`. Scenes in the
- * talk enter all at once on the arrow, so they pass no `delay` (only cut scenes still do). */
+ * talk enter all at once on the arrow, so they pass no `delay` (only cut scenes still do). Short, so
+ * it lands with the slide instead of after it. */
 export function Rise({
   children,
   delay = 0,
-  y = 24,
+  y = 12,
   className,
   style,
 }: {
@@ -50,7 +59,7 @@ export function Rise({
       style={style}
       initial={{ opacity: 0, y }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, delay, ease: EASE }}
+      transition={{ duration: REVEAL_TIME, delay, ease: EASE }}
     >
       {children}
     </motion.div>
@@ -64,7 +73,7 @@ export function Reveal({
   children,
   className,
   style,
-  y = 24,
+  y = 12,
 }: {
   step: number;
   at: number;
@@ -80,7 +89,7 @@ export function Reveal({
       style={style}
       initial={false}
       animate={{ opacity: shown ? 1 : 0, y: shown ? 0 : y }}
-      transition={{ duration: 0.55, ease: EASE }}
+      transition={{ duration: REVEAL_TIME, ease: EASE }}
       aria-hidden={!shown}
     >
       {children}
@@ -106,7 +115,8 @@ export function Logo({ height, className, style }: { height: number; className?:
 /**
  * The slide shell: the space color over the globe (the globe shows through at 1 - `wash`), the
  * logo, a headline (8 words or fewer, 2 lines max) and at most one line under it. The headline
- * stops at x 1432 so the corner QR card stays clear.
+ * stops at x 1432 so the corner QR card stays clear. The headline doesn't rise on its own: it comes
+ * in with the slide's fade, so two slides' headlines never show offset during a change.
  */
 export function Slide({
   headline,
@@ -129,17 +139,13 @@ export function Slide({
         <div className="absolute inset-0" style={{ background: `rgba(8,9,31,${wash})` }} />
         <Logo height={28} className="absolute left-[96px] top-[72px]" />
         <div className="absolute left-[96px] top-[160px] w-[1336px]">
-          <Rise>
-            <h1 className="font-semibold leading-[1.05] tracking-[-0.015em]" style={{ fontSize: size }}>
-              {headline}
-            </h1>
-          </Rise>
+          <h1 className="font-semibold leading-[1.05] tracking-[-0.015em]" style={{ fontSize: size }}>
+            {headline}
+          </h1>
           {under ? (
-            <Rise>
-              <p className="mt-4 text-[32px] leading-[1.35]" style={{ color: T.t64 }}>
-                {under}
-              </p>
-            </Rise>
+            <p className="mt-4 text-[32px] leading-[1.35]" style={{ color: T.t64 }}>
+              {under}
+            </p>
           ) : null}
         </div>
         {children}
@@ -164,7 +170,7 @@ export function OverlayShell({ children }: { children: ReactNode }) {
 export function Caption({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   return (
     <div className="absolute top-[60px]" style={{ left: wide ? 352 : 432 }}>
-      <div className={`${PANEL} flex h-[64px] items-center whitespace-nowrap rounded-[999px] px-[28px]`}>
+      <div className={`${GLASS} flex h-[64px] items-center whitespace-nowrap rounded-[999px] px-[28px]`}>
         <p className="text-[32px] font-semibold">{children}</p>
       </div>
     </div>

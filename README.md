@@ -15,6 +15,7 @@ DB-Chain), own it and expire it. Expired dots leave the map.
 |---|---|---|
 | `/map` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
 | `/slides` | Optional second window | The slides alone, in step with `/map`. Presenter password. |
+| `/outline` | Presenter | The outline: each part and scene with its planned start, what each → reveals and the script. Marks the scene on screen when `/map` or `/slides` is open in the same browser. Presenter password. |
 | `/scan` | Phones | Join the map: write an entity (up to ten per phone per session), then watch it on the projector |
 
 `/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
@@ -26,8 +27,8 @@ map, fresh limits for every phone and the slides back at the start. D runs the 3
 the QR slide.
 
 Every reveal is one →; nothing moves on a timer. The dots at the bottom right show the steps of the
-current scene. Drag with the left button on a slide (Alt + drag on the map) to draw a rectangle that
-points at something; it disappears on the next step or scene.
+current scene. Drag with the right mouse button, on a slide or on the map, to draw a rectangle that
+points at something; a right-click without dragging clears them, and so does the next step or scene.
 
 On the map: the filter bar along the top filters by name (starts with), country and owner (a full 0x
 address), plus a business category; it counts the results and the query panel updates as you type.

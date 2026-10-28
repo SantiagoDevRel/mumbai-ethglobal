@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { Mascot } from "../Mascot";
-import { Caption, EASE, OverlayShell, PANEL, PANEL_EASE, Rise, T } from "../ui";
+import { Caption, EASE, GLASS, OverlayShell, PANEL_EASE, Rise, T } from "../ui";
 
 /** Swaps the caption text with a short cross-fade (panel in 240 ms, out 160 ms). */
 function SwapCaption({ id, children, wide = false }: { id: string; children: ReactNode; wide?: boolean }) {
@@ -90,7 +90,7 @@ const LINKS: { name: string; where: string; url?: boolean }[] = [
 export function L9(_props: SceneContentProps) {
   return (
     <OverlayShell>
-      <Rise className={`${PANEL} absolute left-[1464px] top-[300px] flex w-[424px] flex-col gap-5 px-8 py-7`}>
+      <Rise className={`${GLASS} absolute left-[1464px] top-[300px] flex w-[424px] flex-col gap-5 px-8 py-7`}>
         <p className="text-[20px] font-bold tracking-[0.1em]" style={{ color: T.t64 }}>START BUILDING</p>
         {LINKS.map(({ name, where, url }) => (
           <div key={name} className="flex flex-col gap-1">

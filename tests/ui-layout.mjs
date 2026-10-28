@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
-import { SECTIONS, sceneIndex } from "../shared/scenes.ts";
+import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
 import { startApp } from "./local-app.mjs";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
@@ -389,6 +389,108 @@ try {
   await expect(page.locator(".presenter-notice")).toHaveCount(0, { timeout: 12000 });
   evidence.push({ surface: "slides", follows: true, keysDriveMap: true, countdownToggles: true, resetStartsSession: true, noticesFade: true, outlineBar: true });
   await context.close();
+
+  // October 28, evening: five fast → on "Five steps", quick scene changes, right-drag boxes, /outline.
+  {
+    const { context, page } = await setup({ viewport: { width: 1280, height: 720 } });
+    await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
+    const slides = await context.newPage();
+    slides.on("pageerror", (error) => errors.push(error.message));
+    await slides.setViewportSize({ width: 1280, height: 720 });
+    await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
+    await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
+    // Every → shows one more of the five rows, even pressed without a pause, from either window; the
+    // next → leaves for the QR. Hidden rows are aria-hidden, so the role count is what the room sees.
+    const rows = (target) => target.getByRole("listitem");
+    for (const [driver, name] of [[slides, "slides"], [page, "map"]]) {
+      await commands(page, [go("ST")]);
+      for (const target of [page, slides]) await expect(rows(target)).toHaveCount(1);
+      for (let i = 0; i < 4; i++) await driver.keyboard.press("ArrowRight");
+      for (const target of [page, slides]) {
+        await expect(rows(target)).toHaveCount(5);
+        await expect(target.getByRole("img", { name: "Step 5 of 5" })).toBeVisible();
+        await expect.poll(() => rows(target).last().evaluate((element) => Number(getComputedStyle(element.parentElement).opacity))).toBe(1);
+      }
+      if (capture && name === "slides") await slides.screenshot({ path: path.join(capture, "slides-1280-ST-5.png") });
+      await driver.keyboard.press("ArrowRight");
+      for (const target of [page, slides]) await expect(target.locator('[data-scene="S7"]')).toBeVisible();
+      evidence.push({ surface: "five-steps", driver: name, rowsShown: 5, leavesOnSixth: true });
+    }
+    // A scene change leaves one layer on screen in about a third of a second (about 0.7 s before).
+    for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W1", "W2"]]) {
+      await commands(page, [go(from)]);
+      await expect(target.locator(`[data-scene-layer="${from}"]`)).toHaveCount(1);
+      await expect(target.locator("[data-scene-layer]")).toHaveCount(1);
+      const settled = await target.evaluate((id) => new Promise((resolve) => {
+        const begin = performance.now();
+        const check = () => {
+          const layers = [...document.querySelectorAll("[data-scene-layer]")];
+          if (layers.length === 1 && layers[0].getAttribute("data-scene-layer") === id && Number(getComputedStyle(layers[0]).opacity) === 1) resolve(performance.now() - begin);
+          else if (performance.now() - begin > 5000) resolve(Infinity);
+          else requestAnimationFrame(check);
+        };
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+        requestAnimationFrame(check);
+      }), to);
+      assert.ok(settled < 600, `${from} → ${to} settles in ${Math.round(settled)} ms`);
+      evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, settledMs: Math.round(settled) });
+    }
+    // Boxes: only a right-drag draws one, on a slide and on the map; a right-click clears them; a
+    // left-drag selects text or moves the globe and draws nothing.
+    const boxes = (target) => target.locator(".annotations span");
+    const drag = async (target, button, [x0, y0], [x1, y1]) => {
+      await target.mouse.move(x0, y0);
+      await target.mouse.down({ button });
+      await target.mouse.move(x1, y1, { steps: 6 });
+      await target.mouse.up({ button });
+    };
+    await commands(page, [go("W3")]);
+    // On the map the drags start on the globe, clear of the HUD's panels.
+    for (const [target, scene, first, second, click] of [[slides, "W3", [[300, 300], [520, 460]], [[700, 320], [820, 420]], [900, 600]], [page, "L1", [[560, 300], [700, 400]], [[720, 320], [800, 380]], [640, 300]]]) {
+      if (scene !== "W3") await commands(page, [go(scene)]);
+      await expect(target.locator(`[data-scene="${scene}"]`)).toBeVisible();
+      await drag(target, "left", ...first);
+      await expect(boxes(target)).toHaveCount(0);
+      await drag(target, "right", ...first);
+      await expect(boxes(target)).toHaveCount(1);
+      await drag(target, "right", ...second);
+      await expect(boxes(target)).toHaveCount(2);
+      if (capture) await target.screenshot({ path: path.join(capture, `${target === page ? "map" : "slides"}-1280-${scene}-boxes.png`) });
+      const menuBlocked = await target.evaluate(() => { const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.querySelector(".stage-root").dispatchEvent(event); return event.defaultPrevented; });
+      assert.equal(menuBlocked, true, "The browser menu stays closed so the right button can draw.");
+      await target.mouse.click(...click, { button: "right" });
+      await expect(boxes(target)).toHaveCount(0);
+      evidence.push({ surface: "boxes", screen: target === page ? "map" : "slides", scene, leftDragDraws: false, rightDragDraws: true, rightClickClears: true });
+    }
+    // /outline: every part and scene with its reveals, the script on demand, the scene on screen now.
+    const outline = await context.newPage();
+    outline.on("pageerror", (error) => errors.push(error.message));
+    await outline.setViewportSize({ width: 1440, height: 900 });
+    await outline.goto(`${origin}/outline`, { waitUntil: "domcontentloaded" });
+    await expect(outline.getByRole("heading", { name: "Outline", level: 1 })).toBeVisible({ timeout: 20000 });
+    await expect(outline.getByRole("heading", { level: 2 })).toHaveCount(SECTIONS.length + 1);
+    for (const section of SECTIONS) await expect(outline.getByRole("heading", { name: section.title, level: 2, exact: true })).toBeVisible();
+    await expect(outline.getByRole("heading", { level: 3 })).toHaveCount(SCENES.length);
+    await expect(outline.locator("details[open]")).toHaveCount(0);
+    await commands(page, [go("ST")]);
+    const now = outline.locator('li[aria-current="step"]');
+    await expect(now).toHaveCount(1);
+    await expect(now).toContainText("Five steps to get started");
+    await expect(now).toContainText("On screen now");
+    await commands(page, [go("S7")]);
+    await expect(now.getByRole("heading", { level: 3 })).toHaveText(SCENES[sceneIndex("S7")].title);
+    await outline.getByRole("button", { name: "Show the script", exact: true }).click();
+    await expect(outline.locator("details[open]")).toHaveCount(SCENES.length);
+    await expect(outline.getByRole("button", { name: "Hide the script", exact: true })).toHaveAttribute("aria-pressed", "true");
+    for (const width of [390, 768, 1440]) {
+      await outline.setViewportSize({ width, height: 900 });
+      assert.equal(await outline.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `/outline at ${width}px`);
+      if (capture) await outline.screenshot({ path: path.join(capture, `outline-${width}.png`), fullPage: width === 1440 });
+    }
+    evidence.push({ surface: "outline", parts: SECTIONS.length + 1, scenes: SCENES.length, marksSceneOnScreen: true, scriptToggle: true, noOverflow: [390, 768, 1440] });
+    await context.close();
+  }
 
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
     const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme }, { loggedIn: false });

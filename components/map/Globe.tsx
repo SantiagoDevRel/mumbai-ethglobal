@@ -29,11 +29,13 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
   const canvas = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<GLMap | null>(null);
   const current = useRef({ entities, ghosts, block, state, source });
+  /** Bumped whenever the props change, so the dot layer redraws only when something did. */
+  const version = useRef(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reduced = usePrefersReducedMotion();
   const stageScale = useStageScale();
-  useEffect(() => { current.current = { entities, ghosts, block, state, source }; }, [entities, ghosts, block, state, source]);
+  useEffect(() => { current.current = { entities, ghosts, block, state, source }; version.current++; }, [entities, ghosts, block, state, source]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -85,6 +87,14 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
           stage.dispatch({ type: "select", keys: [], mode: "set" });
         }
       });
+      // The dot layer redraws only when something changed: the map repainted (a camera move, a tile),
+      // the props changed, a dot is landing or leaving, or once a second for the lifetime rings.
+      // Redrawing it 30 times a second under a slide made every slide change stutter (October 28).
+      let mapDirty = true;
+      let drawnVersion = -1;
+      let lastFull = 0;
+      let fonts: { sans: string; mono: string } | null = null;
+      map.on("render", () => { mapDirty = true; });
       resize = new ResizeObserver(() => map.resize());
       resize.observe(container.current);
       map.on("moveend", () => {
@@ -100,17 +110,21 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
         if (stopped) return;
         frame = requestAnimationFrame(draw);
         if (now - last < 32 || !canvas.current) return;
-        last = now;
         const { entities, ghosts, block, state, source } = current.current;
         const surface = canvas.current;
         const width = surface.clientWidth, height = surface.clientHeight;
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
-        if (surface.width !== width * ratio || surface.height !== height * ratio) { surface.width = width * ratio; surface.height = height * ratio; }
+        const resized = surface.width !== width * ratio || surface.height !== height * ratio;
+        let moving = leaving.size > 0;
+        if (!moving && !reducedMotion) for (const at of born.values()) if (now - at < 900) { moving = true; break; }
+        if (!resized && !mapDirty && !moving && drawnVersion === version.current && now - lastFull < 1000) return;
+        last = now; lastFull = now; mapDirty = false; drawnVersion = version.current;
+        if (resized) { surface.width = width * ratio; surface.height = height * ratio; }
         const ctx = surface.getContext("2d");
         if (!ctx) return;
-        const css = getComputedStyle(surface);
-        const fontFamily = css.fontFamily;
-        const fontMono = css.getPropertyValue("--font-plex-mono") || "monospace";
+        if (!fonts) { const css = getComputedStyle(surface); fonts = { sans: css.fontFamily, mono: css.getPropertyValue("--font-plex-mono") || "monospace" }; }
+        const fontFamily = fonts.sans;
+        const fontMono = fonts.mono;
         const scale = Math.min(width / 1920, height / 1080);
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);

@@ -1,6 +1,6 @@
 // The script for each scene, one paragraph per item (outline v3, MUMBAI-ETHGLOBAL/OUTLINE.md), and
-// what each → reveals inside a scene (lib/stage/choreography.ts and the scene files). Not shown on
-// screen: the talk runs from /map and /slides only.
+// what each → reveals inside a scene (lib/stage/choreography.ts and the scene files). Never on the
+// projector: /outline shows them to the presenter.
 
 import type { SceneId } from "../../shared/scenes";
 import { A1_NOTES } from "./scenes/ai/A1";
