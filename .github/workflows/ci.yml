@@ -1,0 +1,70 @@
+# Checks every push in parallel on GitHub-hosted runners (free for this public repo).
+# No secrets: browser suites run the local build against fixtures. The writer tests against
+# real Postgres (tests/writer-server.test.ts) skip here and run where DATABASE_URL is set.
+name: CI
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_PUBLIC_WRITER_URL: same-origin
+  NEXT_PUBLIC_ARKIV_PROFILE: tiramisu
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  static:
+    name: typecheck · lint · unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  browser:
+    name: ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ui-layout, phone-ticket, deck-walk, deck-captures]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run ${{ matrix.suite }}
+        run: |
+          case "${{ matrix.suite }}" in
+            deck-captures) node tests/deck-walk.mjs "$RUNNER_TEMP/deck" 0 ;;
+            *) node "tests/${{ matrix.suite }}.mjs" ;;
+          esac
+      - name: Upload deck captures
+        if: matrix.suite == 'deck-captures' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deck-captures
+          path: ${{ runner.temp }}/deck
+          retention-days: 7
+          if-no-files-found: ignore
