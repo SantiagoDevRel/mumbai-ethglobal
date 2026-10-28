@@ -40,6 +40,7 @@ notes in `app/deck/`.
 - Text font IBM Plex Sans; code IBM Plex Mono.
 - Never `git add .`; scan staged changes for secrets before every commit.
 - Vercel is connected to this repo: every push to `main` deploys production (`mumbai-ethglobal.vercel.app`), and other branches get preview deployments. Push to `main` only verified work.
+- Checks run on GitHub Actions (`.github/workflows/ci.yml`) on every push, in parallel: typecheck, lint, unit, `ui-layout`, `phone-ticket`, `deck-walk`, and the deck captures (artifact `deck-captures`, read with `gh run download <id> -n deck-captures`). Push work to a branch, wait for a green run, then merge to `main`. The writer tests against real Postgres need `DATABASE_URL` and run outside Actions.
 
 ## Changing the network or the SDK
 
