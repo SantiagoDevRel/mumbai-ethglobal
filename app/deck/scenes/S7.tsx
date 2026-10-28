@@ -1,118 +1,76 @@
 "use client";
 
-// S7 · Join the map (handoff boards "S7 · Doors open (QR)" and "S7 · 3 · 2 · 1 · write!"). /slides
-// draws the big QR in the left column; this slide adds the form line under it (step 0) and, on →,
-// the lifespan select card on the right (step 1), framed on the default lifetime and still: nothing
-// here moves on a timer. When D starts the countdown (`state.countdownAt`), 3 · 2 · 1 · write!
-// plays over the map column from that time: 1 s per step, an Orange ring draining each step.
+// S7 · Your entity: the room scans (handoff boards "S7 · Doors open (QR)" and "S7 · write!"). The app
+// draws the big QR in the left column; this slide adds the form line under it (step 0) and, on →, the
+// form read as an entity on the right (step 1): the fields are attributes and the lifetime is its
+// Entity Expiration. Nothing here moves on a timer. D (`state.countdownAt`) shows one still frame,
+// "write!", over the map column so the room taps together; a second D, or the next scene, clears it.
 
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
-import { useEffect, useState } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { useStage } from "../../../lib/stage/store";
-import { LIFETIME_DEFAULT_SEC, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC } from "../../../shared/types";
-import { CharacterSelect } from "../memes";
-import { Logo, Reveal, Rise } from "../ui";
+import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC } from "../../../shared/types";
+import { Logo, Reveal, Rise, T } from "../ui";
 
-const BEATS = ["3", "2", "1", "write!"] as const;
-const BEAT_MS = 1000;
-const RING_R = 240;
-const RING_C = 2 * Math.PI * RING_R;
+/** What a phone sends, read as an entity: the values are an example. */
+const ATTRIBUTES: [name: string, value: string][] = [
+  ["name", '"Priya"'],
+  ["color", '"#fe7446"'],
+  ["country", '"IN"'],
+];
 
-function formatLifetime(sec: number): string {
-  return sec <= 60 ? `${sec} s` : sec % 60 === 0 ? `${sec / 60} min` : `${Math.floor(sec / 60)} min ${sec % 60} s`;
-}
-
-/** Milliseconds since the countdown started while it runs, else null. */
-function useCountdownElapsed(startedAt: number | null): number | null {
-  const [now, setNow] = useState(() => Date.now());
-  const running = startedAt !== null && now - startedAt < BEATS.length * BEAT_MS;
-  useEffect(() => {
-    if (startedAt === null) return;
-    let frame = 0;
-    const tick = () => {
-      setNow(Date.now());
-      if (Date.now() - startedAt < BEATS.length * BEAT_MS) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [startedAt]);
-  if (startedAt === null || !running) return null;
-  const elapsed = now - startedAt;
-  return elapsed < 0 ? null : elapsed;
-}
-
-function Countdown({ elapsed }: { elapsed: number }) {
-  const beat = Math.min(BEATS.length - 1, Math.floor(elapsed / BEAT_MS));
-  const left = 1 - (elapsed % BEAT_MS) / BEAT_MS;
-  const last = beat === BEATS.length - 1;
+/** The form, read as an entity: three attributes and a lifetime. */
+function EntityCard() {
   return (
-    <motion.div
-      className="absolute inset-0"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
+    <div className="flex w-[560px] flex-col gap-5 rounded-[20px] border-[3px] border-[var(--arkiv-sand)] bg-[var(--arkiv-ink)] p-8 shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
+      <p className="font-mono text-[20px] tracking-[0.12em]" style={{ color: T.t64 }}>YOUR FORM = ONE ENTITY</p>
+      <p className="text-[48px] font-bold leading-[1.05]">Your entity</p>
+      <div className="flex flex-col overflow-hidden rounded-[12px] border border-[rgba(246,244,239,0.14)]">
+        <div className="grid grid-cols-[150px_1fr] bg-[rgba(246,244,239,0.08)] px-5 py-2 font-mono text-[18px]" style={{ color: T.t64 }}>
+          <span>attribute</span><span>value</span>
+        </div>
+        {ATTRIBUTES.map(([name, value]) => (
+          <div key={name} className="grid grid-cols-[150px_1fr] border-t border-[rgba(246,244,239,0.08)] px-5 py-3 font-mono text-[26px]">
+            <span>{name}</span><span>{value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col gap-1 rounded-[12px] border-[2px] border-[var(--arkiv-orange)] bg-[rgba(254,116,70,0.12)] px-5 py-4">
+        <span className="text-[22px] font-semibold" style={{ color: T.t84 }}>Entity Expiration</span>
+        <span className="text-[30px] font-semibold text-[var(--arkiv-orange)]">in {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} min</span>
+      </div>
+    </div>
+  );
+}
+
+/** The still "write!" frame D shows over the map column. */
+function WriteFrame() {
+  return (
+    <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
       <div className="absolute inset-0 bg-[rgba(8,9,31,0.55)]" />
-      <Logo height={24} className="absolute left-[32px] top-[32px]" />
-      <div className="absolute left-0 top-0 flex h-[1080px] w-[1464px] flex-col items-center justify-center gap-6">
-        <div className="relative flex h-[520px] w-[520px] items-center justify-center">
-          <svg width="520" height="520" viewBox="0 0 520 520" aria-hidden className="absolute inset-0 -rotate-90">
-            <circle cx="260" cy="260" r={RING_R} fill="rgba(17,17,17,0.6)" stroke="rgba(246,244,239,0.16)" strokeWidth="16" />
-            <circle
-              cx="260"
-              cy="260"
-              r={RING_R}
-              fill="none"
-              stroke="#FE7446"
-              strokeWidth="16"
-              strokeLinecap="round"
-              strokeDasharray={`${left * RING_C} ${RING_C}`}
-            />
-          </svg>
-          <AnimatePresence initial={false}>
-            <motion.span
-              key={beat}
-              className={`absolute inset-0 flex items-center justify-center font-bold leading-none tracking-[-0.04em] ${last ? "text-[150px] text-[var(--arkiv-orange)]" : "text-[360px]"}`}
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            >
-              {BEATS[beat]}
-            </motion.span>
-          </AnimatePresence>
-        </div>
-        <div className="flex items-baseline gap-7" aria-hidden>
-          {BEATS.map((b, i) => (
-            <span key={b} className="flex items-baseline gap-7">
-              {i > 0 ? <span className="text-[48px] font-semibold text-[rgba(246,244,239,0.36)]">·</span> : null}
-              <span className={`text-[48px] font-semibold ${i === beat ? "text-[var(--arkiv-sand)]" : "text-[rgba(246,244,239,0.36)]"}`}>{b}</span>
-            </span>
-          ))}
-        </div>
-        <p className="text-[28px] text-[rgba(246,244,239,0.72)]">Everyone: tap Write my entity.</p>
+      <Logo height={24} className="absolute left-[32px] top-[64px]" />
+      <div className="absolute left-0 top-0 flex h-[1080px] w-[1464px] flex-col items-center justify-center gap-8">
+        <p className="text-[220px] font-bold leading-none tracking-[-0.04em] text-[var(--arkiv-orange)]">write!</p>
+        <p className="text-[44px] font-semibold">Everyone: tap Write my entity.</p>
       </div>
     </motion.div>
   );
 }
 
 export function S7({ step }: SceneContentProps) {
-  const startedAt = useStage((s) => s.countdownAt);
-  const elapsed = useCountdownElapsed(startedAt);
-  const lifespans = [LIFETIME_MIN_SEC, (LIFETIME_MIN_SEC + LIFETIME_MAX_SEC) / 2, LIFETIME_MAX_SEC].map((sec) => ({ sec, label: formatLifetime(sec) }));
-  const defaultSlot = Math.max(0, lifespans.findIndex((l) => l.sec === LIFETIME_DEFAULT_SEC));
+  const writing = useStage((s) => s.countdownAt !== null);
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
         <div className="absolute inset-0 bg-[rgba(8,9,31,0.65)]" />
         <AnimatePresence>
-          {elapsed === null ? (
+          {writing ? (
+            <WriteFrame key="write" />
+          ) : (
             <motion.div key="card" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
               <Logo height={28} className="absolute left-[96px] top-[72px]" />
               {/* The app's centered QR fills the left column above this line. */}
-              <Rise delay={0.1} className="absolute left-[140px] top-[880px] w-[1040px]">
+              <Rise className="absolute left-[140px] top-[880px] w-[1040px]">
                 <p className="text-center text-[44px] font-semibold leading-[1.2]">
                   Name. Color. Country.
                   <br />
@@ -121,12 +79,10 @@ export function S7({ step }: SceneContentProps) {
                   </span>
                 </p>
               </Rise>
-              <Reveal step={step} at={1} className="absolute left-[1260px] top-[300px]">
-                <CharacterSelect lifespans={lifespans} maxSec={LIFETIME_MAX_SEC} selected={defaultSlot} />
+              <Reveal step={step} at={1} className="absolute left-[1260px] top-[230px]">
+                <EntityCard />
               </Reveal>
             </motion.div>
-          ) : (
-            <Countdown key="countdown" elapsed={elapsed} />
           )}
         </AnimatePresence>
       </div>

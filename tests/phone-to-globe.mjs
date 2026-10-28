@@ -2,6 +2,7 @@
 // replaces an active session.
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
+import { sceneIndex } from "../shared/scenes.ts";
 
 const ORIGIN = (process.env.APP_ORIGIN ?? "https://mumbai-ethglobal.vercel.app").replace(/\/$/, "");
 const WRITER = ORIGIN;
@@ -44,13 +45,13 @@ try {
   let publicRpcReads = 0;
   stage.on("request", (request) => { if (/rpc\.[a-z0-9.-]*arkiv\.network/.test(new URL(request.url()).host)) publicRpcReads++; });
   await stage.goto(`${ORIGIN}/map`, { waitUntil: "domcontentloaded" });
-  await expect(stage.locator(".qr-image img")).toBeVisible({ timeout: 20000 });
-  await stage.evaluate((code) => {
+  await expect(stage.getByRole("heading", { name: /From zero to hero/ })).toBeVisible({ timeout: 20000 });
+  await stage.evaluate(([code, index]) => {
     const channel = new BroadcastChannel("arkiv-mumbai-stage");
     channel.postMessage({ kind: "command", cmd: { type: "session", code } });
-    channel.postMessage({ kind: "command", cmd: { type: "goto", index: 2 } });
+    channel.postMessage({ kind: "command", cmd: { type: "goto", index } });
     channel.close();
-  }, session);
+  }, [session, sceneIndex("L1")]);
   await expect(stage.locator('[data-scene="L1"]')).toBeVisible();
   await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
   const phone = await context.newPage();

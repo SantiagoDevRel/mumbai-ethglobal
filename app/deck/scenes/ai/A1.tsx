@@ -3,8 +3,8 @@
 // A1 · MCP: your agent asks Arkiv. Your agent asks for its first entity. Without MCP it searches
 // the web and builds on old pages (the struck-through answer is the outdated one on purpose). With
 // MCP it asks Arkiv's network_status; the values come from the app's active network profile, so
-// they follow the network switch. → steps: 0 the ask and the web search, 1 the agent's answer,
-// 2 it is out of date, 3 with MCP, 4 how to add it.
+// they follow the network switch. Each step lands whole. → steps: 0 the ask, the web search and the
+// agent's answer, 1 it is out of date, 2 with MCP and how to add it.
 
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, type ReactNode } from "react";
@@ -12,13 +12,7 @@ import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
 import { getProfile } from "../../../../shared/arkiv/profiles";
 import { Mascot } from "../../Mascot";
 import { EASE, PANEL, PANEL_EASE, Reveal, Rise, Slide, T } from "../../ui";
-import { INSTALL, MCP_HOST } from "./facts";
-
-const OLD_PAGES: [source: string, title: string][] = [
-  ["blog", "Getting started with Arkiv on Braga"],
-  ["forum", "npm install @arkiv-network/sdk@0.6"],
-  ["video", "Arkiv testnet tutorial, part 1"],
-];
+import { MCP_HOST } from "./facts";
 
 function Check({ size = 26 }: { size?: number }) {
   return (
@@ -52,19 +46,9 @@ function WithoutMcp({ step }: { step: number }) {
           <circle cx="11" cy="11" r="8" />
           <path d="m21 21-4.3-4.3" />
         </svg>
-        <span className="text-[24px] font-semibold">Your agent searched the web and read {OLD_PAGES.length} old pages</span>
+        <span className="text-[24px] font-semibold">Your agent searched the web and read old pages.</span>
       </div>
-      <div className="ml-[42px] mt-2.5 flex flex-col gap-1.5">
-        {OLD_PAGES.map(([source, title]) => (
-          <div key={source} className="flex items-baseline gap-3.5 text-[20px] leading-[1.3]" style={{ color: "rgba(246,244,239,0.6)" }}>
-            <span className="w-[92px] flex-none font-mono text-[16px]" style={{ color: T.t42 }}>
-              {source}
-            </span>
-            <span>{title}</span>
-          </div>
-        ))}
-      </div>
-      <Reveal step={step} at={1} y={12} className="absolute left-0 top-[158px] flex flex-col items-start gap-2">
+      <div className="absolute left-0 top-[64px] flex flex-col items-start gap-2">
         <span className="text-[18px] font-semibold" style={{ color: T.t56 }}>
           Your agent
         </span>
@@ -74,12 +58,12 @@ function WithoutMcp({ step }: { step: number }) {
             aria-hidden
             className="absolute left-[18px] right-[18px] top-1/2 -mt-[2px] h-[4px] origin-left rounded-[2px] bg-[var(--arkiv-orange)]"
             initial={false}
-            animate={{ scaleX: step >= 2 ? 1 : 0 }}
+            animate={{ scaleX: step >= 1 ? 1 : 0 }}
             transition={{ duration: 0.5, ease: EASE }}
           />
         </div>
-      </Reveal>
-      <Reveal step={step} at={2} y={12} className="absolute left-0 top-[276px]">
+      </div>
+      <Reveal step={step} at={1} y={12} className="absolute left-0 top-[196px]">
         <Badge icon="x">Out of date: Braga closed in August.</Badge>
       </Reveal>
     </div>
@@ -96,9 +80,7 @@ function WithMcp() {
   }, []);
   const rows: [string, string, boolean?][] = [
     ["network", profile?.name ?? "—"],
-    ["chain ID", profile ? String(profile.chainId) : "—"],
     ["install", profile ? `npm install ${profile.sdk.package}@${profile.sdk.version} viem` : "—", true],
-    ["faucet", profile ? profile.faucet.replace(/^https?:\/\//, "") : "—"],
   ];
   return (
     <div className="absolute inset-0">
@@ -113,32 +95,29 @@ function WithMcp() {
       </motion.div>
       <div className="absolute left-0 top-[66px] w-[820px] rounded-[14px] border border-[rgba(246,244,239,0.14)] bg-[rgba(246,244,239,0.06)] px-6 py-4">
         <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-y-1.5 font-mono text-[24px] leading-[1.45]">
-          {rows.flatMap(([key, value, accent], i) => {
-            const t = { duration: 0.35, delay: 0.25 + i * 0.12, ease: EASE };
-            return [
-              <motion.span key={key} style={{ color: T.t56 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={t}>
-                {key}
-              </motion.span>,
-              <motion.span key={key + '-v'} className={accent ? 'text-[var(--arkiv-orange)]' : undefined} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={t}>
-                {value}
-              </motion.span>,
-            ];
-          })}
+          {rows.flatMap(([key, value, accent]) => [
+            <span key={key} style={{ color: T.t56 }}>
+              {key}
+            </span>,
+            <span key={key + "-v"} className={accent ? "text-[var(--arkiv-orange)]" : undefined}>
+              {value}
+            </span>,
+          ])}
         </div>
       </div>
-      <motion.div className="absolute left-0 top-[276px]" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, delay: 0.8, ease: EASE }}>
+      <div className="absolute left-0 top-[196px]">
         <Badge icon="check">Today&apos;s answer, straight from Arkiv.</Badge>
-      </motion.div>
+      </div>
     </div>
   );
 }
 
 export function A1({ step }: SceneContentProps) {
-  const withMcp = step >= 3;
-  const pose = withMcp ? "thumbsUp" : step >= 2 ? "thumbsDown" : "stand";
+  const withMcp = step >= 2;
+  const pose = withMcp ? "thumbsUp" : step >= 1 ? "thumbsDown" : "stand";
   return (
     <Slide headline="MCP: your agent asks Arkiv" under="Instead of guessing from the web, your agent asks Arkiv.">
-      <Rise delay={0.2} className={`${PANEL} absolute left-[96px] top-[340px] h-[458px] w-[1728px]`}>
+      <Rise className={`${PANEL} absolute left-[96px] top-[340px] h-[400px] w-[1728px]`}>
         <div className="absolute left-[28px] top-[20px] flex h-[210px] w-[440px] justify-center">
           <AnimatePresence mode="wait">
             <motion.div key={pose} initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: PANEL_EASE }}>
@@ -170,7 +149,7 @@ export function A1({ step }: SceneContentProps) {
               );
             })}
           </div>
-          <div className="absolute left-0 top-[104px] h-[336px] w-[1128px]">
+          <div className="absolute left-0 top-[104px] h-[280px] w-[1128px]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={withMcp ? "with" : "without"}
@@ -189,8 +168,8 @@ export function A1({ step }: SceneContentProps) {
 
       <Reveal
         step={step}
-        at={4}
-        className={`${PANEL} absolute left-[96px] top-[822px] grid h-[184px] w-[1728px] grid-cols-[600px_minmax(0,1fr)] items-center gap-10 !border-[var(--arkiv-orange)] px-8 py-6`}
+        at={2}
+        className={`${PANEL} absolute left-[96px] top-[764px] grid h-[184px] w-[1728px] grid-cols-[600px_minmax(0,1fr)] items-center gap-10 !border-[var(--arkiv-orange)] px-8 py-6`}
       >
         <div className="flex flex-col gap-2.5">
           <span className="text-[22px] font-semibold" style={{ color: T.t64 }}>
@@ -205,21 +184,9 @@ export function A1({ step }: SceneContentProps) {
             ))}
           </div>
         </div>
-        <div className="grid grid-cols-[160px_minmax(0,1fr)] items-center gap-x-4 gap-y-3">
-          {(["claude", "codex"] as const).map((host) => (
-            <div key={host} className="contents">
-              <span className="text-[18px] font-semibold" style={{ color: T.t56 }}>
-                {INSTALL[host].label}
-              </span>
-              <span className="font-mono text-[19px]">{INSTALL[host].mcp}</span>
-            </div>
-          ))}
-          <span className="text-[18px] font-semibold" style={{ color: T.t56 }}>
-            Chat apps
-          </span>
-          <span className="text-[22px]" style={{ color: T.t84 }}>
-            Add the URL as a custom connector.
-          </span>
+        <div className="flex flex-col gap-3 text-[28px] leading-[1.3]" style={{ color: T.t84 }}>
+          <span>Claude Code or Codex CLI: one command.</span>
+          <span>Chat apps: add the URL as a custom connector.</span>
         </div>
       </Reveal>
     </Slide>
@@ -227,7 +194,7 @@ export function A1({ step }: SceneContentProps) {
 }
 
 export const A1_NOTES: string[] = [
-  "Your agent, on the left, asks for help with its first Arkiv entity. Without MCP it searches the web, reads old pages and confidently tells you to use a network that closed in August with an old SDK.",
-  "With MCP it asks Arkiv directly: network_status answers with today's network, chain ID, install line and faucet. Same question, today's answer.",
-  "Add it once with one command in Claude Code or Codex CLI, or as a custom connector in a chat app. No key needed. It reads and checks; it never signs.",
+  "Your agent, on the left, asks for help with its first Arkiv entity. Without MCP it searches the web, reads old pages and confidently answers.",
+  "But that answer is out of date: that network closed in August, and that SDK is old.",
+  "With MCP it asks Arkiv directly: network_status answers with today's network and install line. Same question, today's answer. Add it once with one command in Claude Code or Codex CLI, or as a custom connector in a chat app. No key needed. It reads and checks; it never signs.",
 ];

@@ -10,8 +10,10 @@
 //   hud      query panel, event log, filters, inspector (live)      z-20
 //   slide    slide scenes' Slide, over the map                      z-25
 //   qr       the QR, where the scene places it                      z-30
+//   outline  the outline bar across the top (OutlineBar)            z-35
 //   controls the "?" keyboard overlay                               z-40
-// /slides: every slide scene's Slide, a card for live scenes, the S7 QR and the "?" overlay.
+// /slides: every slide scene's Slide, a card for live scenes, the S7 QR, the outline bar and the
+// "?" overlay.
 //
 // Everything is drawn in stage pixels. /slides fits a 1920x1080 box to the window ("contain"). /map
 // keeps the box 1920 wide and stretches it to the window's height ("fill"), so in half a 16:9
@@ -23,6 +25,7 @@ import { KEY_HELP } from "../../lib/stage/keyboard";
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
 import { SCENES, type SceneDef } from "../../shared/scenes";
 import { stage, useScene, useStage } from "../../lib/stage/store";
+import { OutlineBar } from "./OutlineBar";
 
 export const STAGE_W = 1920;
 export const STAGE_H = 1080;
@@ -102,6 +105,7 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: 
           ) : null}
         </AnimatePresence>
         {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
+        <div className="pointer-events-none absolute inset-0 z-[35]"><StageBox><OutlineBar /></StageBox></div>
         {/* The map has no free corner for Reset, so it sits in the "?" presenter card. */}
         <ControlsOverlay extra={bar} />
         {writing}
@@ -135,6 +139,7 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
         </AnimatePresence>
       </div>
       {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
+      <div className="pointer-events-none absolute inset-0 z-[35]"><StageBox><OutlineBar /></StageBox></div>
       {bar}
       <ControlsOverlay />
       <StepDots />

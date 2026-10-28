@@ -44,7 +44,7 @@ const report = {
   timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; synthetic lifetimes are 15 minutes (the phone default), so the room is still alive when the map returns at L2. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
   writer: "the app's own /api (Vercel function)",
   scenes: [], operations: [], transactions: [], phones: [], balances: [], pageErrors: [], requestFailures: [], dataErrors: [],
-  ownership: { mode: "demo view", allowedWalletOperationTags: [2, 3], onChainTransfers: 0 },
+  ownership: { mode: "transfer form checked, never sent", allowedWalletOperationTags: [3], onChainTransfers: 0 },
   sessionEnded: false, status: "running",
 };
 const now = () => epoch === null ? null : Math.round(performance.now() - epoch);
@@ -135,7 +135,7 @@ async function walletRequest({ method, params = [] }) {
   const decoded = decodeFunctionData({ abi: EXECUTE, data: tx.data });
   assert.equal(decoded.functionName, "execute");
   const tags = decoded.args[0].map((item) => item.operation);
-  assert.ok(tags.length > 0 && tags.every((tag) => tag === 2 || tag === 3), "Only patch and extend are authorized. Ownership transfer and delete are blocked.");
+  assert.ok(tags.length > 0 && tags.every((tag) => tag === 3), "Only extend is authorized. Patch, ownership transfer and delete are blocked.");
   const held = await presenter("status");
   assert.ok(held.held && !held.inFlight && held.queued === 0, "Presenter wallet requires an idle, held writer.");
   const funds = await balance("before presenter signature");
@@ -276,41 +276,37 @@ async function sceneWork(id, step) {
       report.extendedEntities = after.entities.length;
     });
   }
-  if (id === "L3" && step === 0) await op("show filters and exact query", async () => { await command({ type: "inspect", key: null }); await command({ type: "togglePanel", panel: "filters", open: true }); await expect(stage.locator(".query-panel")).toBeVisible(); });
-  if (id === "L3" && step === 1) await op("country filter India", async () => {
-    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Country/ }).selectOption("IN");
-    await expect(stage.locator(".query-panel")).toContainText('eq("country", "IN")', { timeout: 20000 });
-    const run = await adapter.query({ kinds: ["dot"], session, country: "IN" }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.country === "IN"));
+  // L3 runs the B3 query by itself, one filter per →: color is orange, then AND country is India.
+  if (id === "L3" && step === 0) await op("show filters and exact query", async () => { await command({ type: "inspect", key: null }); await expect(stage.locator(".query-panel")).toBeVisible(); await expect(stage.locator(".filter-bar")).toBeVisible(); });
+  if (id === "L3" && step === 1) await op("color filter orange", async () => {
+    await expect(stage.locator(".query-panel")).toContainText(`color = str('${ORANGE}')`, { timeout: 20000 });
+    const run = await adapter.query({ kinds: ["dot"], session, color: ORANGE }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.color === ORANGE));
   });
-  if (id === "L3" && step === 2) await op("colour filter green", async () => {
-    { const more = stage.locator(".filters-panel .more-filters"); await more.evaluate((element) => { element.open = true; }); await more.getByRole("button", { name: "Filter color Green", exact: true }).click(); }
-    await expect(stage.locator(".query-panel")).toContainText(`eq("color", "${GREEN}")`, { timeout: 20000 });
-    const run = await adapter.query({ kinds: ["dot"], session, country: "IN", color: GREEN }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.color === GREEN && item.attrs.country === "IN"));
+  if (id === "L3" && step === 2) await op("AND country India", async () => {
+    await expect(stage.locator(".query-panel")).toContainText("AND country = str('IN')", { timeout: 20000 });
+    const run = await adapter.query({ kinds: ["dot"], session, color: ORANGE, country: "IN" }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.color === ORANGE && item.attrs.country === "IN"));
     report.filterEvidence = { query: run.description.query, block: run.block.toString(), keys: run.entities.map((item) => item.key) };
   });
-  if (id === "L3" && step === 3) await op("close filters", () => stage.getByRole("button", { name: "Close filters" }).click());
-  if (id === "L4") await op("inspect attributes and Arkiv fields", async () => { await inspect(phoneKey); await stage.getByText("Stored attributes", { exact: true }).click(); await expect(stage.locator(".inspector-panel")).toContainText("$creator"); });
-  if (id === "L5" && step === 0) await signedAction("makeBusiness", async () => { await inspect(phoneKey); await stage.getByRole("button", { name: "Make it a business", exact: true }).click(); }, async () => {
-    await expect.poll(async () => (await entity(phoneKey)).attributes.kind.value, { timeout: 20000 }).toBe("business");
-    await expect(stage.locator(".inspector-panel .business-card")).toContainText("cafe", { timeout: 20000 });
-    report.patchedEntity = { key: phoneKey, kind: "business", owner: (await entity(phoneKey)).owner };
+  // Own it: the card shows $owner and no $creator; the transfer form is checked but never sent.
+  if (id === "L6" && step === 0) await op("entity card shows $owner, not $creator", async () => {
+    await inspect(phoneKey);
+    await expect(stage.locator(".inspector-panel .badge-highlight")).toHaveAttribute("data-field", "$owner");
+    await expect(stage.locator(".inspector-panel")).not.toContainText("$creator");
   });
-  if (id === "L5" && step === 1) await op("business query and card", async () => { await expect(stage.locator(".query-panel")).toContainText("business", { timeout: 20000 }); await expect(stage.locator(".business-card")).toBeVisible(); });
-  if (id === "L5" && step === 2) await op("business review relationship", async () => { await expect(stage.locator(".business-card")).toContainText("reviews"); report.patchedEntity.reviewCount = await stage.locator(".business-card .review-card").count(); });
-  if (id === "L6" && step === 0) await op("ownership view", async () => { await command({ type: "inspect", key: null }); await expect(stage.locator(".owner-view")).toContainText("Demo view"); });
-  if (id === "L6" && step === 1) await op("ownership finale demo only", async () => {
+  if (id === "L6" && step === 1) await op("transfer form ready, nothing sent", async () => {
     const before = await entity(phoneKey), sends = report.transactions.length;
-    await stage.getByRole("button", { name: "Transfer ownership", exact: true }).click();
-    await expect(stage.locator(".owner-badge")).toContainText("Each business owns its own data.");
+    await stage.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
+    await stage.getByLabel("New owner wallet").fill(WRITER_ADDRESS);
+    await expect(stage.getByRole("button", { name: "Transfer ownership", exact: true })).toBeEnabled();
     await sleep(2000); const after = await entity(phoneKey);
-    assert.equal(after.owner, before.owner); assert.equal(after.creator, before.creator); assert.equal(report.transactions.length, sends);
-    report.ownership = { ...report.ownership, key: phoneKey, ownerBefore: before.owner, ownerAfter: after.owner, creatorBefore: before.creator, creatorAfter: after.creator, walletSendsDuringDemo: report.transactions.length - sends };
+    assert.equal(after.owner, before.owner); assert.equal(report.transactions.length, sends);
+    report.ownership = { ...report.ownership, key: phoneKey, ownerBefore: before.owner, ownerAfter: after.owner, walletSendsDuringDemo: report.transactions.length - sends };
   });
-  if (id === "L8") await op("QR still opens the phone form and writing stays open", async () => {
+  if (id === "L9") await op("QR still opens the phone form and writing stays open", async () => {
     await expect(stage.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
     const status = await presenter("status");
     assert.equal(status.phase, "talk"); assert.equal(status.doors, "open");
-    report.l8QrOpensScan = true;
+    report.closingQrOpensScan = true;
   });
   if (id === "L9") await op("closing globe remains live", async () => { await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible(); assert.ok(proxyReads > 0); });
 }
@@ -348,9 +344,9 @@ try {
     await command({ type: "goto", index: SCENES.findIndex((scene) => scene.id === "L3") });
     await command({ type: "togglePanel", panel: "filters", open: true });
     await stage.locator(".filters-panel").getByRole("combobox", { name: /^Country/ }).selectOption("IN");
-    await expect(stage.locator(".query-panel")).toContainText('eq("country", "IN")', { timeout: 20000 });
+    await expect(stage.locator(".query-panel")).toContainText("country = str('IN')", { timeout: 20000 });
     { const more = stage.locator(".filters-panel .more-filters"); await more.evaluate((element) => { element.open = true; }); await more.getByRole("button", { name: "Filter color Green", exact: true }).click(); }
-    await expect(stage.locator(".query-panel")).toContainText(`eq("color", "${GREEN}")`, { timeout: 20000 });
+    await expect(stage.locator(".query-panel")).toContainText(`color = str('${GREEN}')`, { timeout: 20000 });
     assert.ok(proxyReads > 0); assert.equal(report.pageErrors.length, 0);
     console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0, filters: ["IN", GREEN] }));
   }
@@ -396,9 +392,9 @@ try {
     await until(TALK_LENGTH_SEC * 1000);
     report.talkElapsedMs = now(); report.talkOverrunMs = Math.max(0, now() - TALK_LENGTH_SEC * 1000);
     assert.equal(report.pageErrors.length, 0, "Browser page errors occurred.");
-    assert.equal(report.transactions.length, 3, "Expected exactly two extensions and one patch.");
+    assert.equal(report.transactions.length, 2, "Expected exactly two extensions.");
     assert.ok(report.transactions.every((item) => item.status === "success"));
-    const owned = await adapter.query({ kinds: ["dot", "business"], session });
+    const owned = await adapter.query({ kinds: ["dot"], session });
     assert.ok(owned.entities.every((item) => item.owner.toLowerCase() === WRITER_ADDRESS.toLowerCase()));
     report.remainingEntities = owned.entities.length; report.ownership.allRemainingEntitiesStillWriterOwned = true;
     report.status = report.scenes.some((scene) => scene.status === "failed") ? "failed" : "passed";

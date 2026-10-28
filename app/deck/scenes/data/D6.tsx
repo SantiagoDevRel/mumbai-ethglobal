@@ -1,9 +1,11 @@
 "use client";
 
-// D6 · Private attributes. A table where everyone reads every value; → flags the phone number
-// stored as text; → your app encrypts it with your key and Arkiv stores bytes; → with the key you
-// get the number back, without it only bytes; → encrypted bytes can't be filtered, and the tool.
-// Steps: 0 table · 1 the phone is public · 2 encrypt · 3 decrypt or not · 4 closing line.
+// D6 · Encrypt what's private (outline v3 scene B4). A table where everyone reads every value, with
+// the phone number flagged as a public text attribute; → your app encrypts it with your key and the
+// entity stores it in its payload ($payload, type bytes: SDK 0.8.1 keeps bytes for the payload, so
+// an attribute can't hold them, and arkiv-encryption encrypts payloads); → with the key you get the
+// number back, without it only bytes, and you query the public attributes. Each step lands whole.
+// Steps: 0 the phone is public · 1 encrypt · 2 decrypt or not, and the closing line.
 
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
@@ -84,21 +86,22 @@ function PublicRow({ name, value }: { name: string; value: string }) {
 }
 
 export function D6({ step }: SceneContentProps) {
-  const encrypted = step >= 2;
-  const rowBg = step === 1 ? "rgba(254,116,70,0.3)" : step >= 2 ? "rgba(24,30,169,0.12)" : "rgba(24,30,169,0)";
+  const encrypted = step >= 1;
+  const read = step >= 2;
+  const rowBg = encrypted ? "rgba(24,30,169,0.12)" : "rgba(254,116,70,0.3)";
   return (
-    <Slide headline="Private attributes" under="Anyone can read Arkiv. Encrypt what should stay private." wash={0.82}>
+    <Slide headline="Encrypt what's private" under="Anyone can query attributes. Private values go in the payload, encrypted." wash={0.82}>
       <div className="absolute left-[96px] top-[330px] w-[1728px] overflow-hidden rounded-[20px] bg-[var(--arkiv-sand)] text-[var(--arkiv-ink)]" style={{ boxShadow: CARD_SHADOW }}>
         <div className="grid h-[52px] items-center border-b-2 border-[rgba(17,17,17,0.12)] px-8 font-mono text-[20px] text-[rgba(17,17,17,0.56)]" style={{ gridTemplateColumns: COLS }}>
-          <span>attribute</span>
+          <span>field</span>
           <span>type</span>
           <span>value</span>
-          <span>who can read it</span>
+          <span>who can read the value</span>
         </div>
         <PublicRow name="name" value="Chai Corner" />
         <PublicRow name="category" value="cafe" />
         <motion.div className="grid h-[80px] items-center px-8" style={{ gridTemplateColumns: COLS }} initial={false} animate={{ backgroundColor: rowBg }} transition={{ duration: 0.4, ease: EASE }}>
-          <span className="font-mono text-[30px] font-semibold">owner_phone</span>
+          <Swap flip={encrypted} a={<span className="font-mono text-[30px] font-semibold">owner_phone</span>} b={<span className="font-mono text-[30px] font-semibold">$payload</span>} />
           <Swap flip={encrypted} a={<TypeTag>str</TypeTag>} b={<TypeTag>bytes</TypeTag>} />
           <Swap
             flip={encrypted}
@@ -121,26 +124,26 @@ export function D6({ step }: SceneContentProps) {
             b={
               <span className="flex items-center gap-2.5 whitespace-nowrap text-[24px] font-semibold text-[var(--arkiv-blue)]">
                 <KeyIcon color="#181EA9" size={28} />
-                Only who has the key
+                Only the key holder
               </span>
             }
           />
         </motion.div>
       </div>
 
-      <Show on={step === 1} className="absolute left-[96px] top-[690px] flex items-center gap-4">
+      <Show on={!encrypted} className="absolute left-[96px] top-[690px] flex items-center gap-4">
         <Eye color="#FE7446" size={40} />
         <span className="text-[32px] font-semibold">Stored as plain text, anyone can read this phone number.</span>
       </Show>
 
       <svg width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden className="pointer-events-none absolute left-0 top-0">
-        <motion.g fill="none" stroke="#FE7446" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: encrypted ? 1 : 0 }} transition={{ duration: 0.45, delay: encrypted ? 0.25 : 0 }}>
+        <motion.g fill="none" stroke="#FE7446" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: encrypted ? 1 : 0 }} transition={{ duration: 0.45 }}>
           <path d="M460 825 H470" />
           <path d="M462 817 L472 825 L462 833" />
           <path d="M592 825 H608" />
           <path d="M600 817 L610 825 L600 833" />
         </motion.g>
-        <motion.g fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: step >= 3 ? 1 : 0 }} transition={{ duration: 0.45 }}>
+        <motion.g fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: read ? 1 : 0 }} transition={{ duration: 0.45 }}>
           <path d="M1064 825 C1120 825 1120 745 1176 745" stroke="#FE7446" />
           <path d="M1064 825 C1120 825 1120 905 1176 905" stroke="rgba(246,244,239,0.4)" strokeDasharray="8 8" />
           <path d="M1264 745 H1282" stroke="#FE7446" />
@@ -155,15 +158,15 @@ export function D6({ step }: SceneContentProps) {
           <span className="whitespace-nowrap text-[32px] font-semibold">+91 98765 43210</span>
         </Box>
       </Show>
-      <Show on={encrypted} delay={0.25} className="absolute left-[478px] top-[773px]">
+      <Show on={encrypted} className="absolute left-[478px] top-[773px]">
         <span className="flex h-[104px] w-[104px] items-center justify-center rounded-full bg-[var(--arkiv-orange)] shadow-[0_10px_28px_rgba(254,116,70,0.35)]">
           <KeyIcon color="#111111" size={52} />
         </span>
       </Show>
-      <Show on={encrypted} delay={0.25} className="absolute left-[410px] top-[896px] w-[240px] text-center">
+      <Show on={encrypted} className="absolute left-[410px] top-[896px] w-[240px] text-center">
         <span className="whitespace-nowrap text-[20px] font-semibold">Encrypt with your key</span>
       </Show>
-      <Show on={encrypted} delay={0.5} className="absolute left-[620px] top-[760px] h-[130px] w-[444px]">
+      <Show on={encrypted} className="absolute left-[620px] top-[760px] h-[130px] w-[444px]">
         <Box label="ON ARKIV" accent sub="Anyone can read these bytes.">
           <span className="flex items-center gap-3 whitespace-nowrap font-mono text-[28px] font-medium">
             <Lock color="#FE7446" />
@@ -172,22 +175,22 @@ export function D6({ step }: SceneContentProps) {
         </Box>
       </Show>
 
-      <Show on={step >= 3} delay={0.25} className="absolute left-[1184px] top-[705px]">
+      <Show on={read} className="absolute left-[1184px] top-[705px]">
         <span className="flex h-[80px] w-[80px] items-center justify-center rounded-full border-2 border-[var(--arkiv-orange)] bg-[rgba(254,116,70,0.14)]">
           <KeyIcon color="#FE7446" size={40} />
         </span>
       </Show>
-      <Show on={step >= 3} delay={0.25} className="absolute left-[1290px] top-[690px] h-[110px] w-[534px]">
+      <Show on={read} className="absolute left-[1290px] top-[690px] h-[110px] w-[534px]">
         <Box label="HAS THE KEY · DECRYPT" labelColor="#FE7446" accent>
           <span className="whitespace-nowrap text-[32px] font-semibold">+91 98765 43210</span>
         </Box>
       </Show>
-      <Show on={step >= 3} delay={0.5} className="absolute left-[1184px] top-[865px]">
+      <Show on={read} className="absolute left-[1184px] top-[865px]">
         <span className="flex h-[80px] w-[80px] items-center justify-center rounded-full border-2 border-dashed border-[rgba(246,244,239,0.36)] bg-[rgba(246,244,239,0.06)]">
           <KeyIcon color="rgba(246,244,239,0.56)" size={40} cross />
         </span>
       </Show>
-      <Show on={step >= 3} delay={0.5} className="absolute left-[1290px] top-[850px] h-[110px] w-[534px]">
+      <Show on={read} className="absolute left-[1290px] top-[850px] h-[110px] w-[534px]">
         <Box label="NO KEY">
           <span className="flex items-center gap-3 whitespace-nowrap font-mono text-[28px] font-medium text-[rgba(246,244,239,0.72)]">
             0x8f3a…e21b <span className="font-sans text-[22px] font-medium text-[rgba(246,244,239,0.6)]">just bytes</span>
@@ -195,20 +198,18 @@ export function D6({ step }: SceneContentProps) {
         </Box>
       </Show>
 
-      <Show on={step >= 4} className="absolute left-[96px] top-[976px] flex items-center gap-4">
-        <span className="text-[24px] text-[rgba(246,244,239,0.84)]">Encrypted values are bytes, so you can&apos;t filter on them.</span>
-        <span className="text-[24px] text-[rgba(246,244,239,0.6)]">Your agent knows how:</span>
-        <span className="rounded-[8px] border-[1.5px] border-[var(--arkiv-orange)] px-[14px] py-1.5 font-mono text-[22px] font-semibold text-[var(--arkiv-orange)]">arkiv-encryption</span>
-        <span className="text-[22px] text-[rgba(246,244,239,0.6)]">skill and npm package</span>
+      <Show on={read} className="absolute left-[96px] top-[976px] flex items-center gap-4">
+        <span className="text-[26px] text-[rgba(246,244,239,0.84)]">You can&apos;t filter on encrypted bytes: query the public attributes.</span>
+        <span className="rounded-[8px] border-[1.5px] border-[var(--arkiv-orange)] px-[14px] py-1.5 font-mono text-[24px] font-semibold text-[var(--arkiv-orange)]">npm arkiv-encryption</span>
       </Show>
     </Slide>
   );
 }
 
-export const D6_STEPS = 5;
+export const D6_STEPS = 3;
 
 export const D6_NOTES: string[] = [
-  "Anyone can read Arkiv, so think about what you store in plain text. Here the owner's phone number is a text attribute, and everyone can read it.",
-  "Instead, your app encrypts it with your key before writing, and Arkiv stores bytes. Anyone can read those bytes, but with the key you get the number back; without it, you only get bytes.",
-  "Encrypted values are bytes, so you can't filter on them. Your agent knows how to do this: there is an arkiv-encryption skill and npm package.",
+  "Attributes are public: that's what makes them queryable. So think about what you store in plain text. Here the owner's phone number is a text attribute, and everyone can read it.",
+  "Instead, your app encrypts it with your key before writing, and the entity keeps it in its payload, as bytes. Anyone can read those bytes.",
+  "With the key you get the number back; without it, only bytes. You can't filter on encrypted bytes, so you query by the public attributes. The arkiv-encryption npm package does the encrypting for you.",
 ];

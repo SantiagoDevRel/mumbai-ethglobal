@@ -49,3 +49,5 @@
 /* Presenter's pointer rectangles (drag on a slide, Alt + drag on the map). */
 .annotations{position:fixed;inset:0;z-index:44;pointer-events:none}.annotations span{position:absolute;border:3px solid #fe7446;border-radius:10px;background:rgba(254,116,70,.08);box-shadow:0 0 0 2px rgba(17,17,17,.35)}
 .annotations[data-drawing=true]{cursor:crosshair}
+/* Presenter chrome stays dim on the projector until the presenter reaches for it. */
+.controls-button,.writing-switch,.step-dots{opacity:.4;transition:opacity .2s}.controls-button:hover,.controls-button:focus-visible,.controls-button[aria-expanded=true],.writing-switch:hover,.writing-switch:focus-within,.writing-switch:has(em){opacity:1}

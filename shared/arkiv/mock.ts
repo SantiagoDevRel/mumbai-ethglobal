@@ -42,34 +42,35 @@ function rawOf(attrs: EntityAttrs): RawAttribute[] {
   return out;
 }
 
-/** Same text shape the SDK adapter produces, so the panel looks right on mock data. */
+/** Describes a read the way the SDK 0.8 adapter does: the builder calls, and the query text in the
+ * SDK's own form (`name = str('…')` joined by AND), so mock and live projections read the same. */
 export function describeFilters(filters: ChainFilters, creator: Hex): QueryDescription {
   const where: string[] = [`eq("app", "${APP_ID}")`];
-  const q: string[] = [`app = "${APP_ID}"`];
+  const q: string[] = [`app = str('${APP_ID}')`];
   if (filters.kinds.length === 1) {
     where.push(`eq("kind", "${filters.kinds[0]}")`);
-    q.push(`kind = "${filters.kinds[0]}"`);
+    q.push(`kind = str('${filters.kinds[0]}')`);
   }
-  if (filters.session) { where.push(`eq("session", "${filters.session}")`); q.push(`session = "${filters.session}"`); }
-  if (filters.namePrefix) { where.push(`startsWith("name", ${JSON.stringify(filters.namePrefix)})`); q.push(`name STARTSWITH ${JSON.stringify(filters.namePrefix)}`); }
-  if (filters.color) { where.push(`eq("color", "${filters.color}")`); q.push(`color = "${filters.color}"`); }
-  if (filters.country) { where.push(`eq("country", "${filters.country}")`); q.push(`country = "${filters.country}"`); }
+  if (filters.session) { where.push(`eq("session", "${filters.session}")`); q.push(`session = str('${filters.session}')`); }
+  if (filters.color) { where.push(`eq("color", "${filters.color}")`); q.push(`color = str('${filters.color}')`); }
+  if (filters.country) { where.push(`eq("country", "${filters.country}")`); q.push(`country = str('${filters.country}')`); }
+  if (filters.category) { where.push(`eq("category", "${filters.category}")`); q.push(`category = str('${filters.category}')`); }
+  if (filters.namePrefix) { where.push(`startsWith("name", ${JSON.stringify(filters.namePrefix)})`); q.push(`name STARTSWITH str(${JSON.stringify(filters.namePrefix)})`); }
+  if (filters.business) { where.push(`eq("business", key("${filters.business}"))`); q.push(`business = key(${filters.business})`); }
+  if (filters.minRating !== undefined) { where.push(`gte("rating", ${encodeRating(filters.minRating)})`); q.push(`rating >= i32(${encodeRating(filters.minRating)})`); }
   if (filters.viewport) {
     const v = filters.viewport;
     where.push(
       `gte("lat", ${encodeCoord(v.minLat)})`, `lte("lat", ${encodeCoord(v.maxLat)})`,
       `gte("lng", ${encodeCoord(v.minLng)})`, `lte("lng", ${encodeCoord(v.maxLng)})`,
     );
-    q.push(`lat >= ${encodeCoord(v.minLat)} && lat <= ${encodeCoord(v.maxLat)} && lng >= ${encodeCoord(v.minLng)} && lng <= ${encodeCoord(v.maxLng)}`);
+    q.push(`lat >= i32(${encodeCoord(v.minLat)})`, `lat <= i32(${encodeCoord(v.maxLat)})`, `lng >= i32(${encodeCoord(v.minLng)})`, `lng <= i32(${encodeCoord(v.maxLng)})`);
   }
-  if (filters.category) { where.push(`eq("category", "${filters.category}")`); q.push(`category = "${filters.category}"`); }
-  if (filters.minRating !== undefined) { where.push(`gte("rating", ${encodeRating(filters.minRating)})`); q.push(`rating >= ${encodeRating(filters.minRating)}`); }
-  if (filters.business) { where.push(`eq("business", key("${filters.business}"))`); q.push(`business = ${filters.business}`); }
   const owner = filters.owner ? `\n  .ownedBy("${filters.owner}")` : "";
-  if (filters.owner) q.push(`$owner = ${filters.owner}`);
-  q.push(`$creator = ${creator}`);
+  if (filters.owner) q.push(`$owner = addr(${filters.owner})`);
+  q.push(`$creator = addr(${creator})`);
   const code = `const result = await client\n  .select()\n  .where(\n    ${where.join(",\n    ")},\n  )${owner}\n  .createdBy("${creator}")\n  .fetch()`;
-  return { code, query: q.join(" && "), appSide: [] };
+  return { code, query: q.join(" AND "), appSide: [] };
 }
 
 export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {

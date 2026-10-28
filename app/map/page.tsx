@@ -17,13 +17,14 @@ import { JoinQR } from "../../components/stage/JoinQR";
 import { StageHud } from "../../components/stage/StageHud";
 import { applyAppFilters } from "../../lib/data/view-model";
 import { useStageEffects } from "../../lib/data/useStageEffects";
-import { useReviews } from "../../lib/data/useReviews";
 import "../../components/stage/app-stage.css";
 import { deck } from "../deck/registry";
 import { SCENES } from "../../shared/scenes";
-import type { ChainFilters } from "../../shared/types";
+import type { ChainFilters, LiveEntity } from "../../shared/types";
 
 const SERVER_STATE = initialState();
+// No scene shows business reviews any more (outline v3); the inspector keeps the prop.
+const NO_REVIEWS: LiveEntity[] = [];
 const serverSnapshot = () => SERVER_STATE;
 
 export default function MapPage() {
@@ -39,29 +40,22 @@ function MapStage() {
   const filters: ChainFilters = { ...state.chainFilters, kinds: state.map !== "dots" ? ["dot", "business"] : state.chainFilters.kinds };
   const data = useLiveData(filters, state.session);
   const scene = SCENES[state.sceneIndex]!;
-  const reviewScene = scene.id === "L5" && state.step === 2;
-  // L4 and L6 open on one entity, once per entry: closing the card keeps it closed, so "On the map"
-  // comes back. The L5 reviews step keeps a business inspected.
-  const picked = useRef<string | null>(null);
-  const entry = `${state.sceneIndex}:${reviewScene}`;
+  // L6 opens on one entity, once per entry: closing the card keeps it closed, so "On the map" comes
+  // back. It picks the dot with the most time left, so the transfer has time to land.
+  const picked = useRef<number | null>(null);
   useEffect(() => {
-    const current = data.run?.entities.find((entity) => entity.key === state.inspected);
-    if (scene.id !== "L4" && scene.id !== "L6" && !reviewScene) { picked.current = null; return; }
-    if (!reviewScene && picked.current === entry) return;
-    if (current && (!reviewScene || current.attrs.kind === "business")) return;
-    const distance = (entity: NonNullable<typeof current>) => "lat" in entity.attrs ? (entity.attrs.lat - 18.9275) ** 2 + (entity.attrs.lng - 72.8335) ** 2 : Infinity;
-    const candidate = data.run?.entities.filter((entity) => reviewScene ? entity.attrs.kind === "business" && !entity.attrs.session : entity.attrs.kind === "dot").sort((a, b) => reviewScene ? distance(a) - distance(b) : Number(b.expiresAtBlock - a.expiresAtBlock))[0];
+    if (scene.id !== "L6") { picked.current = null; return; }
+    if (picked.current === state.sceneIndex) return;
+    if (data.run?.entities.some((entity) => entity.key === state.inspected)) { picked.current = state.sceneIndex; return; }
+    const candidate = data.run?.entities.filter((entity) => entity.attrs.kind === "dot").sort((a, b) => Number(b.expiresAtBlock - a.expiresAtBlock))[0];
     if (candidate) {
-      picked.current = entry;
+      picked.current = state.sceneIndex;
       stage.dispatch({ type: "inspect", key: candidate.key });
       stage.dispatch({ type: "select", keys: [candidate.key], mode: "set" });
     }
-  }, [data.run, entry, reviewScene, scene.id, state.inspected]);
-  const reviewKey = state.map === "business" && reviewScene ? state.inspected : null;
-  useEffect(() => { if (reviewScene && state.inspected) stage.dispatch({ type: "togglePanel", panel: "inspector", open: true }); }, [reviewScene, state.inspected]);
+  }, [data.run, scene.id, state.inspected, state.sceneIndex]);
   const block = useLiveBlock();
   const notice = useStageEffects(data.adapter, data.source, data.run?.entities ?? []);
-  const reviews = useReviews(data.adapter, reviewKey, block?.number);
   // An expired entity leaves the map completely (Santiago, October 28): no grey dot stays behind.
   const ghosts: typeof data.expired = [];
   // The query for the filters on screen now, so the panel follows the presenter's typing at once.
@@ -83,7 +77,7 @@ function MapStage() {
     map={<Globe source={data.source} entities={view.entities} ghosts={ghosts} block={block} state={state} />}
     overlay={Overlay ? <StageBox><Overlay scene={scene} step={state.step} /></StageBox> : undefined}
     slide={Slide ? <Slide scene={scene} step={state.step} /> : undefined}
-    hud={live && <StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} described={described} />{status}</div></StageBox>}
+    hud={live && <StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={NO_REVIEWS} described={described} />{status}</div></StageBox>}
     qr={<StageBox><JoinQR screen="map" />{!live && status ? <div className="slide-notice">{status}</div> : null}</StageBox>}
     bar={<PresenterBar inline />}
     writing={<WritingSwitch />}

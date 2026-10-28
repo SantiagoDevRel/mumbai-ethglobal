@@ -3,8 +3,8 @@
 // Prizes · Arkiv's prizes at ETHGlobal Mumbai, as published on ETHGlobal on October 27, 2026
 // (source: ../ethglobal-preview/ethglobal-prizes.md, mirror of
 // https://ethglobal.com/events/mumbai/prizes/arkiv). Names, places and amounts only: no network,
-// chain ID or SDK version, which are not settled. The total and the number of winners are summed
-// from the places. → steps: 0 the headline, 1-5 one prize per step, 6 the total.
+// chain ID or SDK version, which are not settled. The total and the number of prizes are summed from
+// the places. → steps: 0-4 one prize per step (the first comes with the headline), 5 the total.
 
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
@@ -23,7 +23,7 @@ const PRIZES: Prize[] = [
 const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
 const ORDINAL = ["1st", "2nd", "3rd"];
 const TOTAL = PRIZES.reduce((sum, p) => sum + p.places.reduce((a, b) => a + b, 0), 0);
-const WINNERS = PRIZES.reduce((sum, p) => sum + p.places.length, 0);
+const PLACES = PRIZES.reduce((sum, p) => sum + p.places.length, 0);
 
 export function Prizes({ step }: SceneContentProps) {
   return (
@@ -33,7 +33,7 @@ export function Prizes({ step }: SceneContentProps) {
           const amount = prize.places.reduce((a, b) => a + b, 0);
           const split = prize.places.length > 1 ? prize.places.map((p, j) => `${ORDINAL[j]} ${usd(p)}`).join(" · ") : "One winner";
           return (
-            <Reveal key={prize.name} step={step} at={i + 1} y={16}>
+            <Reveal key={prize.name} step={step} at={i} y={16}>
               <div className={`${PANEL} grid h-[100px] grid-cols-[minmax(0,1fr)_auto] items-center gap-10 px-9`}>
                 <div className="flex min-w-0 flex-col gap-1">
                   <div className="flex items-center gap-4">
@@ -63,10 +63,10 @@ export function Prizes({ step }: SceneContentProps) {
         })}
       </div>
 
-      <Reveal step={step} at={PRIZES.length + 1} y={16} className="absolute left-[96px] top-[912px] w-[1728px]">
+      <Reveal step={step} at={PRIZES.length} y={16} className="absolute left-[96px] top-[912px] w-[1728px]">
         <div className="grid h-[104px] grid-cols-[minmax(0,1fr)_auto] items-center gap-10 rounded-[16px] bg-[var(--arkiv-blue)] px-9 shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
           <div className="flex flex-col gap-1">
-            <span className="text-[34px] font-semibold leading-[1.15]">In total · {WINNERS} winners</span>
+            <span className="text-[34px] font-semibold leading-[1.15]">In total · {PLACES} prizes</span>
             <span className="text-[22px]" style={{ color: "rgba(246,244,239,0.8)" }}>
               Each team can win one track prize. The Swarm bonus can come on top.
             </span>
@@ -74,7 +74,7 @@ export function Prizes({ step }: SceneContentProps) {
           <motion.span
             className="text-[64px] font-semibold leading-none tabular-nums"
             initial={false}
-            animate={{ scale: step >= PRIZES.length + 1 ? 1 : 0.9 }}
+            animate={{ scale: step >= PRIZES.length ? 1 : 0.9 }}
             transition={{ duration: 0.5, ease: EASE }}
           >
             {usd(TOTAL)}

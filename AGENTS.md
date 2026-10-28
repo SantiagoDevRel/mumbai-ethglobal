@@ -22,11 +22,17 @@ writes Arkiv entities from their phones, and watches them land, count down and e
 
 Change a contract only through the orchestrator. Every user-facing string is English.
 
-The talk runs on one screen, `/map`: the room writes first (S0, S7, L1), then the agenda (AG) and the
-slides, then back to the map, the data-modeling slides (D1-D8), the map again (LM), your agent's
-tools (A1-A4) and the prizes (PZ). Every reveal is one → (`steps` in `SCENES`): nothing moves on a timer.
-`tests/deck-walk.mjs` walks every scene and step. A new scene goes into `SCENES` (`shared/scenes.ts`) with a `section`, so
-the agenda lists it, and a `qr.placement` (`corner`, `center` or `none`); add its slide or overlay and
+The talk runs on one screen, `/map` (outline v3, October 28): the title (S0) and the index (IX), then
+four parts that the outline bar across the top tracks. Why Arkiv (W1-W4) and the five steps (ST) are
+slides with no QR. In "Build it, live" the room scans (S7) and each idea gets a slide followed by the map
+running it on their entities: write (L1, B2), query (B3, L3), own (L6), expire (L2), then encryption
+(B4) and the explorer (B5). Tools and prizes: Hub and docs (T1), your agent's MCP (T2), the prizes (PZ)
+and the close (L9). One idea per scene, never twice; `$owner` only, no `$creator` on screen. Every
+reveal is one → (`steps` in `SCENES`): nothing moves on a timer, and live data changes in place (no
+flash, roll, spin or ticking clock). The query panel opens on L3 only, on the Query tab: the scope and
+the filters joined by AND, never `$creator` (every read still scopes by it). `tests/deck-walk.mjs` walks every scene
+and step. A new scene goes into `SCENES` (`shared/scenes.ts`) with a `section`, so the index and the
+outline bar list it, and a `qr.placement` (`corner`, `center` or `none`); add its slide or overlay and
 notes in `app/deck/`.
 
 ## Rules

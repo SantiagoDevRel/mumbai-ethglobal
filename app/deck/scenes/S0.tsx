@@ -29,7 +29,7 @@ export function S0(_props: SceneContentProps) {
         />
         <Logo height={32} className="absolute left-[96px] top-[72px]" />
         <div className="absolute left-[96px] top-[300px] flex w-[1040px] flex-col gap-10">
-          <Rise delay={0.1}>
+          <Rise>
             <h1 className="text-[96px] font-semibold leading-[1.02] tracking-[-0.02em]">
               From zero to hero
               <br />
@@ -38,13 +38,13 @@ export function S0(_props: SceneContentProps) {
               the Web3 database
             </h1>
           </Rise>
-          <Rise delay={0.1}>
+          <Rise>
             <p className="text-[40px] leading-[1.25]" style={{ color: T.t64 }}>
               Write it. Query it. Own it. <span className="text-[var(--arkiv-orange)]">Expire it.</span>
             </p>
           </Rise>
         </div>
-        <Rise delay={0.1} className="absolute left-[1280px] top-[250px]">
+        <Rise className="absolute left-[1280px] top-[250px]">
           <Mascot pose="wave" height={720} />
         </Rise>
       </div>

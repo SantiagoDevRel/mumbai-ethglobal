@@ -2,13 +2,14 @@
 
 **Write it. Query it. Own it. Expire it.**
 
-The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026). The room becomes the database
-first: everyone scans a QR code, picks a name, a color, a country and a lifetime (5 to 15 minutes, 15
-by default), and their Arkiv entity drops onto a live 3D globe, where it counts down and expires. Then
-an agenda and a few minutes of Arkiv 101, and back to the map. The map is just a query, and the panel
-under it shows the query that ran (Code: the SDK call the app runs; Query: the query text the SDK sends
-to the DB-Chain). Expired dots leave the map. After the map scenes come the data-modeling slides (with
-deleting an entity), the map once more, your agent's tools (MCP, skills, plugin) and Arkiv's prizes.
+The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026), in four parts: why Arkiv, the
+five steps before your first write, building it live, and the tools and prizes for the weekend. An index
+after the title lists the parts, and a bar across the top shows where the talk is. In "Build it, live"
+everyone scans a QR code, picks a name, a color, a country and a lifetime (5 to 15 minutes, 15 by
+default), and their Arkiv entity drops onto a live 3D globe, where it counts down and expires. Each idea
+gets one slide, then runs on the room's own entities: write it, query it (the panel under the map shows
+the query that ran: Code, the SDK call the app runs; Query, the query text the SDK sends to the
+DB-Chain), own it and expire it. Expired dots leave the map.
 
 | Route | Who | What |
 |---|---|---|

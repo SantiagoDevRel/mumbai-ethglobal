@@ -7,8 +7,8 @@
 //   step 2 · the Your app layer
 //   step 3 · own it: the four entities owned by your app's wallet
 //   step 4 · give it to every user: each entity's owner line moves to its own user's wallet
-// The block number is real data and updates with each block; its dot flashes once per new block
-// (grey and "mock" with the mock source). The user wallets are illustrative.
+// The block number is real data and changes in place with each block (grey and "mock" with the
+// mock source). The user wallets are illustrative.
 
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
@@ -25,46 +25,23 @@ function useIsMock(): boolean {
   return !(mode === "live" || (mode === "auto" && WRITER_CONNECTED));
 }
 
-function LiveBlock() {
+/** The DB-Chain's real latest block (also on W4). The number changes in place with each block: no
+ * flash and no roll, so nothing on a slide moves without the arrow. */
+export function LiveBlock() {
   const block = useLiveBlock();
   const mock = useIsMock();
   if (!block) return <span className="text-[rgba(246,244,239,0.64)]">Reading the chain…</span>;
   return (
     <span className="flex items-center gap-5">
-      {/* One short flash per new block (keyed by the number), then still: no looping pulse. */}
-      <motion.span
-        key={block.number.toString()}
-        className={`block h-[22px] w-[22px] rounded-full ${mock ? "bg-[rgba(246,244,239,0.4)]" : "bg-[#14f195]"}`}
-        initial={mock ? false : { scale: 1.5, boxShadow: "0 0 22px #14f195" }}
-        animate={mock ? { scale: 1 } : { scale: 1, boxShadow: "0 0 0px rgba(20,241,149,0)" }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        aria-hidden
-      />
+      <span className={`block h-[22px] w-[22px] rounded-full ${mock ? "bg-[rgba(246,244,239,0.4)]" : "bg-[#14f195]"}`} aria-hidden />
       <span className="text-[rgba(246,244,239,0.64)]">block</span>
-      {/* The number rolls inside its own clipped slot, so the old one never leaves the chip. */}
-      <span className="relative inline-flex h-[1.25em] items-center overflow-hidden align-baseline">
-        <span className="invisible tabular-nums" aria-hidden>
-          #{block.number.toLocaleString("en-US")}
-        </span>
-        <AnimatePresence initial={false}>
-          <motion.span
-            key={block.number.toString()}
-            className="absolute inset-0 flex items-center tabular-nums text-[var(--arkiv-sand)]"
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "-100%", opacity: 0 }}
-            transition={{ duration: 0.35, ease: EASE }}
-          >
-            #{block.number.toLocaleString("en-US")}
-          </motion.span>
-        </AnimatePresence>
-      </span>
+      <span className="tabular-nums text-[var(--arkiv-sand)]">#{block.number.toLocaleString("en-US")}</span>
       {mock ? <span className="text-[24px] text-[rgba(246,244,239,0.64)]">mock</span> : null}
     </span>
   );
 }
 
-function Layer({ label, sub, tone, children }: { label: string; sub?: ReactNode; tone: "app" | "arkiv" | "eth"; children?: ReactNode }) {
+export function Layer({ label, sub, tone, children }: { label: string; sub?: ReactNode; tone: "app" | "arkiv" | "eth"; children?: ReactNode }) {
   const style =
     tone === "arkiv"
       ? "border-[var(--arkiv-orange)] bg-[rgba(254,116,70,0.14)]"

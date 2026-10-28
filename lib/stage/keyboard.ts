@@ -7,9 +7,8 @@ import { stage, type Command } from "./store";
 
 export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "→ / ←", action: "Next / previous scene" },
-  { keys: "D", action: "3 · 2 · 1 · write! countdown (S7)" },
+  { keys: "D", action: "Show or hide the write! frame (S7)" },
   { keys: "E / Shift+E", action: "Extend the selected dots / every live dot (Rabby)" },
-  { keys: "B", action: "Business view" },
   { keys: "F, I, Q", action: "Filters, inspector, query panel" },
   { keys: "H", action: "Hide the selected dot (local)" },
   { keys: "R", action: "Reset the camera" },
@@ -34,9 +33,6 @@ export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Comma
       return { type: "extend", scope: "selected" };
     case "E":
       return { type: "extend", scope: e.shiftKey ? "all" : "selected" };
-    case "b":
-    case "B":
-      return { type: "setMap", map: "business" };
     case "f":
     case "F":
       return { type: "togglePanel", panel: "filters" };

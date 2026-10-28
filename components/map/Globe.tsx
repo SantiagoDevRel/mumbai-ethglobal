@@ -45,7 +45,6 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
     const categoryIcons = Object.fromEntries(Object.entries(CATEGORY_PATHS).map(([name, path]) => [name, new Path2D(path)]));
     const leaving = new Map<Hex, { entity: LiveEntity; at: number }>();
     let lastEntities = new Map<Hex, LiveEntity>();
-    let hasLanded = false;
     let lastSource: string | null = null;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     void Promise.all([import("maplibre-gl"), darkStyle()]).then(([gl, style]) => {
@@ -67,9 +66,8 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
         setReady(true);
         setError(null);
       });
-      // The first touch stops the idle spin for good and cancels any camera flight in progress.
-      let touched = false;
-      for (const gesture of ["mousedown", "touchstart", "wheel"] as const) map.getCanvas().addEventListener(gesture, () => { touched = true; map.stop(); }, { passive: true });
+      // The first touch cancels any camera flight in progress. The globe never turns on its own.
+      for (const gesture of ["mousedown", "touchstart", "wheel"] as const) map.getCanvas().addEventListener(gesture, () => { map.stop(); }, { passive: true });
       map.on("click", (event) => {
         const hit = current.current.entities.map((entity) => {
           if (entity.attrs.kind === "review") return { entity, distance: Infinity };
@@ -102,11 +100,8 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
         if (stopped) return;
         frame = requestAnimationFrame(draw);
         if (now - last < 32 || !canvas.current) return;
-        const delta = now - (last || now);
         last = now;
         const { entities, ghosts, block, state, source } = current.current;
-        if (entities.length) hasLanded = true;
-        if (!hasLanded && !touched && !reducedMotion && state.camera.cue === "globe-idle" && !map.isMoving()) map.jumpTo({ center: [map.getCenter().lng + delta * 0.0018, map.getCenter().lat] });
         const surface = canvas.current;
         const width = surface.clientWidth, height = surface.clientHeight;
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
@@ -178,7 +173,6 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
             if (business.appSide) ctx.setLineDash([4, 3]); ctx.stroke(); ctx.setLineDash([]);
             ctx.save(); ctx.translate(-12, -50); ctx.strokeStyle = "#111111"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke(categoryIcons[business.category]!); ctx.restore();
           } else {
-            if (!reducedMotion && seconds < 5) { const pulse = 1.125 + Math.sin(now / 800 * Math.PI * 2) * .125; ctx.scale(pulse, pulse); }
             ctx.strokeStyle = "rgba(246,244,239,.2)"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
             ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, seconds / total)); ctx.stroke();
             if (seconds <= 0) { ctx.save(); ctx.globalAlpha *= .35; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
@@ -224,7 +218,7 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
     const cue = state.camera.cue;
     const scale = stageScale;
     const view = cue === "india" ? { center: [82, 19.2] as [number, number], zoom: 4.5, pitch: 0 } : cue === "mumbai-street" ? { center: [72.8335, 18.9275] as [number, number], zoom: 15.9, pitch: 60 } : { center: [72, 19] as [number, number], zoom: 2.38, pitch: 0 };
-    map.flyTo({ ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 200 * scale, bottom: (cue === "mumbai-street" ? 300 : 272) * scale }, bearing: cue === "mumbai-street" ? -22 : 0, duration: reduced ? 0 : 2400, easing: (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
+    map.flyTo({ ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 200 * scale, bottom: (cue === "mumbai-street" ? 300 : 272) * scale }, bearing: cue === "mumbai-street" ? -22 : 0, duration: reduced ? 0 : 1200, easing: (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
   }, [ready, reduced, state.camera, stageScale]);
   return <div className="globe-shell"><div ref={container} className="globe-map" aria-label="Interactive globe of Arkiv entities" /><canvas key={source} data-source={source} ref={canvas} className="globe-dots" aria-hidden="true" /><StageBox><details className="map-attribution pointer-events-auto"><summary aria-label="Map attribution">i</summary><p><a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p></details></StageBox>{error && <p className="map-error" role="status">{error}</p>}</div>;
 }

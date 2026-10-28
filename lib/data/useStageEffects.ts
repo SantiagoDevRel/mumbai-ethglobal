@@ -102,7 +102,7 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
             stage.dispatch({ type: "setMap", map: "business" });
           }
           if (source === "live") awaitingQuery.current = true;
-          notify(source === "mock" ? "Mock data · action applied" : command.type === "transferTo" ? "Ownership transferred. $owner changes on the next query; $creator stays." : "Transaction confirmed. Waiting for the next query…");
+          notify(source === "mock" ? "Mock data · action applied" : command.type === "transferTo" ? "Ownership transferred. $owner changes on the next query." : "Transaction confirmed. Waiting for the next query…");
         } finally {
           clearInterval(heartbeat);
           if (held) {

@@ -2,7 +2,8 @@
 
 // Building blocks shared by every scene. Everything is drawn in stage pixels (1920x1080), on the
 // numbers of the design handoff (design/HANDOFF.md): logo at (96, 72), headline at top 160, the
-// corner QR card top-right (x 1464-1888, y 32-204), captions as one-line pills at top 36.
+// corner QR card top-right (x 1464-1888, y 56-272), captions as one-line pills at top 60. The
+// outline bar (components/stage/OutlineBar.tsx) takes the top 56 px of every scene but the title.
 
 import Image from "next/image";
 import { motion, MotionConfig, type Transition } from "motion/react";
@@ -28,7 +29,8 @@ export const T = {
 export const PANEL =
   "rounded-[16px] border border-[rgba(246,244,239,0.12)] bg-[rgba(17,17,17,0.78)] shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-[16px]";
 
-/** Fade-and-rise entrance. Respects reduced motion through the MotionConfig in `Slide`. */
+/** Fade-and-rise entrance. Respects reduced motion through the MotionConfig in `Slide`. Scenes in the
+ * talk enter all at once on the arrow, so they pass no `delay` (only cut scenes still do). */
 export function Rise({
   children,
   delay = 0,
@@ -127,13 +129,13 @@ export function Slide({
         <div className="absolute inset-0" style={{ background: `rgba(8,9,31,${wash})` }} />
         <Logo height={28} className="absolute left-[96px] top-[72px]" />
         <div className="absolute left-[96px] top-[160px] w-[1336px]">
-          <Rise delay={0.05}>
+          <Rise>
             <h1 className="font-semibold leading-[1.05] tracking-[-0.015em]" style={{ fontSize: size }}>
               {headline}
             </h1>
           </Rise>
           {under ? (
-            <Rise delay={0.15}>
+            <Rise>
               <p className="mt-4 text-[32px] leading-[1.35]" style={{ color: T.t64 }}>
                 {under}
               </p>
@@ -156,12 +158,12 @@ export function OverlayShell({ children }: { children: ReactNode }) {
 }
 
 /**
- * Caption pill for live scenes (handoff 4): one line, 32/600, at (432, 36); at (352, 36) when the
- * right column holds a wide panel (`wide`).
+ * Caption pill for live scenes (handoff 4): one line, 32/600, at (432, 60); at (352, 60) when the
+ * right column holds a wide panel (`wide`). Below the outline bar.
  */
 export function Caption({ children, wide = false }: { children: ReactNode; wide?: boolean }) {
   return (
-    <div className="absolute top-[36px]" style={{ left: wide ? 352 : 432 }}>
+    <div className="absolute top-[60px]" style={{ left: wide ? 352 : 432 }}>
       <div className={`${PANEL} flex h-[64px] items-center whitespace-nowrap rounded-[999px] px-[28px]`}>
         <p className="text-[32px] font-semibold">{children}</p>
       </div>

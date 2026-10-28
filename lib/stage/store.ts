@@ -104,6 +104,7 @@ function enterScene(state: StageState, index: number, step = 0): StageState {
     sceneIndex: clamped,
     step: Math.max(0, Math.min(scene.steps - 1, step)),
     map: scene.map,
+    countdownAt: null,
   };
   if (scene.camera !== "keep") {
     next.camera = { cue: scene.camera, nonce: state.camera.nonce + 1 };
