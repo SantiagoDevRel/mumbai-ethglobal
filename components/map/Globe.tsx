@@ -10,6 +10,7 @@ import { mapViewport } from "../../lib/map/viewport";
 import { remainingSeconds } from "../../lib/data/entity-state";
 import { StageBox, stageGeometry, usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
 import { businessPresentation } from "../../lib/data/view-model";
+import { SCENES } from "../../shared/scenes";
 
 const CATEGORY_PATHS = {
   cafe: "M4 8h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4ZM16 8h2a3 3 0 0 1 0 6h-2M7 3v2M11 3v2",
@@ -151,6 +152,8 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
           ctx.restore();
         }
         const labels: { x: number; y: number; width: number; name: string; suffix: string; hot: boolean; appSide: boolean }[] = [];
+        // Under a slide the globe is backdrop: dots without their labels, so no name shows through a headline.
+        const backdrop = SCENES[state.sceneIndex]?.kind === "slide";
         const sorted = [...entities, ...[...leaving.values()].map((item) => item.entity)].sort((a, b) => Number(state.selected.includes(b.key)) - Number(state.selected.includes(a.key)) || Number(b.createdAtBlock - a.createdAtBlock));
         for (const entity of sorted) {
           if (entity.attrs.kind === "review") continue;
@@ -199,8 +202,8 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
             }
           }
           ctx.restore();
-          if (!exit) {
-            const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.kind === "dot" ? `${a.name} · ${business.category}` : a.name;
+          if (!exit && !backdrop) {
+            const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.kind === "dot" ? `${a.name} · ${a.country}` : a.name;
             const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
             // Whole minutes, like the entity card: the label changes about once a minute, never ticks.
             const left = seconds <= 0 ? "expired" : seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;

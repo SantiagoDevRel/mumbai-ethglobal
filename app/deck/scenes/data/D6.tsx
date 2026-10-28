@@ -5,7 +5,9 @@
 // entity stores it in its payload ($payload, type bytes: SDK 0.8.1 keeps bytes for the payload, so
 // an attribute can't hold them, and arkiv-encryption encrypts payloads); → with the key you get the
 // number back, without it only bytes, and you query the public attributes. Each step lands whole.
-// Steps: 0 the phone is public · 1 encrypt · 2 decrypt or not, and the closing line.
+// Steps: 0 the phone is public, marked as the design not to ship · 1 encrypt before the first write
+// · 2 decrypt or not, and the closing line. The subtitle says what the payload is (review round,
+// October 29: a newcomer read the plain-text row as a leak that encryption repairs afterwards).
 
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
@@ -90,7 +92,7 @@ export function D6({ step }: SceneContentProps) {
   const read = step >= 2;
   const rowBg = encrypted ? "rgba(24,30,169,0.12)" : "rgba(254,116,70,0.3)";
   return (
-    <Slide headline="Encrypt what's private" under="Anyone can query attributes. Private values go in the payload, encrypted." wash={0.82}>
+    <Slide headline="Encrypt what's private" under="Attributes are public. The payload is the entity's data body: encrypt private values there." wash={0.82}>
       <div className="absolute left-[96px] top-[330px] w-[1728px] overflow-hidden rounded-[20px] bg-[var(--arkiv-sand)] text-[var(--arkiv-ink)]" style={{ boxShadow: CARD_SHADOW }}>
         <div className="grid h-[52px] items-center border-b-2 border-[rgba(17,17,17,0.12)] px-8 font-mono text-[20px] text-[rgba(17,17,17,0.56)]" style={{ gridTemplateColumns: COLS }}>
           <span>field</span>
@@ -133,7 +135,9 @@ export function D6({ step }: SceneContentProps) {
 
       <Show on={!encrypted} className="absolute left-[96px] top-[690px] flex items-center gap-4">
         <Eye color="#FE7446" size={40} />
-        <span className="text-[32px] font-semibold">Stored as plain text, anyone can read this phone number.</span>
+        <span className="text-[32px] font-semibold">
+          <span className="text-[var(--arkiv-orange)]">Don&apos;t ship this:</span> as a text attribute, anyone can read this phone number.
+        </span>
       </Show>
 
       <svg width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden className="pointer-events-none absolute left-0 top-0">
@@ -163,8 +167,8 @@ export function D6({ step }: SceneContentProps) {
           <KeyIcon color="#111111" size={52} />
         </span>
       </Show>
-      <Show on={encrypted} className="absolute left-[410px] top-[896px] w-[240px] text-center">
-        <span className="whitespace-nowrap text-[20px] font-semibold">Encrypt with your key</span>
+      <Show on={encrypted} className="absolute left-[380px] top-[896px] w-[300px] text-center">
+        <span className="whitespace-nowrap text-[20px] font-semibold">Encrypt before you write</span>
       </Show>
       <Show on={encrypted} className="absolute left-[620px] top-[760px] h-[130px] w-[444px]">
         <Box label="ON ARKIV" accent sub="Anyone can read these bytes.">
@@ -209,7 +213,7 @@ export function D6({ step }: SceneContentProps) {
 export const D6_STEPS = 3;
 
 export const D6_NOTES: string[] = [
-  "Attributes are public: that's what makes them queryable. So think about what you store in plain text. Here the owner's phone number is a text attribute, and everyone can read it.",
-  "Instead, your app encrypts it with your key before writing, and the entity keeps it in its payload, as bytes. Anyone can read those bytes.",
+  "Attributes are public: that's what makes them queryable. So think about what you store in plain text. Here's the design not to ship: the owner's phone number as a text attribute, and everyone can read it.",
+  "Instead, before the first write, your app encrypts it with your key, and the entity keeps it in its payload: the entity's data body, stored as bytes. Anyone can read those bytes.",
   "With the key you get the number back; without it, only bytes. You can't filter on encrypted bytes, so you query by the public attributes. The arkiv-encryption npm package does the encrypting for you.",
 ];

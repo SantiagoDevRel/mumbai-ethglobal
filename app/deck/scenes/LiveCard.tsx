@@ -38,7 +38,7 @@ const EXPLAIN: Partial<Record<SceneId, Explainer>> = {
     lines: ["Every entity has an expiration.", "When its time runs out, the DB-Chain deletes it.", "No cleanup script."],
     steps: [
       ["Every entity has an expiration.", "When its time runs out, the DB-Chain deletes it.", "No cleanup script."],
-      ["Anyone can give it more time.", "Entities nobody extends are gone for good."],
+      ["Anyone can extend these: we switched on permissionless extension.", "Entities nobody extends drop out of every query."],
     ],
   },
 };

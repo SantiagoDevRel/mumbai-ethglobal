@@ -45,12 +45,12 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   L6: [
     "Step 1 · \"One wallet, ours, owns every entity on this map: we signed for the room.\" The entity card shows its $owner.",
-    "Step 2 · The real transfer: in the entity card, paste a wallet address and press Transfer ownership. Rabby (the MUMBAI account, the writer wallet) asks to sign. $owner changes on the next query. In your app, each user can own their own entities.",
+    "Step 2 · The real transfer: in the entity card, paste a wallet address and press Transfer ownership. Rabby (the MUMBAI account, the writer wallet) asks to sign. $owner changes on the next query. In your app, each user can own their own entities. And anyone can write any attribute, so when you only trust your own writes, filter by $owner too.",
   ],
   L2: [
     "Entity Expiration: no cron job, no cleanup script. The DB-Chain forgets on time.",
     "Select three dots → E → Rabby → rings refill. \"Anyone can extend these. We switched on permissionless extension.\"",
-    "Step 2 · the caption \"Expire it. Or extend it.\" \"The ones I didn't save are gone from the query.\"",
+    "Step 2 · the caption \"Expire it. Or extend it.\" \"The ones nobody extended drop out of every query.\"",
   ],
   B4: D6_NOTES,
   B5: B5_NOTES,
@@ -71,7 +71,7 @@ export const REVEALS: Record<SceneId, string[]> = {
   W2: [],
   W3: ["column: from web3", "column: of its own, and the closing line"],
   W4: ["where your data goes: Arkiv and Swarm"],
-  ST: ["step 2 · a wallet", "step 3 · test funds", "step 4 · free reads", "step 5 · an access key"],
+  ST: ["step 2 · a wallet", "step 3 · test funds", "step 4 · free reads", "step 5 · an RPC access key"],
   S7: ["your form as an entity"],
   L1: [],
   B2: ["what each part is"],

@@ -1,18 +1,30 @@
 "use client";
 
 // ST · Five steps to get started, on testnet, where everything is free. One row per →:
-// install the SDK, a wallet for writes, test funds from the faucet, free reads, and an optional
-// access key. Every URL was checked with a live request (October 28).
+// install the SDK, a wallet that signs writes, test funds from the faucet, free reads, and an RPC
+// access key. Every URL was checked with a live request (October 28). The install line comes from
+// the network profile, the same one T2's network_status shows.
 
+import { getProfile } from "../../../shared/arkiv/profiles";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { PANEL, Reveal, Slide, T } from "../ui";
 
-const STEPS: { title: string; line: string; tag: string; code?: boolean }[] = [
-  { title: "Install the SDK", line: "Built on viem: it feels like the web3 libraries you already use.", tag: "npm install @arkiv-network/sdk", code: true },
-  { title: "A wallet and its private key", line: "Only for writes. Keep the key on your server.", tag: "writes only" },
-  { title: "Test funds from the faucet", line: "Every write is a transaction: the faucet pays its gas.", tag: "hub.arkiv.network/faucet", code: true },
-  { title: "Reads are free", line: "Query the public RPC: no wallet, no key.", tag: "no wallet" },
-  { title: "Optional: an access key", line: "Higher read limits for your app.", tag: "hub.arkiv.network/access-keys", code: true },
+function installLine(): string {
+  try {
+    const { sdk } = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
+    return `npm install ${sdk.package}@${sdk.version} viem`;
+  } catch {
+    return "npm install @arkiv-network/sdk viem";
+  }
+}
+
+/** Only the rows that point somewhere carry a tag: a command or a Hub page. */
+const STEPS: { title: string; line: string; tag?: string }[] = [
+  { title: "Install the SDK", line: "Built on viem: it feels like the web3 libraries you already use.", tag: installLine() },
+  { title: "A wallet to sign writes", line: "Your user's browser wallet, or a key on your server." },
+  { title: "Test funds from the faucet", line: "Every write is a transaction: the faucet pays its gas.", tag: "hub.arkiv.network/faucet" },
+  { title: "Reads are free", line: "Query the public RPC: no wallet needed." },
+  { title: "An RPC access key", line: "Higher read limits for your app: get one for the hackathon.", tag: "hub.arkiv.network/access-keys" },
 ];
 
 export function ST({ step }: SceneContentProps) {
@@ -27,12 +39,9 @@ export function ST({ step }: SceneContentProps) {
                 <span className="text-[38px] font-semibold leading-[1.15]">{item.title}</span>
                 <span className="truncate text-[25px] leading-[1.3]" style={{ color: T.t64 }}>{item.line}</span>
               </span>
-              <span
-                className={`whitespace-nowrap rounded-[10px] border-[1.5px] px-4 py-2 ${item.code ? "font-mono text-[26px] text-[var(--arkiv-orange)]" : "text-[24px] font-semibold"}`}
-                style={{ borderColor: item.code ? "var(--arkiv-orange)" : T.t28, color: item.code ? undefined : T.t84 }}
-              >
-                {item.tag}
-              </span>
+              {item.tag ? (
+                <span className="whitespace-nowrap rounded-[10px] border-[1.5px] border-[var(--arkiv-orange)] px-4 py-2 font-mono text-[26px] text-[var(--arkiv-orange)]">{item.tag}</span>
+              ) : null}
             </div>
           </Reveal>
         ))}
@@ -43,8 +52,8 @@ export function ST({ step }: SceneContentProps) {
 
 export const ST_NOTES: string[] = [
   "Five steps, and on testnet everything is free. One: npm install the SDK. It's built on viem, so it feels like the web3 libraries you already use.",
-  "Two: a wallet and its private key, only for writes. Keep the key on your server, never in the browser.",
+  "Two: a wallet to sign writes. In your app that's your user's browser wallet, or a key you keep on your server, never in the browser.",
   "Three: test funds from the faucet on the Hub. Every write is a transaction, and the faucet pays its gas.",
-  "Four: reads are free. Anyone can query the public RPC, no wallet and no key.",
-  "Five, optional: an access key from the Hub for higher read limits. That's all you need. Now let's build one together.",
+  "Four: reads are free. Anyone can query the public RPC, no wallet needed.",
+  "Five: an RPC access key from the Hub gives your app higher read limits. Get one for the hackathon: the whole venue shares one internet connection. That's all you need. Now let's build one together.",
 ];

@@ -41,7 +41,8 @@ export function LiveBlock() {
   );
 }
 
-export function Layer({ label, sub, tone, children }: { label: string; sub?: ReactNode; tone: "app" | "arkiv" | "eth"; children?: ReactNode }) {
+/** `compact`: less padding, for a stack where every layer carries a line (W4). */
+export function Layer({ label, sub, tone, children, compact = false }: { label: string; sub?: ReactNode; tone: "app" | "arkiv" | "eth"; children?: ReactNode; compact?: boolean }) {
   const style =
     tone === "arkiv"
       ? "border-[var(--arkiv-orange)] bg-[rgba(254,116,70,0.14)]"
@@ -49,7 +50,7 @@ export function Layer({ label, sub, tone, children }: { label: string; sub?: Rea
         ? "border-[rgba(246,244,239,0.12)] bg-[rgba(17,17,17,0.78)]"
         : "border-[var(--arkiv-blue)] bg-[rgba(24,30,169,0.7)]";
   return (
-    <div className={`rounded-[20px] border-[3px] px-9 py-6 ${style}`}>
+    <div className={`rounded-[20px] border-[3px] px-9 ${compact ? "py-4" : "py-6"} ${style}`}>
       <p className="text-[40px] font-semibold">{label}</p>
       {sub ? <div className="mt-1 text-[28px] leading-[1.35] text-[rgba(246,244,239,0.72)]">{sub}</div> : null}
       {children ? <div className="mt-3 font-mono text-[38px] font-medium">{children}</div> : null}

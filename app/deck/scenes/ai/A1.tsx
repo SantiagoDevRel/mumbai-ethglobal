@@ -4,7 +4,8 @@
 // the web and builds on old pages (the struck-through answer is the outdated one on purpose). With
 // MCP it asks Arkiv's network_status; the values come from the app's active network profile, so
 // they follow the network switch. Each step lands whole. → steps: 0 the ask, the web search and the
-// agent's answer, 1 it is out of date, 2 with MCP and how to add it.
+// agent's answer, 1 it is out of date, 2 with MCP and how to add it: the two commands themselves
+// (facts.ts) and the connector line, so nobody has to guess the command.
 
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo, type ReactNode } from "react";
@@ -12,7 +13,7 @@ import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
 import { getProfile } from "../../../../shared/arkiv/profiles";
 import { Mascot } from "../../Mascot";
 import { EASE, PANEL, PANEL_EASE, REVEAL_TIME, Reveal, Rise, Slide, T } from "../../ui";
-import { MCP_HOST } from "./facts";
+import { INSTALL, MCP_HOST } from "./facts";
 
 function Check({ size = 26 }: { size?: number }) {
   return (
@@ -116,7 +117,7 @@ export function A1({ step }: SceneContentProps) {
   const withMcp = step >= 2;
   const pose = withMcp ? "thumbsUp" : step >= 1 ? "thumbsDown" : "stand";
   return (
-    <Slide headline="MCP: your agent asks Arkiv" under="Instead of guessing from the web, your agent asks Arkiv.">
+    <Slide headline="MCP: your agent asks Arkiv" under="MCP connects your coding agent to Arkiv's docs and tools.">
       <Rise className={`${PANEL} absolute left-[96px] top-[340px] h-[400px] w-[1728px]`}>
         <div className="absolute left-[28px] top-[20px] flex h-[210px] w-[440px] justify-center">
           <AnimatePresence mode="wait">
@@ -184,9 +185,15 @@ export function A1({ step }: SceneContentProps) {
             ))}
           </div>
         </div>
-        <div className="flex flex-col gap-3 text-[28px] leading-[1.3]" style={{ color: T.t84 }}>
-          <span>Claude Code or Codex CLI: one command.</span>
-          <span>Chat apps: add the URL as a custom connector.</span>
+        <div className="flex min-w-0 flex-col gap-2.5 leading-[1.3]">
+          {[INSTALL.claude.mcp, INSTALL.codex.mcp].map((command) => (
+            <span key={command} className="whitespace-nowrap font-mono text-[24px] text-[var(--arkiv-orange)]">
+              {command}
+            </span>
+          ))}
+          <span className="text-[24px]" style={{ color: T.t84 }}>
+            Chat apps: add the URL as a custom connector.
+          </span>
         </div>
       </Reveal>
     </Slide>
@@ -196,5 +203,5 @@ export function A1({ step }: SceneContentProps) {
 export const A1_NOTES: string[] = [
   "Your agent, on the left, asks for help with its first Arkiv entity. Without MCP it searches the web, reads old pages and confidently answers.",
   "But that answer is out of date: that network closed in August, and that SDK is old.",
-  "With MCP it asks Arkiv directly: network_status answers with today's network and install line. Same question, today's answer. Add it once with one command in Claude Code or Codex CLI, or as a custom connector in a chat app. No key needed. It reads and checks; it never signs.",
+  "With MCP it asks Arkiv directly: network_status answers with today's network and install line. Same question, today's answer. Add it once: the command for Claude Code or Codex CLI is on screen, or add the URL as a custom connector in a chat app. No key needed. It reads and checks; it never signs.",
 ];

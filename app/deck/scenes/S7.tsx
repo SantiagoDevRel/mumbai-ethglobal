@@ -70,13 +70,17 @@ export function S7({ step }: SceneContentProps) {
             <motion.div key="card" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
               <Logo height={28} className="absolute left-[96px] top-[72px]" />
               {/* The app's centered QR fills the left column above this line. */}
-              <Rise className="absolute left-[140px] top-[880px] w-[1040px]">
+              {/* The wait is on screen too: the room is looking at its phones, not at the speaker. */}
+              <Rise className="absolute left-[140px] top-[850px] w-[1040px]">
                 <p className="text-center text-[44px] font-semibold leading-[1.2]">
                   Name. Color. Country.
                   <br />
                   <span className="text-[var(--arkiv-orange)]">
                     Lifetime: {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} minutes.
                   </span>
+                </p>
+                <p className="mt-3 text-center text-[32px]" style={{ color: T.t84 }}>
+                  Don&apos;t tap Write yet: we write together.
                 </p>
               </Rise>
               <Reveal step={step} at={1} className="absolute left-[1260px] top-[230px]">

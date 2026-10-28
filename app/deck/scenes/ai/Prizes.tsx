@@ -6,7 +6,10 @@
 // chain ID or SDK version, which are not settled. The total and the number of prizes are summed from
 // the places. → steps: 0-4 one prize per step (the first comes with the headline), 5 the total.
 // Each row is the name and the money only; what each track asks for is in the notes, said out loud
-// (outline v3: less on screen). Only the two tracks that differ carry a tag.
+// (outline v3: less on screen). Only the two tracks that differ carry a tag: Continuity, and the
+// Swarm bonus, which only from-scratch projects can enter. The total line carries the two rules a
+// team needs before it starts (one track prize plus the bonus, feedback scored in every track), as
+// published on ETHGlobal.
 
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
@@ -19,7 +22,7 @@ const PRIZES: Prize[] = [
   { name: "Build on Arkiv (from scratch)", places: [3000, 1000] },
   { name: "Build on Arkiv (existing projects)", tag: "Continuity", places: [3000, 1000] },
   { name: "Node tooling", places: [2000] },
-  { name: "Arkiv + Swarm bonus", tag: "Bonus", places: [1000] },
+  { name: "Arkiv + Swarm bonus", tag: "From-scratch projects", places: [1000] },
 ];
 
 const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
@@ -62,7 +65,7 @@ export function Prizes({ step }: SceneContentProps) {
           <div className="flex flex-col gap-1">
             <span className="text-[34px] font-semibold leading-[1.15]">In total · {PLACES} prizes</span>
             <span className="text-[22px]" style={{ color: "rgba(246,244,239,0.8)" }}>
-              Each team can win one track prize. The Swarm bonus can come on top.
+              One track prize per team, plus the Swarm bonus. Every track scores your Arkiv feedback.
             </span>
           </div>
           <motion.span
