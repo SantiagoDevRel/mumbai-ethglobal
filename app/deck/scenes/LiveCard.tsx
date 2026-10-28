@@ -2,7 +2,8 @@
 
 // What /slides shows during a live scene: the scene's name, what is happening on the map in plain
 // words (it follows the step), and the mascot. Every detail itself (the dots, the query, the
-// entity's fields) lives on the map; this half of the screen only explains what to look at.
+// entity's fields) lives on the map; this half of the screen only explains what to look at. The
+// lines describe how it works, never that something already happened: /slides can't see the chain.
 
 import { MotionConfig, AnimatePresence, motion } from "motion/react";
 import type { SceneDef, SceneId } from "../../../shared/scenes";
@@ -16,7 +17,7 @@ type Explainer = { pose: MascotPose; lines: string[]; steps?: string[][]; cumula
 const EXPLAIN: Partial<Record<SceneId, Explainer>> = {
   L1: {
     pose: "laptop",
-    lines: ["Your phone sent one request.", "Our wallet wrote it to the DB-Chain as an entity.", "Now it's a dot on the map."],
+    lines: ["Your phone sends one request.", "Our wallet writes it to the DB-Chain as an entity.", "Each entity is a dot on the map."],
   },
   L3: {
     pose: "magnifier",
