@@ -29,7 +29,7 @@ const EXPLAIN: Partial<Record<SceneId, Explainer>> = {
     lines: ["One wallet owns every entity on this map."],
     steps: [
       ["One wallet owns every entity on this map.", "Ours: we signed for the room."],
-      ["Transfer it:", "$owner is now the new wallet.", "Only the owner can change or delete it."],
+      ["Transfer it: paste a wallet, sign once.", "$owner becomes that wallet.", "Only the owner can change or delete it."],
     ],
   },
   L2: {
@@ -37,7 +37,7 @@ const EXPLAIN: Partial<Record<SceneId, Explainer>> = {
     lines: ["Every entity has an expiration.", "When its time runs out, the DB-Chain deletes it.", "No cleanup script."],
     steps: [
       ["Every entity has an expiration.", "When its time runs out, the DB-Chain deletes it.", "No cleanup script."],
-      ["Anyone can give it more time.", "The ones nobody extended are gone for good."],
+      ["Anyone can give it more time.", "Entities nobody extends are gone for good."],
     ],
   },
 };

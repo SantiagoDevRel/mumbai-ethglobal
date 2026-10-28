@@ -41,7 +41,7 @@ export const NOTES: Record<SceneId, string[]> = {
   L3: [
     "Same query, on your entities. Step 1 · no filter yet: every entity in this session, and the camera flies to India.",
     "Step 2 · color is orange.",
-    "Step 3 · AND country is India. The query panel at the bottom shows the query text, with AND, and the app-side line: no ORDER BY, your app sorts.",
+    "Step 3 · AND country is India. The query panel at the bottom shows the query text, with AND.",
   ],
   L6: [
     "Step 1 · \"One wallet, ours, owns every entity on this map: we signed for the room.\" The entity card shows its $owner.",

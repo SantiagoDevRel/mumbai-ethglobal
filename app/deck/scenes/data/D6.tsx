@@ -96,7 +96,7 @@ export function D6({ step }: SceneContentProps) {
           <span>field</span>
           <span>type</span>
           <span>value</span>
-          <span>who can read the value</span>
+          <span>who reads it in plain text</span>
         </div>
         <PublicRow name="name" value="Chai Corner" />
         <PublicRow name="category" value="cafe" />

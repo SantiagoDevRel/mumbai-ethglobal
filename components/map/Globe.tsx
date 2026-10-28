@@ -188,10 +188,12 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
           if (!exit) {
             const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.kind === "dot" ? `${a.name} · ${business.category}` : a.name;
             const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-            const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : seconds >= 60 ? `${Math.floor(Math.ceil(seconds) / 60)}:${String(Math.ceil(seconds) % 60).padStart(2, "0")}` : `${Math.ceil(seconds)} s`;
+            // Whole minutes, like the entity card: the label changes about once a minute, never ticks.
+            const left = seconds <= 0 ? "expired" : seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;
+            const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : left;
             ctx.font = `600 16px ${fontFamily}`;
             const labelWidth = ctx.measureText(name).width + suffix.length * 8.5 + 36;
-            const label = { x: point.x + (state.map === "business" ? 28 : 22) * scale, y: y - (state.map === "business" ? 52 : 15) * scale, width: labelWidth, name, suffix, hot: seconds < 5 || state.map === "business", appSide: state.map === "business" && business.appSide };
+            const label = { x: point.x + (state.map === "business" ? 28 : 22) * scale, y: y - (state.map === "business" ? 52 : 15) * scale, width: labelWidth, name, suffix, hot: seconds < 60 || state.map === "business", appSide: state.map === "business" && business.appSide };
             if (!labels.some((other) => label.x < other.x + other.width * scale + 8 && label.x + label.width * scale + 8 > other.x && label.y < other.y + 36 * scale && label.y + 36 * scale > other.y)) labels.push(label);
           }
         }
