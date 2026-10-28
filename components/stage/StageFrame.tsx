@@ -156,9 +156,11 @@ function StepDots() {
   </div>;
 }
 
-/** Right-drag to draw a rectangle that points at something, on a slide or on the map; a right-click
- * without a drag clears them. Only the right button draws (Santiago, October 28: a left drag also
- * drew while he selected text or clicked). The rectangles clear on the next step or scene. */
+/** Right-drag to draw a rectangle that points at something, on a slide or on the map, panels and the
+ * QR card included; a right-click without a drag clears them. Only the right button draws (Santiago,
+ * October 28: a left drag also drew while he selected text or clicked), so the left button keeps every
+ * click, selection and globe drag. Fields and links keep the browser's own menu and don't draw. The
+ * rectangles clear on the next step or scene. */
 function Annotations() {
   const { index, step } = useScene();
   const [boxes, setBoxes] = useState<{ x: number; y: number; w: number; h: number }[]>([]);
@@ -173,7 +175,7 @@ function Annotations() {
     const down = (event: PointerEvent) => {
       if (event.button !== 2 || !(event.target instanceof Element)) return;
       ownMenu = Boolean(event.target.closest("input, textarea, select, a, [contenteditable]"));
-      if (event.target.closest("button, a, input, select, textarea, label, summary, [role=dialog], .panel, .writing-switch")) return;
+      if (ownMenu) return;
       // Keep the drag away from the globe so it draws instead of moving the map.
       event.stopPropagation();
       start.current = { x: event.clientX, y: event.clientY };

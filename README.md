@@ -27,8 +27,9 @@ map, fresh limits for every phone and the slides back at the start. D runs the 3
 the QR slide.
 
 Every reveal is one →; nothing moves on a timer. The dots at the bottom right show the steps of the
-current scene. Drag with the right mouse button, on a slide or on the map, to draw a rectangle that
-points at something; a right-click without dragging clears them, and so does the next step or scene.
+current scene. Drag with the right mouse button, on a slide or on the map (panels and the QR card
+included), to draw a rectangle that points at something; a right-click without dragging clears them,
+and so does the next step or scene. The left button keeps clicks, text selection and moving the globe.
 
 On the map: the filter bar along the top filters by name (starts with), country and owner (a full 0x
 address), plus a business category; it counts the results and the query panel updates as you type.

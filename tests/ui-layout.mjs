@@ -464,6 +464,12 @@ try {
       await expect(boxes(target)).toHaveCount(1);
       await drag(target, "right", ...second);
       await expect(boxes(target)).toHaveCount(2);
+      // A box can start on a panel too: the QR card's "Join the map" (not its links, which keep the menu).
+      const card = scene === "L1" ? await target.locator(".join-qr .qr-copy p").boundingBox() : null;
+      if (card) {
+        await drag(target, "right", [card.x + 10, card.y + card.height / 2], [card.x + 90, card.y + card.height / 2 + 60]);
+        await expect(boxes(target)).toHaveCount(3);
+      }
       if (capture) await target.screenshot({ path: path.join(capture, `${target === page ? "map" : "slides"}-1280-${scene}-boxes.png`) });
       const menuBlocked = await target.evaluate(() => { const event = new MouseEvent("contextmenu", { bubbles: true, cancelable: true }); document.querySelector(".stage-root").dispatchEvent(event); return event.defaultPrevented; });
       assert.equal(menuBlocked, true, "The browser menu stays closed so the right button can draw.");
