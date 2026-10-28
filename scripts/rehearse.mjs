@@ -41,7 +41,7 @@ const report = {
   scriptSha256: createHash("sha256").update(await readFile(new URL(import.meta.url))).digest("hex"),
   mapHtmlSha256: createHash("sha256").update(await (await fetch(`${ORIGIN}/map`, { headers: PROTECTION })).text()).digest("hex"),
   startedAt: new Date().toISOString(), plannedTalkMs: TALK_LENGTH_SEC * 1000,
-  timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; lifetimes stay at 120 s. The two cohorts avoid querying an entity immediately before its expiration during L2 preparation. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
+  timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; synthetic lifetimes are 15 minutes (the phone default), so the room is still alive when the map returns at L2. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
   writer: "the app's own /api (Vercel function)",
   scenes: [], operations: [], transactions: [], phones: [], balances: [], pageErrors: [], requestFailures: [], dataErrors: [],
   ownership: { mode: "demo view", allowedWalletOperationTags: [2, 3], onChainTransfers: 0 },
@@ -200,7 +200,7 @@ function observe(page, label) {
 let phoneKey;
 async function submitSynthetic(index) {
   return op(`synthetic phone ${index + 1}`, async () => {
-    const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : ORANGE, lifetimeSec: 300 };
+    const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : ORANGE, lifetimeSec: 900 };
     const submittedAtMs = now();
     const response = await fetch(`${WRITER}/api/submit`, { method: "POST", headers: { "content-type": "application/json", ...PROTECTION, "x-device-token": crypto.randomUUID(), origin: ORIGIN }, body: JSON.stringify(draft), signal: AbortSignal.timeout(20000) });
     assert.equal(response.status, 200);

@@ -22,16 +22,17 @@ const CATEGORY_PATHS = {
   bar: "M5 3h14v4a7 7 0 0 1-14 0ZM12 14v8M7 22h10",
 };
 
-export function Globe({ entities, block, state, source }: { entities: LiveEntity[]; block: BlockInfo | null; state: StageState; source: "mock" | "live" }) {
+/** `ghosts`: expired dots the screen remembers, drawn grey under the live ones and never selectable. */
+export function Globe({ entities, ghosts = [], block, state, source }: { entities: LiveEntity[]; ghosts?: LiveEntity[]; block: BlockInfo | null; state: StageState; source: "mock" | "live" }) {
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const mapRef = useRef<GLMap | null>(null);
-  const current = useRef({ entities, block, state, source });
+  const current = useRef({ entities, ghosts, block, state, source });
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reduced = usePrefersReducedMotion();
   const stageScale = useStageScale();
-  useEffect(() => { current.current = { entities, block, state, source }; }, [entities, block, state, source]);
+  useEffect(() => { current.current = { entities, ghosts, block, state, source }; }, [entities, ghosts, block, state, source]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,7 +99,7 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
         if (now - last < 32 || !canvas.current) return;
         const delta = now - (last || now);
         last = now;
-        const { entities, block, state, source } = current.current;
+        const { entities, ghosts, block, state, source } = current.current;
         if (entities.length) hasLanded = true;
         if (!hasLanded && !touched && !reducedMotion && state.camera.cue === "globe-idle" && !map.isMoving()) map.jumpTo({ center: [map.getCenter().lng + delta * 0.0018, map.getCenter().lat] });
         const surface = canvas.current;
@@ -122,6 +123,19 @@ export function Globe({ entities, block, state, source }: { entities: LiveEntity
         for (const [key, entity] of lastEntities) if (!active.has(key)) leaving.set(key, { entity, at: now });
         for (const [key, item] of leaving) if (now - item.at > 600) { leaving.delete(key); born.delete(key); }
         lastEntities = active;
+        for (const ghost of ghosts) {
+          if (ghost.attrs.kind !== "dot" || active.has(ghost.key) || leaving.has(ghost.key)) continue;
+          const point = map.project([ghost.attrs.lng, ghost.attrs.lat]);
+          const center = map.getCenter(), radians = Math.PI / 180;
+          const front = Math.sin(ghost.attrs.lat * radians) * Math.sin(center.lat * radians) + Math.cos(ghost.attrs.lat * radians) * Math.cos(center.lat * radians) * Math.cos((ghost.attrs.lng - center.lng) * radians);
+          if ((map.getZoom() < 4 && front < 0.08) || point.x < -80 || point.x > width + 80 || point.y < -80 || point.y > height + 80) continue;
+          ctx.save(); ctx.translate(point.x, point.y); ctx.scale(scale, scale);
+          // Same size as a live dot, with its lifetime ring empty and no color left.
+          ctx.strokeStyle = "rgba(233,230,222,.28)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = "rgba(233,230,222,.5)"; ctx.strokeStyle = "rgba(233,230,222,.7)"; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
         const labels: { x: number; y: number; width: number; name: string; suffix: string; hot: boolean; appSide: boolean }[] = [];
         const sorted = [...entities, ...[...leaving.values()].map((item) => item.entity)].sort((a, b) => Number(state.selected.includes(b.key)) - Number(state.selected.includes(a.key)) || Number(b.createdAtBlock - a.createdAtBlock));
         for (const entity of sorted) {

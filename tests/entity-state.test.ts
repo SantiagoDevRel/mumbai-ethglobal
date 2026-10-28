@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { diffEntities, remainingSeconds, snapshotEntities } from "../lib/data/entity-state.ts";
+import { diffEntities, rememberExpired, remainingSeconds, snapshotEntities } from "../lib/data/entity-state.ts";
 import type { LiveEntity, QueryRun } from "../shared/types.ts";
 
 const entity: LiveEntity = { key: "0x01", owner: "0x02", creator: "0x02", createdAtBlock: 10n, expiresAtBlock: 20n,
@@ -34,4 +34,21 @@ test("interpolation uses measured block time and caps a stale clock to one block
   assert.equal(remainingSeconds(entity, block, 11500), 4.5);
   assert.equal(remainingSeconds(entity, block, 90000), 3);
   assert.equal(remainingSeconds(entity, block, 9000), 6);
+});
+test("expired dots are remembered grey; filtered-out or extended ones are not", () => {
+  const seen = new Map<string, LiveEntity>();
+  const other: LiveEntity = { ...entity, key: "0x03", expiresAtBlock: 40n };
+  assert.deepEqual(rememberExpired(seen, run([entity, other], 15n)), []);
+  // Past its expiration and gone from the query: expired. Gone but not yet due: just filtered out.
+  assert.deepEqual(rememberExpired(seen, run([], 21n)).map((e) => e.key), ["0x01"]);
+  // An extension seen before the old deadline keeps the dot alive.
+  const extended = { ...other, expiresAtBlock: 80n };
+  assert.deepEqual(rememberExpired(seen, run([extended], 50n)).map((e) => e.key), ["0x01"]);
+  assert.deepEqual(rememberExpired(seen, run([], 60n)).map((e) => e.key), ["0x01"]);
+  // Businesses and reviews never become grey dots.
+  const business = { ...entity, key: "0x04", attrs: { kind: "business", name: "Cafe", category: "cafe", rating: 4.5, opens: 480, closes: 1320, city: "Mumbai", lat: 19, lng: 73 } } as LiveEntity;
+  assert.deepEqual(rememberExpired(new Map(), run([business], 15n)), []);
+  const onlyBusinessSeen = new Map<string, LiveEntity>();
+  rememberExpired(onlyBusinessSeen, run([business], 15n));
+  assert.equal(onlyBusinessSeen.size, 0);
 });

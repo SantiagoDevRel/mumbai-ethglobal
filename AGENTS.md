@@ -22,6 +22,11 @@ writes Arkiv entities from their phones, and watches them land, count down and e
 
 Change a contract only through the orchestrator. Every user-facing string is English.
 
+The talk runs on one screen, `/map`: the room writes first (S0, S7, L1), then the agenda (AG) and the
+slides, then back to the map. A new scene goes into `SCENES` (`shared/scenes.ts`) with a `section`, so
+the agenda lists it, and a `qr.placement` (`corner`, `center` or `none`); add its slide or overlay and
+notes in `app/deck/`.
+
 ## Rules
 
 - The RPC access key never reaches a browser, a `NEXT_PUBLIC_*` variable or this repo. Phones never call an RPC (a room shares one IP and the public RPC limits each IP): they send one request to the writer and nothing else. The presenter pages (/map and /slides) open with the presenter password; the writer answers with a signed 12-hour login that both windows share, and every presenter read goes through the writer's keyed read proxy with it. Without a login, reads fail. No browser falls back to the public RPC. The key has a monthly quota: once it is used up (429 `QUOTA_EXCEEDED`), the writer alone retries reads and sends on the public RPC and tries the key again every ten minutes; `/api/presenter/status` reports `keyQuotaExhausted`. That fallback covers block reads and sends only: the public RPC gives each IP a small anonymous query budget (`arkiv_query` costs 100 units; 429 `ANON_COST_LIMITED`) and the writer shares Vercel IPs, so the stage needs the key's quota. Each query spends 100 units of it: /map reads every block while it is visible and in use, and pauses when hidden or after 20 minutes without input. The Vercel function logs show why a read failed.

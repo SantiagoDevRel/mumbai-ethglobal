@@ -6,8 +6,8 @@ import type { SceneId } from "../../shared/scenes";
 
 export const NOTES: Record<SceneId, string[]> = {
   S0: [
-    "Phones out. Scan the code. Don't press anything yet, you'll get your moment.",
-    "Start the session first (Workshop writer). The phone shows a waiting room. → starts the timer.",
+    "Phones out. Scan the code and fill the form. Hold the button: we write together in a moment.",
+    "Start the session first (presenter controls, ?). Phones can write as soon as it runs. → starts the timer.",
   ],
   S1: [
     "Storage keeps the heavy files: videos scroll past one by one. Indexing is the tiny cards, sorted so you can find things.",
@@ -19,7 +19,7 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   S3: [
     "Every entity starts with Arkiv's fields: its key, its owner and creator (both wallets) and when it expires.",
-    "Step 2 · then your attributes underneath: whatever your app needs. Keep this picture: in three minutes you'll be one of these.",
+    "Step 2 · then your attributes underneath: whatever your app needs. You already wrote one of these: name, color, country and lifetime.",
   ],
   S4: [
     "The problem first: your data sits on one company's server. Server down, rules changed, data gone.",
@@ -32,11 +32,15 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   S6: [
     "Four tiles, one per →, each with a tiny example under it: writing an entity, a simple query, the owner changing hands, an entity expiring.",
-    "Let's do all four. Live. With you.",
+    "You already did the first one. Back to the map for the other three.",
   ],
   S7: [
     "Name. Color. Country. Lifetime: 5 to 15 minutes, 15 by default. Give them a few seconds to fill the form.",
-    "Press D: 3 · 2 · 1 · write! Every phone unlocks at once. Then → to the map.",
+    "Press D: 3 · 2 · 1 · write! Everyone taps Write my entity together. Then → to the map.",
+  ],
+  AG: [
+    "Here is the rest of the talk. Part one is done: your entity is on the map.",
+    "Next, why it works. Then back to the map, where your entities are still waiting.",
   ],
   L1: [
     "Every dot is an entity you just wrote. This map has no backend database. It's one query, run again every block.",
@@ -96,8 +100,9 @@ export const REVEALS: Record<SceneId, string[]> = {
   S3: ["your attributes under Arkiv's fields"],
   S4: ["the answer: query like a database, the table on a DB-Chain"],
   S5: ["own it, or give it to every user"],
-  S6: ["tile 2 · Query it", "tile 3 · Own it", "tile 4 · Expire it, and \"Let's do all four\""],
+  S6: ["tile 2 · Query it", "tile 3 · Own it", "tile 4 · Expire it, and \"You did the first one\""],
   S7: [],
+  AG: [],
   L1: [],
   L2: ["the caption: Expire it. Or extend it."],
   L3: ["filter: color is orange", "filter: country is India", "filter: inside this map view", "filter: owner is santiago"],

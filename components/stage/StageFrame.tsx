@@ -1,12 +1,15 @@
 "use client";
 
-// The two presenter screens, side by side on a split screen. Contract owned by the orchestrator.
+// The presenter screens. Contract owned by the orchestrator. /map is the whole talk on one screen,
+// one thing at a time: the map in live scenes, the slide over it in slide scenes. /slides is the
+// optional second window for a split screen.
 //
 // /map, layers bottom to top:
 //   map      full viewport, always mounted                         z-0
 //   overlay  live scenes' captions (deck Overlay)                   z-10
-//   hud      query panel, event log, filters, inspector             z-20
-//   qr       the corner QR                                          z-30
+//   hud      query panel, event log, filters, inspector (live)      z-20
+//   slide    slide scenes' Slide, over the map                      z-25
+//   qr       the QR, where the scene places it                      z-30
 //   controls the "?" keyboard overlay                               z-40
 // /slides: every slide scene's Slide, a card for live scenes, the S7 QR and the "?" overlay.
 //
@@ -74,14 +77,30 @@ export function StageBox({ children, interactive = false }: { children: ReactNod
   );
 }
 
-export function MapFrame({ map, overlay, hud, qr, bar }: { map: ReactNode; overlay?: ReactNode; hud?: ReactNode; qr?: ReactNode; bar?: ReactNode }) {
+const slideFade = (duration: number) => ({
+  shown: { opacity: 1, zIndex: 26, transition: { duration, ease: [0.22, 1, 0.36, 1] as const } },
+  hidden: (covered: boolean) => covered ? { opacity: 0, zIndex: 25, transition: { delay: duration, duration: 0 } } : { opacity: 0, zIndex: 25, transition: { duration, ease: [0.22, 1, 0.36, 1] as const } },
+});
+
+export function MapFrame({ map, overlay, hud, slide, qr, bar }: { map: ReactNode; overlay?: ReactNode; hud?: ReactNode; slide?: ReactNode; qr?: ReactNode; bar?: ReactNode }) {
   const { scene } = useScene();
+  const reduced = usePrefersReducedMotion();
   return (
     <FitContext.Provider value="fill">
       <div className="stage-root fixed inset-0 overflow-hidden bg-[var(--stage-bg)] text-[var(--stage-fg)]" data-scene={scene.id} data-kind={scene.kind} data-screen="map">
         <div className="absolute inset-0 z-0">{map}</div>
         {overlay ? <div className="pointer-events-none absolute inset-0 z-10">{overlay}</div> : null}
         {hud ? <div className="pointer-events-none absolute inset-0 z-20">{hud}</div> : null}
+        {/* Slides fit the screen like /slides does; while one shows, the map underneath takes no input. */}
+        {/* Slide to slide, the new one fades in over the old one, which stays until it is covered, so
+            the globe never shows through mid-way. Slide to map, the slide fades out. */}
+        <AnimatePresence initial={false} custom={Boolean(slide)}>
+          {slide ? (
+            <motion.div key={scene.id} className="absolute inset-0" custom={Boolean(slide)} variants={slideFade(reduced ? 0 : 0.45)} initial="hidden" animate="shown" exit="hidden">
+              <FitContext.Provider value="contain"><StageBox interactive>{slide}</StageBox></FitContext.Provider>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
         {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
         {/* The map has no free corner for Reset, so it sits in the "?" presenter card. */}
         <ControlsOverlay extra={bar} />

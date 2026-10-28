@@ -189,7 +189,7 @@ export function S6({ step }: SceneContentProps) {
         </AnimatePresence>
       </div>
       <Reveal step={step} at={3} className="absolute left-[96px] top-[972px]">
-        <p className="text-[44px] font-semibold">Let&apos;s do all four. Live. With you.</p>
+        <p className="text-[44px] font-semibold">You did the first one. The other three, live.</p>
       </Reveal>
     </Slide>
   );

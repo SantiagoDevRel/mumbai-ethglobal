@@ -5,7 +5,7 @@ import type { ArkivAdapter } from "../../shared/arkiv/adapter";
 import { createMockAdapter } from "../../shared/arkiv/mock";
 import type { ChainFilters, LiveEntity, QueryRun } from "../../shared/types";
 import { blockFeed } from "./block-feed";
-import { diffEntities, snapshotEntities, type VisualStageEvent } from "./entity-state";
+import { diffEntities, rememberExpired, snapshotEntities, type VisualStageEvent } from "./entity-state";
 import { stageReadTransport, usePresenterToken } from "./presenter-auth";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
@@ -20,6 +20,8 @@ export interface LiveData {
   source: "mock" | "live";
   run: QueryRun | null;
   events: VisualStageEvent[];
+  /** Expired dots this screen remembers (app-side; see rememberExpired). */
+  expired: LiveEntity[];
   error: string | null;
   /** Reads are paused to save the access key's quota (see useReadsAwake). */
   paused: boolean;
@@ -60,7 +62,8 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
   const mode = useSourceMode();
   const previous = useRef<{ adapter: ArkivAdapter; queryKey: string; entities: LiveEntity[] } | null>(null);
   const awake = useReadsAwake();
-  const [data, setData] = useState<Omit<LiveData, "paused">>({ adapter: null, source: "mock", run: null, events: [], error: null });
+  const seen = useRef<{ adapter: ArkivAdapter; session: string; dots: Map<string, LiveEntity> } | null>(null);
+  const [data, setData] = useState<Omit<LiveData, "paused">>({ adapter: null, source: "mock", run: null, events: [], expired: [], error: null });
   useEffect(() => {
     let stopped = false;
     let stopMock: (() => void) | undefined;
@@ -77,8 +80,8 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
           await mock.createReviews(SEED_BUSINESSES.flatMap((item, index) => item.reviews.map((review) => ({ ...review, business: result.keys[index]!, lifetimeSec: 12 * 60 * 60 }))));
         }
         if (stopped) return;
-        setData({ adapter, source: live ? "live" : "mock", run: null, events: [], error: null });
-      } catch (error) { if (!stopped) setData({ adapter: null, source: "live", run: null, events: [], error: error instanceof Error ? error.message : "Network not configured" }); }
+        setData({ adapter, source: live ? "live" : "mock", run: null, events: [], expired: [], error: null });
+      } catch (error) { if (!stopped) setData({ adapter: null, source: "live", run: null, events: [], expired: [], error: error instanceof Error ? error.message : "Network not configured" }); }
     });
     return () => { stopped = true; stopMock?.(); blockFeed.publish(null); };
   }, [token, mode]);
@@ -103,7 +106,9 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
           const events = diffEntities(before?.adapter === adapter ? before.entities : [], run, before?.adapter === adapter && before.queryKey === queryKey);
           previous.current = { adapter, queryKey, entities: snapshotEntities(run.entities) };
           lastBlock = run.block;
-          setData((old) => ({ ...old, run, events: [...events.reverse(), ...old.events].slice(0, 120), error: null }));
+          if (seen.current?.adapter !== adapter || seen.current.session !== parsed.session) seen.current = { adapter, session: parsed.session ?? "", dots: new Map() };
+          const expired = rememberExpired(seen.current.dots, run);
+          setData((old) => ({ ...old, run, events: [...events.reverse(), ...old.events].slice(0, 120), expired, error: null }));
         }
       } catch (error) {
         if (!stopped) setData((old) => ({ ...old, error: readError(error) }));

@@ -2,21 +2,23 @@
 
 **Write it. Query it. Own it. Expire it.**
 
-The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026). Five minutes of Arkiv 101,
-then the room becomes the database: everyone scans a QR code, picks a name, a color, a country and a
-lifetime (5 to 15 minutes, 15 by default), and their Arkiv entity drops onto a live 3D globe, where it
-counts down and expires. The map is just a query, and the panel under it shows the query that ran.
+The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026). The room becomes the database
+first: everyone scans a QR code, picks a name, a color, a country and a lifetime (5 to 15 minutes, 15
+by default), and their Arkiv entity drops onto a live 3D globe, where it counts down and expires. Then
+an agenda and a few minutes of Arkiv 101, and back to the map. The map is just a query, and the panel
+under it shows the query that ran. Expired dots stay on the map in grey, and can't be clicked.
 
 | Route | Who | What |
 |---|---|---|
-| `/map` | Projector, left half | The live globe, the query panel and the QR. Presenter password. |
-| `/slides` | Projector, right half | The slides, in step with `/map`. Presenter password. |
+| `/map` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
+| `/slides` | Optional second window | The slides alone, in step with `/map`. Presenter password. |
 | `/scan` | Phones | Join the map: write one entity, then watch it on the projector |
 
 `/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
 
-Present with the screen split in two: `/map` in one window, `/slides` in the other. The arrow keys
-work in either window and move both. Reset (bottom right on /slides; on /map press ? to show it; click twice) starts a new session: an empty
+Present from `/map` full screen: one thing at a time, map scenes and slides in one window
+(scene order in `shared/scenes.ts`). `/slides` can still sit beside it on a split screen; the arrow
+keys work in either window and move both. Reset (bottom right on /slides; on /map press ? to show it; click twice) starts a new session: an empty
 map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
 the QR slide.
 

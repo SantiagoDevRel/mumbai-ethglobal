@@ -5,6 +5,7 @@
 
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
 import { NOTES } from "./notes";
+import { AG } from "./scenes/AG";
 import { L7 } from "./scenes/L7";
 import { L8 } from "./scenes/L8";
 import { L1, L2, L3, L4, L5, L6, L9 } from "./scenes/live";
@@ -26,6 +27,7 @@ export const deck: DeckRegistry = {
   S5: { Slide: S5, notes: NOTES.S5 },
   S6: { Slide: S6, notes: NOTES.S6 },
   S7: { Slide: S7, notes: NOTES.S7 },
+  AG: { Slide: AG, notes: NOTES.AG },
   L1: { Overlay: L1, notes: NOTES.L1 },
   L2: { Overlay: L2, notes: NOTES.L2 },
   L3: { Overlay: L3, notes: NOTES.L3 },

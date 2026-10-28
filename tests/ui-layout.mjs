@@ -72,10 +72,40 @@ try {
   const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
   await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
   await expect(page.locator(".qr-image img")).toBeVisible();
-  // The map shows its HUD and dots from the first slide: phones can write before S7.
-  await expect(page.locator(".app-hud")).toHaveCount(1);
+  // One screen, one thing at a time: the title slide covers the map (no HUD), the corner QR stays.
+  await expect(page.getByRole("heading", { name: /From zero to hero/ })).toBeVisible();
+  await expect(page.locator(".app-hud")).toHaveCount(0);
   await expect(page.locator(".globe-dots")).toHaveCount(1);
-  await commands(page, [{ type: "goto", index: 10 }, { type: "togglePanel", panel: "filters", open: true }]);
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S0.png") }); }
+  // S7: the big QR on the map itself; D swaps it for the 3 · 2 · 1 countdown and back.
+  await commands(page, [{ type: "goto", index: 1 }]);
+  await expect(page.locator(".join-qr-center")).toBeVisible();
+  await expect(page.locator(".join-qr-corner")).toHaveCount(0);
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7.png") }); }
+  await page.keyboard.press("d");
+  await expect(page.locator(".join-qr-center")).toHaveCount(0);
+  await expect(page.getByText("Everyone: tap Write my entity.")).toBeVisible();
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7-countdown.png") }); }
+  await page.keyboard.press("d");
+  await expect(page.locator(".join-qr-center")).toBeVisible();
+  // → from S7 lands on the map, where the room's entities arrive.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
+  await expect(page.locator(".app-hud")).toHaveCount(1);
+  await expect(page.getByText("The map is a query.")).toBeVisible();
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1.png") }); }
+  // The agenda comes after the writing: part one is done, the rest follows. No QR, no HUD.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-screen="map"][data-scene="AG"]')).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Where we're going" })).toBeVisible();
+  await expect(page.getByLabel("Done")).toHaveCount(1);
+  await expect(page.locator(".join-qr,.app-hud")).toHaveCount(0);
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-AG.png") }); }
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-screen="map"][data-scene="S1"]')).toBeVisible();
+  await expect(page.locator(".join-qr,.app-hud")).toHaveCount(0);
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S1.png") }); }
+  await commands(page, [{ type: "goto", index: 11 }, { type: "togglePanel", panel: "filters", open: true }]);
   await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
   await expect(page.locator(".filters-panel")).toBeVisible();
   await commands(page, [{ type: "next" }]);
@@ -124,10 +154,10 @@ try {
     evidence.push({ surface: "map", viewport: "960x1080", layout });
   }
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await commands(page, [{ type: "togglePanel", panel: "filters", open: false }, { type: "goto", index: 8 }]);
+  await commands(page, [{ type: "togglePanel", panel: "filters", open: false }, { type: "goto", index: 2 }]);
   await expect(page.locator('.event-log li[data-event="created"] button').first()).toBeVisible({ timeout: 10000 });
   await page.locator('.event-log li[data-event="created"] button').first().click();
-  await commands(page, [{ type: "goto", index: 11 }]);
+  await commands(page, [{ type: "goto", index: 12 }]);
   await expect(page.locator(".inspector-columns")).toBeVisible();
   const columns = await page.locator(".inspector-columns").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length);
   assert.equal(columns, 2);
@@ -149,7 +179,7 @@ try {
     }
   }
   await page.setViewportSize({ width: 1280, height: 720 });
-  await commands(page, [{ type: "goto", index: 12 }, { type: "next" }]);
+  await commands(page, [{ type: "goto", index: 13 }, { type: "next" }]);
   await expect(page.locator(".review-card")).toHaveCount(0);
   await commands(page, [{ type: "next" }]);
   await expect(page.locator(".review-card").first()).toBeVisible({ timeout: 15000 });
@@ -164,7 +194,7 @@ try {
     assert.equal(footerFits, true, "The entire callback footer must fit without scrolling the card.");
   }
   await page.setViewportSize({ width: 1280, height: 720 });
-  await commands(page, [{ type: "goto", index: 13 }]);
+  await commands(page, [{ type: "goto", index: 14 }]);
   await expect(page.locator(".owner-small-print")).toContainText("Demo view");
   await expect(page.locator(".stage-counter small")).toHaveText("owner");
   await expect(page.locator(".owner-count,.owner-statement")).toHaveCount(0);
@@ -173,11 +203,7 @@ try {
   await expect(page.locator(".owner-panel")).toHaveCount(0);
   await page.keyboard.press("ArrowLeft");
   await expect(page.getByRole("button", { name: /Transfer ownership/ })).toBeVisible();
-  // S7 on the map: corner QR and the HUD; the big QR and the countdown belong to /slides.
-  await commands(page, [{ type: "goto", index: 7 }]);
-  await expect(page.locator(".join-qr-center")).toHaveCount(0);
-  await expect(page.locator(".join-qr-corner")).toBeVisible();
-  await commands(page, [{ type: "goto", index: 15 }]);
+  await commands(page, [{ type: "goto", index: 16 }]);
   // L8 keeps the same corner QR to /scan, clear of the event log below it.
   await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
@@ -185,9 +211,11 @@ try {
     const qr = await page.locator(".join-qr-corner").boundingBox();
     for (const panel of await page.locator(".event-log,.inspector-panel,.owner-panel").all()) assert.ok((await panel.boundingBox()).y >= qr.y + qr.height, "No panel sits behind the QR.");
   }
-  await commands(page, [{ type: "goto", index: 16 }]);
+  await commands(page, [{ type: "goto", index: 17 }]);
   await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
-  await expect(page.getByText("Thank you.")).toHaveCount(0);
+  // On one screen the closing lines sit on the map.
+  await expect(page.getByText("Thank you.")).toBeVisible();
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L9.png") }); }
 
   // /slides follows the map, and its keys drive both windows.
   const slides = await context.newPage();
@@ -196,14 +224,14 @@ try {
   await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
   await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible({ timeout: 20000 });
   await expect(slides.getByText("Thank you.")).toBeVisible();
-  await commands(page, [{ type: "goto", index: 7 }]);
+  await commands(page, [{ type: "goto", index: 1 }]);
   await expect(slides.locator('[data-scene="S7"]')).toBeVisible();
   // The big QR sits in the slide's left column (x 660 of 1920).
   await expect.poll(async () => { const box = await slides.locator(".join-qr-center").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(660 * 1280 / 1920));
   await expect(slides.locator(".join-qr-center .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await slides.keyboard.press("d");
   await expect(slides.locator(".join-qr-center")).toHaveCount(0);
-  await expect(slides.getByText("Every phone unlocks at once.")).toBeVisible();
+  await expect(slides.getByText("Everyone: tap Write my entity.")).toBeVisible();
   await slides.keyboard.press("d");
   await expect(slides.locator(".join-qr-center")).toBeVisible();
   await slides.keyboard.press("ArrowRight");
@@ -213,13 +241,13 @@ try {
   // The live card explains the map in plain words, with the 3D mascot.
   await expect(slides.getByText("Your phone sent one transaction.")).toBeVisible();
   await expect(slides.getByRole("img", { name: "Arkiv mascot typing on a laptop" })).toBeVisible();
-  await expect(page.getByText("The map is a query.")).toBeVisible();
+  await expect(page.getByText("The map is a query.").first()).toBeVisible();
   // Half a screen: the slide keeps 16:9 inside its window, nothing scrolls.
   await slides.setViewportSize({ width: 960, height: 1080 });
   assert.equal(await slides.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   if (capture) await slides.screenshot({ path: path.join(capture, "slides-960x1080-L1.png") });
   // L8: slides take clicks, and Prizes opens and closes.
-  await commands(page, [{ type: "goto", index: 15 }]);
+  await commands(page, [{ type: "goto", index: 16 }]);
   const prizes = slides.getByRole("button", { name: "Prizes" });
   await expect(prizes).toHaveAttribute("aria-expanded", "false");
   await prizes.click();
@@ -234,6 +262,7 @@ try {
   await expect(secondMap.getByText("Another map window is running the talk. This one follows it.")).toBeVisible({ timeout: 20000 });
   await expect(page.getByText("Another map window is running the talk.")).toHaveCount(0);
   await expect(secondMap.locator('[data-screen="map"][data-scene="L8"]')).toBeVisible();
+  if (capture) { await secondMap.waitForTimeout(1200); await secondMap.screenshot({ path: path.join(capture, "map-1280-L8-follower.png") }); }
   await secondMap.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="L9"]')).toBeVisible();
   await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible();
@@ -256,7 +285,8 @@ try {
   // The reset closes the card (and its "Resetting…" button) along with everything else.
   await expect(page.getByRole("heading", { name: "Presenter controls", exact: true })).toHaveCount(0);
   await expect(page.locator(".presenter-bar")).toHaveCount(0);
-  // The data source still switches from the map's "?" toolbar.
+  // The data source still switches from the map's "?" toolbar; the HUD shows on live scenes.
+  await commands(page, [{ type: "goto", index: 2 }]);
   await page.keyboard.press("?");
   await page.getByRole("combobox", { name: "Data source" }).selectOption("live");
   await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });

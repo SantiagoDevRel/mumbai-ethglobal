@@ -48,7 +48,7 @@ try {
   await stage.evaluate((code) => {
     const channel = new BroadcastChannel("arkiv-mumbai-stage");
     channel.postMessage({ kind: "command", cmd: { type: "session", code } });
-    channel.postMessage({ kind: "command", cmd: { type: "goto", index: 8 } });
+    channel.postMessage({ kind: "command", cmd: { type: "goto", index: 2 } });
     channel.close();
   }, session);
   await expect(stage.locator('[data-scene="L1"]')).toBeVisible();

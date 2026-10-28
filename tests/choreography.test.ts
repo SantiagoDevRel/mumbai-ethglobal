@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { SCENES, sceneIndex } from "../shared/scenes.ts";
+import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
 import { WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { initialState, reduce, type StageState } from "../lib/stage/store.ts";
 import { INDIA_VIEW } from "../lib/stage/choreography.ts";
@@ -92,5 +92,21 @@ test("closing scenes close every panel", () => {
   for (const id of ["L7", "L8", "L9"] as const) {
     const { panels } = at(id);
     assert.deepEqual([panels.query, panels.filters, panels.inspector], [false, false, false], id);
+  }
+});
+
+test("one screen, one thing at a time: the room writes on the map, then the slides, then the map", () => {
+  const order = (id: Parameters<typeof sceneIndex>[0]) => sceneIndex(id);
+  assert.ok(order("S0") < order("S7") && order("S7") < order("L1") && order("L1") < order("AG") && order("AG") < order("S1"));
+  assert.ok(order("S6") < order("L2"));
+  for (let i = 1; i < SCENES.length; i++) assert.ok(SCENES[i]!.at > SCENES[i - 1]!.at, SCENES[i]!.id);
+  // Every scene but the agenda belongs to a part, and the parts run in the agenda's order.
+  const parts = SCENES.filter((scene) => scene.id !== "AG").map((scene) => SECTIONS.findIndex((section) => section.id === scene.section));
+  assert.ok(parts.every((part, i) => part >= 0 && (i === 0 || part >= parts[i - 1]!)));
+  assert.deepEqual([...new Set(parts)], SECTIONS.map((_, i) => i));
+  // Slides keep the whole screen; the QR shows on the title, large on S7, and with the map.
+  for (const scene of SCENES) {
+    const expected = scene.id === "S7" ? "center" : scene.kind === "live" || scene.id === "S0" || scene.id === "L8" ? "corner" : "none";
+    assert.equal(scene.qr.placement, expected, scene.id);
   }
 });

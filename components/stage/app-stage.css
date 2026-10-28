@@ -19,3 +19,4 @@
 .inspector-panel:not(.business-inspector) .extend-suggestion{position:absolute;right:80px;top:20px;max-width:300px;font-size:15px;line-height:20px;border-left:0;padding:0;margin:0}.inspector-panel:not(.business-inspector) .panel-heading h2{max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qr-target{min-width:0;text-align:center}.qr-target .qr-url{display:block}.join-qr-center .qr-code{font-size:26px;line-height:34px;margin-top:4px}.event-log,.inspector-panel,.owner-panel{top:252px}.inspector-panel{height:532px}
 .inspector-columns dl>div{padding:4px 20px}
+.slide-notice .presenter-notice{top:24px;left:480px}

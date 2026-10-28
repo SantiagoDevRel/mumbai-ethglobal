@@ -1,8 +1,9 @@
 "use client";
 
-// /map: the live globe, its HUD, the QR and the live scenes' captions. The leader window: it runs
-// the scene engine, reads the DB-Chain through the writer and signs Rabby transactions. /slides
-// sits beside it on a split screen and follows the same scene.
+// /map: the whole talk on one screen. Live scenes show the globe, its HUD, the QR and the scene's
+// caption; slide scenes show the slide over the globe. The leader window: it runs the scene engine,
+// reads the DB-Chain through the writer and signs Rabby transactions. /slides can still sit beside
+// it on a split screen and follows the same scene.
 
 import { useEffect, useSyncExternalStore } from "react";
 import { MapFrame, StageBox } from "../../components/stage/StageFrame";
@@ -53,15 +54,23 @@ function MapStage() {
   const block = useLiveBlock();
   const notice = useStageEffects(data.adapter, data.source, data.run?.entities ?? []);
   const reviews = useReviews(data.adapter, reviewKey, block?.number);
+  // Expired dots stay grey on the unfiltered dots view only; a filtered query shows just its answer.
+  const filtered = Boolean(state.chainFilters.color || state.chainFilters.country || state.chainFilters.viewport || state.chainFilters.owner);
+  const ghosts = state.map === "dots" && !filtered ? data.expired.filter((entity) => !state.hidden.includes(entity.key)) : [];
   const view = applyAppFilters((data.run?.entities ?? []).filter((entity) => !state.hidden.includes(entity.key)), state.appFilters, state.overlays, block?.timestampMs ?? 0);
-  const appSteps = [...view.steps, ...(state.map === "business" ? ["Audience dots: invented business category and rating"] : []), ...(state.map === "owner" ? ["Ownership badges and transfer animation · demo view"] : []), ...(state.hidden.length ? ["Hidden entities · local moderation"] : [])];
-  // The live captions belong on the map; L9's closing lines and every slide are on /slides.
-  const Overlay = scene.kind === "live" && scene.id !== "L9" ? deck[scene.id].Overlay : undefined;
+  const appSteps = [...view.steps, ...(state.map === "business" ? ["Audience dots: invented business category and rating"] : []), ...(state.map === "owner" ? ["Ownership badges and transfer animation · demo view"] : []), ...(state.hidden.length ? ["Hidden entities · local moderation"] : []), ...(ghosts.length ? ["Grey dots: expired entities this screen remembers"] : [])];
+  const live = scene.kind === "live";
+  // Shown on slides too, at the top edge, so a follower window or a paused read is never silent.
+  const message = !leader ? "Another map window is running the talk. This one follows it." : notice ?? (data.paused ? "Live reads paused to save the access key’s quota. Press any key to resume." : null);
+  const status = message ? <p className="presenter-notice" role="status">{message}</p> : null;
+  const Overlay = live ? deck[scene.id].Overlay : undefined;
+  const Slide = live ? undefined : deck[scene.id].Slide;
   return <MapFrame
-    map={<Globe source={data.source} entities={view.entities} block={block} state={state} />}
+    map={<Globe source={data.source} entities={view.entities} ghosts={ghosts} block={block} state={state} />}
     overlay={Overlay ? <StageBox><Overlay scene={scene} step={state.step} /></StageBox> : undefined}
-    hud={<StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} />{!leader ? <p className="presenter-notice" role="status">Another map window is running the talk. This one follows it.</p> : notice ? <p className="presenter-notice" role="status">{notice}</p> : data.paused ? <p className="presenter-notice" role="status">Live reads paused to save the access key’s quota. Press any key to resume.</p> : null}</div></StageBox>}
-    qr={<StageBox><JoinQR screen="map" /></StageBox>}
+    slide={Slide ? <Slide scene={scene} step={state.step} /> : undefined}
+    hud={live && <StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={reviews} />{status}</div></StageBox>}
+    qr={<StageBox><JoinQR screen="map" />{!live && status ? <div className="slide-notice">{status}</div> : null}</StageBox>}
     bar={<PresenterBar inline />}
   />;
 }

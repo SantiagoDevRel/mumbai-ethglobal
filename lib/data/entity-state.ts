@@ -46,3 +46,14 @@ export function diffEntities(previous: LiveEntity[], run: QueryRun, sameQuery: b
 export function snapshotEntities(entities: LiveEntity[]): LiveEntity[] {
   return entities.map((entity) => ({ ...entity, attrs: { ...entity.attrs }, raw: entity.raw.map((attr) => ({ ...attr })) }));
 }
+
+/**
+ * Dots this screen has seen that are past their expiration and gone from the query. App-side
+ * memory: the DB-Chain no longer has them, so the map draws them grey and never selects them.
+ * `seen` keeps the latest copy of every dot, so an extension seen in time keeps it alive.
+ */
+export function rememberExpired(seen: Map<string, LiveEntity>, run: QueryRun): LiveEntity[] {
+  const live = new Set(run.entities.map((entity) => entity.key));
+  for (const entity of run.entities) if (entity.attrs.kind === "dot") seen.set(entity.key, entity);
+  return [...seen.values()].filter((entity) => !live.has(entity.key) && entity.expiresAtBlock <= run.block);
+}

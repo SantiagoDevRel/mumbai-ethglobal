@@ -91,7 +91,7 @@ function Countdown({ elapsed }: { elapsed: number }) {
             </span>
           ))}
         </div>
-        <p className="text-[28px] text-[rgba(246,244,239,0.72)]">Every phone unlocks at once.</p>
+        <p className="text-[28px] text-[rgba(246,244,239,0.72)]">Everyone: tap Write my entity.</p>
       </div>
     </motion.div>
   );
