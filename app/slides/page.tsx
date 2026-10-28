@@ -10,6 +10,7 @@ import { JoinQR } from "../../components/stage/JoinQR";
 import { usePresenterKeys } from "../../lib/stage/keyboard";
 import { stage } from "../../lib/stage/store";
 import "../../components/stage/app-stage.css";
+import { useDeckPreload } from "../deck/preload";
 import { deck } from "../deck/registry";
 import { LiveCard } from "../deck/scenes/LiveCard";
 
@@ -20,5 +21,6 @@ export default function SlidesPage() {
 function SlidesStage() {
   useEffect(() => stage.connect("follower"), []);
   usePresenterKeys();
+  useDeckPreload();
   return <SlidesFrame deck={deck} liveCard={LiveCard} qr={<StageBox><JoinQR screen="slides" /></StageBox>} bar={<PresenterBar />} />;
 }

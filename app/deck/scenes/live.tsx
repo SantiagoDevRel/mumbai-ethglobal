@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { Mascot } from "../Mascot";
-import { Caption, EASE, GLASS, OverlayShell, PANEL_EASE, Rise, T } from "../ui";
+import { Caption, EASE, GLASS, OverlayShell, PANEL_EASE, REVEAL_TIME, Rise, T } from "../ui";
 
 /** Swaps the caption text with a short cross-fade (panel in 240 ms, out 160 ms). */
 function SwapCaption({ id, children, wide = false }: { id: string; children: ReactNode; wide?: boolean }) {
@@ -114,7 +114,7 @@ export function L9(_props: SceneContentProps) {
         className="absolute left-[1620px] top-[800px]"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: EASE }}
+        transition={{ duration: REVEAL_TIME, ease: EASE }}
       >
         <Mascot pose="wave" height={240} />
       </motion.div>

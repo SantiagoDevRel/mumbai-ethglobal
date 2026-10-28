@@ -10,7 +10,7 @@
 
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
-import { EASE, PANEL, Reveal, Slide, T } from "../../ui";
+import { EASE, PANEL, REVEAL_TIME, Reveal, Slide, T } from "../../ui";
 
 type Prize = { name: string; tag?: string; places: number[] };
 
@@ -69,7 +69,7 @@ export function Prizes({ step }: SceneContentProps) {
             className="text-[64px] font-semibold leading-none tabular-nums"
             initial={false}
             animate={{ scale: step >= PRIZES.length ? 1 : 0.9 }}
-            transition={{ duration: 0.5, ease: EASE }}
+            transition={{ duration: REVEAL_TIME, ease: EASE }}
           >
             {usd(TOTAL)}
           </motion.span>

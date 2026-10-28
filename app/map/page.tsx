@@ -18,6 +18,7 @@ import { StageHud } from "../../components/stage/StageHud";
 import { applyAppFilters } from "../../lib/data/view-model";
 import { useStageEffects } from "../../lib/data/useStageEffects";
 import "../../components/stage/app-stage.css";
+import { useDeckPreload } from "../deck/preload";
 import { deck } from "../deck/registry";
 import { SCENES } from "../../shared/scenes";
 import type { ChainFilters, LiveEntity } from "../../shared/types";
@@ -34,6 +35,7 @@ export default function MapPage() {
 function MapStage() {
   useEffect(() => stage.connect("leader"), []);
   usePresenterKeys();
+  useDeckPreload();
   usePresenterSession();
   const state = useSyncExternalStore(stage.subscribe, stage.getState, serverSnapshot);
   const leader = useSyncExternalStore(stage.subscribe, stage.isLeader, () => true);

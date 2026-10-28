@@ -6,7 +6,7 @@
 
 import { motion } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { EASE, PANEL, Reveal, Slide, T } from "../ui";
+import { EASE, PANEL, REVEAL_TIME, Reveal, Slide, T } from "../ui";
 
 type Line = { text: string; mark?: "attributes" | "expires" | "result"; quiet?: boolean };
 
@@ -40,7 +40,7 @@ export function B2({ step }: SceneContentProps) {
               style={line.quiet ? { color: T.t42 } : undefined}
               initial={false}
               animate={{ backgroundColor: marked && line.mark ? "rgba(254,116,70,0.18)" : "rgba(0,0,0,0)", boxShadow: marked && line.mark ? "inset 5px 0 0 #FE7446" : "inset 0 0 0 rgba(0,0,0,0)" }}
-              transition={{ duration: 0.45, ease: EASE }}
+              transition={{ duration: REVEAL_TIME, ease: EASE }}
             >
               {line.text}
             </motion.span>

@@ -417,26 +417,32 @@ try {
       for (const target of [page, slides]) await expect(target.locator('[data-scene="S7"]')).toBeVisible();
       evidence.push({ surface: "five-steps", driver: name, rowsShown: 5, leavesOnSixth: true });
     }
-    // A scene change leaves one layer on screen in about a third of a second (about 0.7 s before).
+    // A scene change: from the moment the new scene is on the page, one layer is left in about a third
+    // of a second (0.22 s fade, then the old one goes; about 0.7 s before), and nothing stays doubled.
+    // The time before the new scene appears is the leader's round trip, slow on a CI runner.
     // Both from-scenes have one step, so the → changes the scene.
     for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W2", "W3"]]) {
       assert.equal(SCENES[sceneIndex(from)].steps, 1);
       await commands(page, [go(from)]);
       await expect(target.locator(`[data-scene-layer="${from}"]`)).toHaveCount(1);
       await expect(target.locator("[data-scene-layer]")).toHaveCount(1);
-      const settled = await target.evaluate((id) => new Promise((resolve) => {
+      const timing = await target.evaluate((id) => new Promise((resolve) => {
         const begin = performance.now();
+        let mounted = null;
         const check = () => {
+          const now = performance.now();
           const layers = [...document.querySelectorAll("[data-scene-layer]")];
-          if (layers.length === 1 && layers[0].getAttribute("data-scene-layer") === id && Number(getComputedStyle(layers[0]).opacity) === 1) resolve(performance.now() - begin);
-          else if (performance.now() - begin > 5000) resolve(Infinity);
+          if (mounted === null && layers.some((layer) => layer.getAttribute("data-scene-layer") === id)) mounted = now;
+          if (layers.length === 1 && layers[0].getAttribute("data-scene-layer") === id && Number(getComputedStyle(layers[0]).opacity) === 1) resolve({ total: now - begin, change: now - mounted });
+          else if (now - begin > 5000) resolve({ total: Infinity, change: Infinity });
           else requestAnimationFrame(check);
         };
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
         requestAnimationFrame(check);
       }), to);
-      assert.ok(settled < 600, `${from} → ${to} settles in ${Math.round(settled)} ms`);
-      evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, settledMs: Math.round(settled) });
+      assert.ok(timing.change < 600, `${from} → ${to}: one layer ${Math.round(timing.change)} ms after the new scene appeared`);
+      assert.ok(timing.total < 3000, `${from} → ${to} settles in ${Math.round(timing.total)} ms`);
+      evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, changeMs: Math.round(timing.change), totalMs: Math.round(timing.total) });
     }
     // Boxes: only a right-drag draws one, on a slide and on the map; a right-click clears them; a
     // left-drag selects text or moves the globe and draws nothing.

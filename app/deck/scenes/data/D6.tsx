@@ -10,7 +10,7 @@
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
-import { EASE, PANEL, Slide } from "../../ui";
+import { EASE, PANEL, REVEAL_TIME, Slide } from "../../ui";
 import { ALERT, CARD_SHADOW, Show } from "./kit";
 
 const COLS = "320px 200px 620px minmax(0, 1fr)";
@@ -19,10 +19,10 @@ const COLS = "320px 200px 620px minmax(0, 1fr)";
 function Swap({ flip, a, b }: { flip: boolean; a: ReactNode; b: ReactNode }) {
   return (
     <div className="relative h-[48px]">
-      <motion.div className="absolute left-0 top-1/2 -translate-y-1/2" initial={false} animate={{ opacity: flip ? 0 : 1 }} transition={{ duration: 0.4 }}>
+      <motion.div className="absolute left-0 top-1/2 -translate-y-1/2" initial={false} animate={{ opacity: flip ? 0 : 1 }} transition={{ duration: REVEAL_TIME }}>
         {a}
       </motion.div>
-      <motion.div className="absolute left-0 top-1/2 -translate-y-1/2" initial={false} animate={{ opacity: flip ? 1 : 0 }} transition={{ duration: 0.4 }}>
+      <motion.div className="absolute left-0 top-1/2 -translate-y-1/2" initial={false} animate={{ opacity: flip ? 1 : 0 }} transition={{ duration: REVEAL_TIME }}>
         {b}
       </motion.div>
     </div>
@@ -100,7 +100,7 @@ export function D6({ step }: SceneContentProps) {
         </div>
         <PublicRow name="name" value="Chai Corner" />
         <PublicRow name="category" value="cafe" />
-        <motion.div className="grid h-[80px] items-center px-8" style={{ gridTemplateColumns: COLS }} initial={false} animate={{ backgroundColor: rowBg }} transition={{ duration: 0.4, ease: EASE }}>
+        <motion.div className="grid h-[80px] items-center px-8" style={{ gridTemplateColumns: COLS }} initial={false} animate={{ backgroundColor: rowBg }} transition={{ duration: REVEAL_TIME, ease: EASE }}>
           <Swap flip={encrypted} a={<span className="font-mono text-[30px] font-semibold">owner_phone</span>} b={<span className="font-mono text-[30px] font-semibold">$payload</span>} />
           <Swap flip={encrypted} a={<TypeTag>str</TypeTag>} b={<TypeTag>bytes</TypeTag>} />
           <Swap
@@ -137,13 +137,13 @@ export function D6({ step }: SceneContentProps) {
       </Show>
 
       <svg width="1920" height="1080" viewBox="0 0 1920 1080" aria-hidden className="pointer-events-none absolute left-0 top-0">
-        <motion.g fill="none" stroke="#FE7446" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: encrypted ? 1 : 0 }} transition={{ duration: 0.45 }}>
+        <motion.g fill="none" stroke="#FE7446" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: encrypted ? 1 : 0 }} transition={{ duration: REVEAL_TIME }}>
           <path d="M460 825 H470" />
           <path d="M462 817 L472 825 L462 833" />
           <path d="M592 825 H608" />
           <path d="M600 817 L610 825 L600 833" />
         </motion.g>
-        <motion.g fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: read ? 1 : 0 }} transition={{ duration: 0.45 }}>
+        <motion.g fill="none" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" initial={false} animate={{ opacity: read ? 1 : 0 }} transition={{ duration: REVEAL_TIME }}>
           <path d="M1064 825 C1120 825 1120 745 1176 745" stroke="#FE7446" />
           <path d="M1064 825 C1120 825 1120 905 1176 905" stroke="rgba(246,244,239,0.4)" strokeDasharray="8 8" />
           <path d="M1264 745 H1282" stroke="#FE7446" />

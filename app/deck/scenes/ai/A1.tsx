@@ -11,7 +11,7 @@ import { useMemo, type ReactNode } from "react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
 import { getProfile } from "../../../../shared/arkiv/profiles";
 import { Mascot } from "../../Mascot";
-import { EASE, PANEL, PANEL_EASE, Reveal, Rise, Slide, T } from "../../ui";
+import { EASE, PANEL, PANEL_EASE, REVEAL_TIME, Reveal, Rise, Slide, T } from "../../ui";
 import { MCP_HOST } from "./facts";
 
 function Check({ size = 26 }: { size?: number }) {
@@ -59,7 +59,7 @@ function WithoutMcp({ step }: { step: number }) {
             className="absolute left-[18px] right-[18px] top-1/2 -mt-[2px] h-[4px] origin-left rounded-[2px] bg-[var(--arkiv-orange)]"
             initial={false}
             animate={{ scaleX: step >= 1 ? 1 : 0 }}
-            transition={{ duration: 0.5, ease: EASE }}
+            transition={{ duration: REVEAL_TIME, ease: EASE }}
           />
         </div>
       </div>
@@ -88,7 +88,7 @@ function WithMcp() {
         className="inline-flex items-center gap-3 rounded-full bg-[var(--arkiv-blue)] px-5 py-2"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: EASE }}
+        transition={{ duration: REVEAL_TIME, ease: EASE }}
       >
         <span className="font-mono text-[22px] font-semibold">arkiv › network_status</span>
         <Check size={24} />

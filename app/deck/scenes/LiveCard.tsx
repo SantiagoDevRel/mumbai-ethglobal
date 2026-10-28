@@ -8,7 +8,7 @@
 import { MotionConfig, AnimatePresence, motion } from "motion/react";
 import type { SceneDef, SceneId } from "../../../shared/scenes";
 import { Mascot, type MascotPose } from "../Mascot";
-import { EASE, Logo, PANEL_EASE, Rise, T } from "../ui";
+import { EASE, Logo, PANEL_EASE, REVEAL_TIME, Rise, T } from "../ui";
 
 /** `cumulative`: each step adds a line, so the newest (last) line is the bold one. */
 type Explainer = { pose: MascotPose; lines: string[]; steps?: string[][]; cumulative?: boolean };
@@ -76,7 +76,7 @@ export function LiveCard({ scene, step }: { scene: SceneDef; step: number }) {
           </AnimatePresence>
         </div>
         {explainer ? (
-          <motion.div className="absolute left-[1300px] top-[300px]" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, ease: EASE }}>
+          <motion.div className="absolute left-[1300px] top-[300px]" initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: REVEAL_TIME, ease: EASE }}>
             <Mascot pose={explainer.pose} height={620} />
           </motion.div>
         ) : null}
