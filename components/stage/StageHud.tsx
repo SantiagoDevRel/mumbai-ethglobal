@@ -59,7 +59,7 @@ export function StageHud({ data, block, state, entities, appSteps, reviews, desc
         <p>{tab === "code" ? "The SDK call: scope and filters" : "The query text: scope and filters"}</p>
         <div className="query-metrics"><span><small>block</small>#{data.run?.block.toString() ?? "—"}</span><span><small>{state.map === "business" ? "rows across queries" : "rows"}</small>{data.run?.rows ?? 0}</span><span><small>latency</small>{Math.round(data.run?.latencyMs ?? 0)} ms</span></div>
       </div>
-      <p className="query-scope"><b>Our app's scope</b> <code>{layout.scope ? highlight(layout.scope) : "Executed SDK call"}</code></p>
+      <p className="query-scope"><b>Our app&apos;s scope</b> <code>{layout.scope ? highlight(layout.scope) : "Executed SDK call"}</code></p>
       {layout.changing ? <QueryText text={layout.changing} /> : <p className="query-empty">No filters yet.</p>}
       {appLine && <div className="query-app-steps"><p className="app-side" title={appLine}><b>app-side</b> {appLine}</p></div>}
     </section>}

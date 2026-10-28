@@ -420,13 +420,16 @@ try {
     // A scene change: from the moment the new scene is on the page, one layer is left in about a third
     // of a second (0.22 s fade, then the old one goes; about 0.7 s before), and nothing stays doubled.
     // The time before the new scene appears is the leader's round trip, slow on a CI runner.
-    // Both from-scenes have one step, so the → changes the scene.
-    for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W2", "W3"]]) {
-      assert.equal(SCENES[sceneIndex(from)].steps, 1);
+    // Both from-scenes have one step, so the → changes the scene. Each pair runs three times, each
+    // after the previous scene has settled (QR card, camera), and the median is checked: one sample on
+    // a shared runner, with the other window drawing the globe in software, swung from 349 to 815 ms
+    // for the same change (October 29).
+    const sample = async (target, from, to) => {
       await commands(page, [go(from)]);
       await expect(target.locator(`[data-scene-layer="${from}"]`)).toHaveCount(1);
       await expect(target.locator("[data-scene-layer]")).toHaveCount(1);
-      const timing = await target.evaluate((id) => new Promise((resolve) => {
+      await target.waitForTimeout(800);
+      return target.evaluate((id) => new Promise((resolve) => {
         const begin = performance.now();
         let mounted = null;
         const check = () => {
@@ -440,9 +443,15 @@ try {
         window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
         requestAnimationFrame(check);
       }), to);
-      assert.ok(timing.change < 600, `${from} → ${to}: one layer ${Math.round(timing.change)} ms after the new scene appeared`);
-      assert.ok(timing.total < 3000, `${from} → ${to} settles in ${Math.round(timing.total)} ms`);
-      evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, changeMs: Math.round(timing.change), totalMs: Math.round(timing.total) });
+    };
+    for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W2", "W3"]]) {
+      assert.equal(SCENES[sceneIndex(from)].steps, 1);
+      const samples = [];
+      for (let i = 0; i < 3; i++) samples.push(await sample(target, from, to));
+      const changes = samples.map((timing) => timing.change).sort((a, b) => a - b);
+      for (const timing of samples) assert.ok(timing.total < 3000, `${from} → ${to} settles in ${Math.round(timing.total)} ms`);
+      assert.ok(changes[1] < 600, `${from} → ${to}: one layer ${Math.round(changes[1])} ms (median of ${changes.map(Math.round).join(", ")}) after the new scene appeared`);
+      evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, changeMs: samples.map((timing) => Math.round(timing.change)), totalMs: samples.map((timing) => Math.round(timing.total)) });
     }
     // Boxes: only a right-drag draws one, on a slide and on the map; a right-click clears them; a
     // left-drag selects text or moves the globe and draws nothing.
