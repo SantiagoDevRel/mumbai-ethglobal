@@ -3,19 +3,20 @@
 **Write it. Query it. Own it. Expire it.**
 
 The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026), in four parts: why Arkiv, the
-five steps before your first write, building it live, and the tools and prizes for the weekend. An index
-after the title lists the parts, and a bar across the top shows where the talk is. In "Build it, live"
-everyone scans a QR code, picks a name, a color, a country and a lifetime (5 to 15 minutes, 15 by
-default), and their Arkiv entity drops onto a live 3D globe, where it counts down and expires. Each idea
-gets one slide, then runs on the room's own entities: write it, query it (the panel under the map shows
+five steps before your first write (and what Arkiv is not), building your entity, and the resources and
+prizes for the weekend. An index after the title lists the parts, and a bar across the top shows where
+the talk is. In "Build your entity" everyone scans a QR code, picks a name, a color, a country and a
+lifetime (5 to 15 minutes, 15 by default, or no expiration), and their Arkiv entity drops onto a live 3D
+globe, where it counts down and expires, or stays. Everything is stored in lower case. Each idea gets
+one slide, then runs on the room's own entities: write it and query it (the panel under the map shows
 the query that ran: Code, the SDK call the app runs; Query, the query text the SDK sends to the
-DB-Chain), own it and expire it. Expired dots leave the map.
+DB-Chain). The entity card transfers and extends any entity. Expired dots leave the map.
 
 | Route | Who | What |
 |---|---|---|
 | `/map` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
 | `/slides` | Optional second window | The slides alone, in step with `/map`. Presenter password. |
-| `/outline` | Presenter | The outline: each part and scene with its planned start, what each → reveals and the script. Marks the scene on screen when `/map` or `/slides` is open in the same browser. Presenter password. |
+| `/outline` | Presenter | The talk at a glance: each part folds open or shut, and each scene shows its slide and a few short points (no script, no times). Click a slide to zoom in and step through its reveals. Marks the scene on screen when `/map` or `/slides` is open in the same browser. Presenter password. |
 | `/scan` | Phones | Join the map: write an entity (up to ten per phone per session), then watch it on the projector |
 
 `/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
@@ -26,17 +27,21 @@ keys work in either window and move both. The presenter card opens with the smal
 map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
 the QR slide.
 
-Every reveal is one →; nothing moves on a timer. The dots at the bottom right show the steps of the
-current scene. Drag with the right mouse button, on a slide or on the map (panels and the QR card
+Every reveal is one →; nothing moves on a timer, except the close (L9): on entry the mascot says the
+four verbs and its cubes build THANK YOU in bricks, once (a click on the bricks plays it again; with
+reduced motion the last frame shows at once). The dots and the scene counter (n / N) at the bottom
+right show the steps of the current scene and where it is in the talk. Drag with the right mouse button, on a slide or on the map (panels and the QR card
 included), to draw a rectangle that points at something; a right-click without dragging clears them,
 and so does the next step or scene. The left button keeps clicks, text selection and moving the globe.
 
-On the map: the filter bar along the top filters by name (starts with), country and owner (a full 0x
-address), plus a business category; it counts the results and the query panel updates as you type.
-Click a dot to open its entity: Extend, Data explorer (the entity on the DB-Chain explorer), and
-Transfer ownership, which asks for the new owner's wallet address and signs with Rabby. Rabby must use
-the writer wallet (the account named MUMBAI): only the current owner can transfer. A click on the
-globe away from any dot closes the card. Dots in one country are spread apart, and each dot is a cafe,
+On L3 the filter bar along the top filters by name (starts with), country (the camera flies there) and
+color; it counts the results and the query panel marks each filter line as you type. Text is stored in
+lower case. Click a dot on L1 or L3 to open its entity card: every stored attribute in one table,
+Extend, Data explorer (the entity on the DB-Chain explorer), and Transfer ownership, which asks for the
+new owner's wallet address and signs with Rabby. Type 0x then Space to fill in a random wallet. Rabby
+must use the writer wallet (the account named MUMBAI): only the current owner can transfer. An entity
+with no expiration shows `$expiresAt` = 2**64 − 1, has no countdown and nothing to extend. A click on
+the globe away from any dot closes the card. Dots in one country are spread apart, and each dot is a cafe,
 restaurant, bookstore or parking, picked by the writer.
 
 Phones can write only while the **Writing ON | OFF** switch (bottom left, beside ?) is ON. ON starts a
@@ -55,6 +60,7 @@ phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + 
 - Every query is scoped by `$creator` (the writer) and the `app` attribute.
 - One sender at a time: a lease in Postgres lets only one function instance sign for the writer wallet, at most one batch per block.
 - Entities are made only of queryable attributes (empty payload): your columns, plus Arkiv's `$key`, `$owner`, `$creator` and `$expiresAt`.
+- "No expiration" writes with `ExpirationTime.permanent()`: `$expiresAt` is 2**64 − 1, with the same gas estimate as a 15-minute lifetime (Tiramisu, October 29, 2026).
 
 ## Run it
 
@@ -77,16 +83,17 @@ Each entity a phone writes is one request:
 2. "Write my entity" sends the form once (`POST /api/submit?wait=1`). The writer puts the entity in
    the running session, sends it, and answers when the block is in (a few seconds; after 25 s it
    answers "on its way" and the dot still lands on the map).
-3. The phone shows the block, the explorer link and a countdown of the lifetime the person chose. The
-   countdown runs on the phone's own clock and fetches nothing, so it can't see a Lifetime Extension:
-   at zero it says the entity has expired unless someone extended it.
+3. The phone shows the block, the explorer link and a countdown of the lifetime the person chose
+   (with no expiration: `$expiresAt = 2**64 − 1` and no countdown). The countdown runs on the phone's
+   own clock and fetches nothing, so it can't see a Lifetime Extension: at zero it says the entity has
+   expired unless someone extended it.
 4. "Create new entity" brings the form back; a refresh does too. A phone can write up to
    `MAX_ENTITIES_PER_DEVICE` (10) entities per session, and its list ("Your entities") keeps a local
    countdown for each. The session takes at most `MAX_ENTITIES_PER_SESSION` (400).
 
 The live countdown, the extension and the expiration are on `/map`, which queries the DB-Chain once
-per block through the writer's read proxy; the dot next to "Live · Arkiv DB-Chain" flashes each time a
-query lands. `/map` stops reading while hidden or after 20 minutes without input.
+per block through the writer's read proxy; the status ("Updated · block #N") sits in the presenter's
+"?" card, never on the stage. `/map` stops reading while hidden or after 20 minutes without input.
 
 | Session | CDN requests | Function invocations |
 | --- | ---: | ---: |

@@ -250,7 +250,9 @@ try {
     const scale = Math.min(width / 1920, height / 1080);
     await expect.poll(() => page.locator(".query-panel").evaluate((element) => Math.round(element.getBoundingClientRect().width)), { timeout: 20000 }).toBe(Math.round(984 * scale));
     const layout = await measure();
-    assert.ok(Math.abs(layout.query.x - 32 * scale) < 1 && Math.abs(layout.query.y + layout.query.height - (height - 32 * scale)) < 1, "The query panel sits at the bottom left.");
+    // /map keeps the stage 1920 wide: a window wider than 16:9 centers it, with the globe at the sides.
+    const left = (width - 1920 * scale) / 2;
+    assert.ok(Math.abs(layout.query.x - (left + 32 * scale)) < 1 && Math.abs(layout.query.y + layout.query.height - (height - 32 * scale)) < 1, "The query panel sits at the bottom left.");
     assert.ok(Math.abs(layout.counter.y - 56 * scale) < 1 && Math.abs(layout.filters.y - 56 * scale) < 1, "The counter and the filter bar share the top row.");
     assert.ok(layout.counter.x + layout.counter.width <= layout.filters.x);
     assert.ok(layout.filters.y + layout.filters.height <= layout.query.y);

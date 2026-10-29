@@ -3,7 +3,8 @@ Edit instructions only in AGENTS.md; CLAUDE.md only imports this file.
 # mumbai-ethglobal: agent guide
 
 "From zero to hero with Arkiv, the Web3 database": a 20-minute live workshop. The room scans a QR,
-writes Arkiv entities from their phones, and watches them land, count down and expire on a 3D globe.
+writes Arkiv entities from their phones, and watches them land on a 3D globe, where they count down and
+expire (or stay, with no expiration).
 
 ## Layout
 
@@ -22,15 +23,20 @@ writes Arkiv entities from their phones, and watches them land, count down and e
 
 Change a contract only through the orchestrator. Every user-facing string is English.
 
-The talk runs on one screen, `/map` (outline v3, October 28): the title (S0), who I am (ME, an empty
-slide for now) and the index (IX), then four parts that the outline bar across the top tracks. Why Arkiv (W1-W4) and the five steps (ST) are
-slides with no QR. In "Build it, live" the room scans (S7) and each idea gets a slide followed by the map
-running it on their entities: write (L1, B2), query (B3, L3), own (L6), expire (L2), then encryption
-(B4) and the explorer (B5). Tools and prizes: Hub and docs (T1), your agent's MCP (T2), the prizes (PZ)
-and the close (L9). One idea per scene, never twice; `$owner` only, no `$creator` on screen. Every
-reveal is one → (`steps` in `SCENES`): nothing moves on a timer, and live data changes in place (no
-flash, roll, spin or ticking clock). The query panel opens on L3 only, on the Query tab: the scope and
-the filters joined by AND, never `$creator` (every read still scopes by it). `tests/deck-walk.mjs` walks every scene
+The talk runs on one screen, `/map` (outline v3, October 28, with Santiago's October 29 feedback): the
+title (S0), who I am (ME, an empty slide for now) and the index (IX, one part lit per →), then four parts
+that the outline bar across the top tracks. Why Arkiv (W1-W4), the five steps (ST) and what Arkiv is not
+(NT) are slides with no QR. In "Build your entity" the room scans (S7, the QR centered) and each idea
+gets a slide followed by the map running it on their entities: write (L1, B2), query (B3, L3: the
+presenter filters by hand), with transfer and extension in the entity card, then encryption (B4) and
+the explorer (B5). Resources and prizes: Hub and docs (T1), your agent's MCP (T2), the prizes (PZ) and
+the close (L9, the finale). Only L1 shows the corner QR. One idea per scene, never twice; `$owner` only,
+no `$creator` on screen. Every reveal is one → (`steps` in `SCENES`): nothing moves on a timer, and live
+data changes in place (no flash, roll, spin or ticking clock). The one exception is L9's finale, which
+plays once on entry (`app/deck/scenes/finale`; a click on the bricks replays it, reduced motion shows the
+last frame). The stage shows no logo or status in the top left; the status lives in the "?" card. The
+query panel opens on L3 only, on the Query tab: the scope, then one predicate per line joined by AND, the
+filter lines marked, never `$creator` (every read still scopes by it). `tests/deck-walk.mjs` walks every scene
 and step. A new scene goes into `SCENES` (`shared/scenes.ts`) with a `section`, so the index and the
 outline bar list it, and a `qr.placement` (`corner`, `center` or `none`); add its slide or overlay and
 notes in `app/deck/`, and its points for `/outline` in `app/deck/points.ts` (one to three short
@@ -42,9 +48,11 @@ deck itself, so a changed slide shows there as it is; change its points with it.
 - The RPC access key never reaches a browser, a `NEXT_PUBLIC_*` variable or this repo. Phones never call an RPC (a room shares one IP and the public RPC limits each IP): they send one request to the writer and nothing else. The presenter pages (/map and /slides) open with the presenter password; the writer answers with a signed 12-hour login that both windows share, and every presenter read goes through the writer's keyed read proxy with it. Without a login, reads fail. No browser falls back to the public RPC. The key has a monthly quota: once it is used up (429 `QUOTA_EXCEEDED`), the writer alone retries reads and sends on the public RPC and tries the key again every ten minutes; `/api/presenter/status` reports `keyQuotaExhausted`. That fallback covers block reads and sends only: the public RPC gives each IP a small anonymous query budget (`arkiv_query` costs 100 units; 429 `ANON_COST_LIMITED`) and the writer shares Vercel IPs, so the stage needs the key's quota. Each query spends 100 units of it: /map reads every block while it is visible and in use, and pauses when hidden or after 20 minutes without input. The Vercel function logs show why a read failed.
 - Each entity a phone writes is one request (Santiago, October 26; up to ten entities per phone per session since October 28; at most 50 phones for 20 minutes). Opening `/scan` asks the writer nothing; "Write my entity" sends `POST /api/submit?wait=1` without a session code, and the writer joins the running session and answers once the block is in. Phones write only while the /map Writing switch is ON (`/api/presenter/writing`). The phone's countdown runs on its own clock from the chosen lifetime and fetches nothing; extension and the real expiration show on `/map`, which reads once per block and pauses while hidden. Recompute the request table in `README.md` before adding any phone request.
 - Every entity has a name you can see (Santiago, October 29): `SubmitRequest` refuses a name that is empty, spaces or only invisible characters (`hasVisibleName` in `shared/writer-api.ts`), and the phone says why next to the field before it sends anything.
+- Everything a phone writes is lower case (Santiago, October 29): the phone lower-cases the name as you type, the writer lower-cases name and country again, and country codes are lower case (`in`). Filters match lower case.
+- "No expiration" (Santiago, October 29): the phone offers it under the lifetime slider; the writer writes with `ExpirationTime.permanent()`, so `$expiresAt` is 2**64 − 1. The phone and the entity card show that value instead of a countdown, and extension skips these entities. Rehearsals never write one.
 - One sender: only the holder of the Postgres lease signs with the writer wallet. Production and preview share the database on purpose, so they can never send at the same time.
 - Never claim on screen what didn't happen on-chain. App-side steps are labeled *app-side*.
-- Vocabulary: "Arkiv entities", "Entity Expiration", "Lifetime Extension", "DB-Chain", "Ethereum-aligned", "your agent", "the Web3 database". Never "TTL", "records", "on Ethereum", or unqualified "decentralized", "trustless", "permanent". The mascot is BLOK. No hardcoded counts in copy.
+- Vocabulary: "Arkiv entities", "Entity Expiration", "Lifetime Extension", "DB-Chain", "Ethereum-aligned", "your agent", "the Web3 database". Never "TTL", "records", "on Ethereum", or unqualified "decentralized", "trustless", "permanent". The mascot is BLOK, but its name is never printed on screen or in alt text (`app/deck/Mascot.tsx`). No hardcoded counts in copy.
 - Palette for UI chrome: Arkiv Blue `#181EA9`, Arkiv Orange `#FE7446`, Ink `#111111`, Sand `#F6F4EF`, Stone `#E9E6DE`. Official logo SVGs only (`public/brand/`). Dot colors are the seven in `DOT_PALETTE` (`shared/encoding.ts`); the writer accepts no other.
 - Text font IBM Plex Sans; code IBM Plex Mono.
 - Never `git add .`; scan staged changes for secrets before every commit.
