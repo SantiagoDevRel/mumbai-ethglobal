@@ -513,7 +513,7 @@ try {
     const outlineText = () => outline.evaluate(() => { const main = document.querySelector("main").cloneNode(true); main.querySelectorAll("[data-preview]").forEach((preview) => preview.remove()); return main.innerText; });
     const listed = await outlineText();
     assert.doesNotMatch(listed, /\b\d{1,2}:\d{2}\b|\bminutes\b|Script/, "/outline shows no times and no script");
-    await expect(outline.locator("[data-preview] [aria-hidden]").first()).toBeAttached({ timeout: 20000 });
+    await expect(outline.locator("[data-preview] [data-stage]").first()).toBeAttached({ timeout: 20000 });
     await commands(page, [go("ST")]);
     const now = outline.locator('li[aria-current="step"]');
     await expect(now).toHaveCount(1);
@@ -538,7 +538,7 @@ try {
     const zoom = outline.getByRole("dialog", { name: st.title });
     await expect(zoom).toBeVisible();
     await expect(zoom.getByRole("button", { name: `Reveal ${st.steps} of ${st.steps}`, exact: true })).toHaveAttribute("aria-pressed", "true");
-    await expect(zoom.locator("[data-preview] [aria-hidden]")).toContainText("An RPC access key");
+    await expect(zoom.locator("[data-preview] [data-stage]")).toContainText("An RPC access key");
     if (capture) await outline.screenshot({ path: path.join(capture, "outline-1440-zoom-ST.png") });
     await outline.keyboard.press("ArrowLeft");
     await expect(zoom.getByRole("button", { name: `Reveal ${st.steps - 1} of ${st.steps}`, exact: true })).toHaveAttribute("aria-pressed", "true");

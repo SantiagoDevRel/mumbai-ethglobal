@@ -58,6 +58,7 @@ jobs:
         run: |
           case "${{ matrix.suite }}" in
             deck-captures) node tests/deck-walk.mjs "$RUNNER_TEMP/deck" 0 ;;
+            ui-layout) mkdir -p "$RUNNER_TEMP/ui" && node tests/ui-layout.mjs "$RUNNER_TEMP/ui" ;;
             *) node "tests/${{ matrix.suite }}.mjs" ;;
           esac
       - name: Upload deck captures
@@ -66,5 +67,13 @@ jobs:
         with:
           name: deck-captures
           path: ${{ runner.temp }}/deck
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Upload ui-layout captures
+        if: matrix.suite == 'ui-layout' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-captures
+          path: ${{ runner.temp }}/ui
           retention-days: 7
           if-no-files-found: ignore

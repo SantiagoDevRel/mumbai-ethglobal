@@ -266,7 +266,7 @@ function StagePreview({ scene, step, lazy = false }: { scene: SceneDef; step: nu
   return (
     <div ref={box} data-preview className="relative aspect-video w-full overflow-hidden bg-[var(--stage-bg)]">
       {near && scale > 0 ? (
-        <div inert aria-hidden className="pointer-events-none absolute left-0 top-0 origin-top-left text-[var(--arkiv-sand)]" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
+        <div inert aria-hidden data-stage className="pointer-events-none absolute left-0 top-0 origin-top-left text-[var(--arkiv-sand)]" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
           <StagePicture scene={scene} step={step} />
         </div>
       ) : null}
