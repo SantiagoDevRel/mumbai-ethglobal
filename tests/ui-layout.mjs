@@ -499,16 +499,21 @@ try {
       await expect(boxes(target)).toHaveCount(0);
       evidence.push({ surface: "boxes", screen: target === page ? "map" : "slides", scene, leftDragDraws: false, rightDragDraws: true, rightClickClears: true });
     }
-    // /outline: every part and scene with its reveals, the script on demand, the scene on screen now.
+    // /outline (October 29): every part folds, every scene shows its slide and a few short points,
+    // with no script and no times; a slide zooms in and steps through its reveals; the scene on
+    // screen is marked.
     const outline = await context.newPage();
     outline.on("pageerror", (error) => errors.push(error.message));
     await outline.setViewportSize({ width: 1440, height: 900 });
     await outline.goto(`${origin}/outline`, { waitUntil: "domcontentloaded" });
-    await expect(outline.getByRole("heading", { name: "Outline", level: 1 })).toBeVisible({ timeout: 20000 });
+    await expect(outline.getByRole("heading", { name: "From zero to hero with Arkiv", level: 1 })).toBeVisible({ timeout: 20000 });
     await expect(outline.getByRole("heading", { level: 2 })).toHaveCount(SECTIONS.length + 1);
     for (const section of SECTIONS) await expect(outline.getByRole("heading", { name: section.title, level: 2, exact: true })).toBeVisible();
     await expect(outline.getByRole("heading", { level: 3 })).toHaveCount(SCENES.length);
-    await expect(outline.locator("details[open]")).toHaveCount(0);
+    const outlineText = () => outline.evaluate(() => { const main = document.querySelector("main").cloneNode(true); main.querySelectorAll("[data-preview]").forEach((preview) => preview.remove()); return main.innerText; });
+    const listed = await outlineText();
+    assert.doesNotMatch(listed, /\b\d{1,2}:\d{2}\b|\bminutes\b|Script/, "/outline shows no times and no script");
+    await expect(outline.locator("[data-preview] [aria-hidden]").first()).toBeAttached({ timeout: 20000 });
     await commands(page, [go("ST")]);
     const now = outline.locator('li[aria-current="step"]');
     await expect(now).toHaveCount(1);
@@ -516,15 +521,38 @@ try {
     await expect(now).toContainText("On screen now");
     await commands(page, [go("S7")]);
     await expect(now.getByRole("heading", { level: 3 })).toHaveText(SCENES[sceneIndex("S7")].title);
-    await outline.getByRole("button", { name: "Show the script", exact: true }).click();
-    await expect(outline.locator("details[open]")).toHaveCount(SCENES.length);
-    await expect(outline.getByRole("button", { name: "Hide the script", exact: true })).toHaveAttribute("aria-pressed", "true");
+    // Fold one part, then all, then open them again.
+    const build = outline.getByRole("button", { name: "Build it, live", exact: true });
+    await build.click();
+    await expect(build).toHaveAttribute("aria-expanded", "false");
+    await expect(outline.locator("#part-build-scenes")).toHaveAttribute("inert", "");
+    await outline.getByRole("button", { name: "Expand all", exact: true }).click();
+    await expect(build).toHaveAttribute("aria-expanded", "true");
+    await outline.getByRole("button", { name: "Collapse all", exact: true }).click();
+    for (const section of SECTIONS) await expect(outline.getByRole("button", { name: section.title, exact: true })).toHaveAttribute("aria-expanded", "false");
+    if (capture) await outline.screenshot({ path: path.join(capture, "outline-1440-collapsed.png") });
+    await outline.getByRole("button", { name: "Expand all", exact: true }).click();
+    // Zoom: Five steps opens on its last reveal, ← and → step through, Esc closes.
+    const st = SCENES[sceneIndex("ST")];
+    await outline.getByRole("button", { name: `Zoom into ${st.title}`, exact: true }).click();
+    const zoom = outline.getByRole("dialog", { name: st.title });
+    await expect(zoom).toBeVisible();
+    await expect(zoom.getByRole("button", { name: `Reveal ${st.steps} of ${st.steps}`, exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(zoom.locator("[data-preview] [aria-hidden]")).toContainText("An RPC access key");
+    if (capture) await outline.screenshot({ path: path.join(capture, "outline-1440-zoom-ST.png") });
+    await outline.keyboard.press("ArrowLeft");
+    await expect(zoom.getByRole("button", { name: `Reveal ${st.steps - 1} of ${st.steps}`, exact: true })).toHaveAttribute("aria-pressed", "true");
+    await outline.keyboard.press("ArrowRight");
+    await outline.keyboard.press("ArrowRight");
+    await expect(outline.getByRole("dialog", { name: SCENES[sceneIndex("ST") + 1].title })).toBeVisible();
+    await outline.keyboard.press("Escape");
+    await expect(outline.getByRole("dialog")).toHaveCount(0);
     for (const width of [390, 768, 1440]) {
       await outline.setViewportSize({ width, height: 900 });
       assert.equal(await outline.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `/outline at ${width}px`);
-      if (capture) await outline.screenshot({ path: path.join(capture, `outline-${width}.png`), fullPage: width === 1440 });
+      if (capture) await outline.screenshot({ path: path.join(capture, `outline-${width}.png`), fullPage: true });
     }
-    evidence.push({ surface: "outline", parts: SECTIONS.length + 1, scenes: SCENES.length, marksSceneOnScreen: true, scriptToggle: true, noOverflow: [390, 768, 1440] });
+    evidence.push({ surface: "outline", parts: SECTIONS.length + 1, scenes: SCENES.length, marksSceneOnScreen: true, noTimesOrScript: true, folds: true, zoomSteps: true, noOverflow: [390, 768, 1440] });
     await context.close();
   }
 
