@@ -273,7 +273,9 @@ try {
   await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible({ timeout: 20000 });
   await expect(slides.getByText("Thank you.")).toBeVisible();
   await commands(page, [go("S7")]);
-  await expect(slides.locator('[data-scene="S7"]')).toBeVisible();
+  // The follower changes scene once the leader, still drawing the 1920 px globe in software WebGL,
+  // handles the command: as long as the other waits in this block.
+  await expect(slides.locator('[data-scene="S7"]')).toBeVisible({ timeout: 20000 });
   // The big QR sits in the slide's left column (x 660 of 1920).
   await expect.poll(async () => { const box = await slides.locator(".join-qr-center").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(660 * 1280 / 1920));
   await expect(slides.locator(".join-qr-center .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
