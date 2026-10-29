@@ -56,11 +56,12 @@ export function StageHud({ data, block, state, entities, appSteps, reviews, desc
   const appLine = [...new Set([...extraSteps, ...(state.map === "business" ? ["No ORDER BY. Your app sorts."] : [])])].join(" ");
   const ownerView = state.map === "owner";
   const count = ownerView ? (state.transferred ? entities.length : Math.min(1, entities.length)) : data.run?.entities.length ?? 0;
+  const noun = count === 1 ? "entity" : "entities";
   // With a filter on (L3), the count is what matches the query, not every live entity.
   const { namePrefix, color, country, viewport, owner, expiringWithinSec, category, minRating } = state.chainFilters;
   const filtered = [namePrefix, color, country, viewport, owner, expiringWithinSec, category, minRating].some((value) => value !== undefined);
   return <>
-    <div className={`stage-counter panel${ownerView && state.transferred ? " counter-transferred" : ""}`}><div><strong key={`${ownerView}:${count}`}>{count}</strong><small>{ownerView ? count === 1 ? "owner" : "owners" : data.error ? "entities in last query" : filtered ? "matching entities" : "live entities"}</small></div><p>{ownerView ? "Demo view · app-side ownership" : "Counted from the query results"}</p></div>
+    <div className={`stage-counter panel${ownerView && state.transferred ? " counter-transferred" : ""}`}><div><strong key={`${ownerView}:${count}`}>{count}</strong><small>{ownerView ? count === 1 ? "owner" : "owners" : data.error ? `${noun} in last query` : filtered ? `matching ${noun}` : `live ${noun}`}</small></div><p>{ownerView ? "Demo view · app-side ownership" : "Counted from the query results"}</p></div>
     {error}
     {!state.panels.inspector && state.map !== "owner" && scene.id !== "L3" && <aside className="event-log panel pointer-events-auto"><h2>On the map <span className="live-dot" /></h2><ol>{data.events.map((event) => <li key={event.id} data-event={event.type} data-current={event.block === data.run?.block}><button onClick={() => stage.dispatch({ type: "inspect", key: event.key })}><i className="event-color" style={{ color: event.color ?? "#fe7446" }} /><div><b>{event.type === "created" ? "+" : event.type === "expired" ? "−" : "↗"} {event.name}{event.country && ` · ${event.country}`}{event.type === "created" && (event.noExpiry ? " · no expiration" : block && ` · ${lifetimeLabel(Number(event.lifetimeBlocks) * block.blockTimeMs / 1000)}`)}</b><span>{event.type === "expired" ? event.detail : `block #${event.block}`}</span></div></button></li>)}</ol>{!data.events.length && <p>Waiting for the room…</p>}</aside>}
     {state.panels.filters && <Filters state={state} results={entities.length} />}

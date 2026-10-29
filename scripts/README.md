@@ -69,13 +69,11 @@ profile; it never changes that session or signs a transaction.
 Scene starts follow `shared/scenes.ts` in real time. That contract has no reveal
 timestamps, so steps run in order at scene entry, 750 ms apart, awaiting each live
 operation. The S7 wave sends ten synthetic phones at +0 to +1 seconds, ten at
-+31 to +32 seconds and a real phone at +33 seconds, all with 120-second lifetimes.
-The two cohorts avoid entities expiring during the all-entity query and preparation.
-Early arrivals expire before
-L2; later arrivals remain available for its immediate selected/all extensions.
-The three wallet transactions are two extensions and one business patch. The
-signer validates their destination and operation tags, rejects ownership changes
-and deletion, requires the writer's idle hold, journals signed bytes before
++31 to +32 seconds and a real phone at +33 seconds. Each writes a 15-minute
+lifetime, never one with no expiration, so the room is still on the map at L3.
+The two wallet transactions are L3's extensions (the selected entity, then all).
+The signer validates their destination and operation tags, rejects patches,
+ownership changes and deletion, requires the writer's idle hold, journals signed bytes before
 broadcast, and checks the eight-GLM floor including the estimated transaction cost.
 An uncertain broadcast is never retried. Retain its private journal for receipt
 reconciliation; never commit it.
@@ -83,7 +81,9 @@ reconciliation; never commit it.
 The JSON checkpoints scene and reveal timing, operation latencies, phone inclusion
 and real-page visibility, receipt gas, errors, balance observations and cleanup.
 Scene lateness above one second is reported as an overrun. Setup and cleanup are
-separate from the twenty-minute talk clock. L6 verifies the demo changes neither
-owner nor creator and sends no transaction. L8 preserves the written phone's
-actual heading and verifies resources on a fresh QR scan. The rehearsal refuses to replace an existing
+separate from the twenty-minute talk clock. L1 opens an entity card, fills the
+transfer form with 0x and Space and cancels it: no transaction. L3 filters by
+hand, checks each filter line of the query, and clears the filters before the
+extensions. L9 checks the quiet map, open writing and the status in the ? card.
+The rehearsal refuses to replace an existing
 session and ends only its own session, including on failure.
