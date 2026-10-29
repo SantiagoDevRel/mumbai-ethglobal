@@ -4,6 +4,7 @@
 
 export type SceneId =
   | "S0"
+  | "ME"
   | "IX"
   | "W1"
   | "W2"
@@ -73,6 +74,8 @@ const CORNER_QR = { label: "Join the map", placement: "corner" } as const;
 // the result.
 export const SCENES: readonly SceneDef[] = [
   { id: "S0", title: "Title", at: 0, kind: "slide", steps: 1, qr: NO_QR, camera: "globe-idle", map: "dots" },
+  // Who I am, in 15 seconds (Santiago, October 29): an empty slide for now.
+  { id: "ME", title: "Santiago", at: 5, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots" },
   { id: "IX", title: "What we'll do", at: 20, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots" },
   { id: "W1", title: "Your data, their terms", at: 40, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
   { id: "W2", title: "Meme: eyes on Web3 data", at: 90, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "why" },

@@ -21,6 +21,7 @@ export const NOTES: Record<SceneId, string[]> = {
     "Hi, I'm Santiago from Arkiv. In twenty minutes you'll write, query, own and expire your own entities, from your phone. Keep it in your pocket for a moment.",
     "Start the session first (presenter controls, ?). → starts the timer.",
   ],
+  ME: ["Who I am, in 15 seconds. The slide comes later."],
   IX: [
     "Four parts. Why Arkiv. The five steps before your first write. Then you build it with me, live, from your phone. And the tools and prizes for this weekend. The bar at the top shows where we are.",
   ],
@@ -66,6 +67,7 @@ export const NOTES: Record<SceneId, string[]> = {
 /** What → reveals from each step, for every step but the last (the last → goes to the next scene). */
 export const REVEALS: Record<SceneId, string[]> = {
   S0: [],
+  ME: [],
   IX: [],
   W1: ["the three cards and \"One company decides. Alone.\""],
   W2: [],

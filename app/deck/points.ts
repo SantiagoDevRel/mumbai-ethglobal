@@ -5,7 +5,8 @@
 import type { SceneId } from "../../shared/scenes";
 
 export const POINTS: Record<SceneId, string[]> = {
-  S0: ["From zero to hero with Arkiv, the Web3 database", "No QR yet: phones stay down"],
+  S0: ["From zero to hero with Arkiv, the Web3 database"],
+  ME: ["Who I am in 15 seconds", "Slide to come"],
   IX: ["The four parts of the talk", "Build it, live: phones out"],
   W1: ["Web2 is great: we're not here to fight it", "Account frozen · Data changed · Rules changed", "One company decides. Alone."],
   W2: ["You turn to look at web3 data", "Your app's database: \"Hey. Eyes over here.\""],

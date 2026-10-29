@@ -1,10 +1,10 @@
 "use client";
 
 // /outline: the talk at a glance, for the presenter (Santiago, October 29: a few short points per
-// scene, no script and no times). Each part folds open or shut. Each scene shows its slide, drawn
-// by the deck itself at its last reveal, and its points (app/deck/points.ts); click the slide to
-// zoom in and step through its reveals with ← and →. With /map or /slides open in this browser,
-// the scene on screen is marked.
+// scene, no script and no times). Each part folds open or shut, and all start shut. Each scene shows
+// its slide, drawn by the deck itself at its last reveal, and its points (app/deck/points.ts); click
+// the slide to zoom in and step through its reveals with ← and →. With /map or /slides open in this
+// browser, the scene on screen is marked.
 
 import Image from "next/image";
 import Link from "next/link";
@@ -21,9 +21,9 @@ import { useDeckPreload } from "../deck/preload";
 import { deck } from "../deck/registry";
 import { LiveCard } from "../deck/scenes/LiveCard";
 
-/** The opening (title and index) has no part of its own; the four parts are the outline bar's. */
+/** The opening (title, who I am, index) has no part of its own; the four parts are the outline bar's. */
 const PARTS = [
-  { id: "opening", number: null, title: "Opening", line: "The title and what we'll do.", scenes: SCENES.filter((scene) => !scene.section) },
+  { id: "opening", number: null, title: "Opening", line: "The title, who I am and what we'll do.", scenes: SCENES.filter((scene) => !scene.section) },
   ...SECTIONS.map((section, i) => ({ ...section, number: i + 1, scenes: SCENES.filter((scene) => scene.section === section.id) })),
 ];
 type Part = (typeof PARTS)[number];
@@ -49,13 +49,24 @@ type Zoomed = { index: number; step: number };
 function Outline() {
   const now = useSceneOnScreen();
   useDeckPreload();
-  const [open, setOpen] = useState<Record<string, boolean>>(() => Object.fromEntries(PARTS.map((part) => [part.id, true])));
+  const [open, setOpen] = useState<Record<string, boolean>>(() => Object.fromEntries(PARTS.map((part) => [part.id, false])));
   const [zoom, setZoom] = useState<Zoomed | null>(null);
   const allOpen = PARTS.every((part) => open[part.id]);
-  // A link to a scene (/outline#scene-W2) lands on it once the outline is in, after the login.
+  // A link to a scene or a part (/outline#scene-W2, #part-build) opens that part and lands on it,
+  // once the outline is in (after the login) and once the part has unfolded (300 ms).
   useEffect(() => {
-    const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
-    target?.scrollIntoView({ block: "start" });
+    let timer = 0;
+    const land = () => {
+      const id = decodeURIComponent(location.hash.slice(1));
+      const part = PARTS.find((p) => id === `part-${p.id}` || p.scenes.some((scene) => id === `scene-${scene.id}`));
+      if (!part) return;
+      setOpen((state) => ({ ...state, [part.id]: true }));
+      clearTimeout(timer);
+      timer = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 320);
+    };
+    land();
+    window.addEventListener("hashchange", land);
+    return () => { clearTimeout(timer); window.removeEventListener("hashchange", land); };
   }, []);
   return (
     <div className="min-h-dvh bg-[radial-gradient(1100px_560px_at_78%_-12%,rgba(24,30,169,0.42),transparent_70%)]">
@@ -92,7 +103,7 @@ function Outline() {
           <PartSection
             key={part.id}
             part={part}
-            open={open[part.id] ?? true}
+            open={open[part.id] ?? false}
             onToggle={() => setOpen((state) => ({ ...state, [part.id]: !state[part.id] }))}
             now={now}
             onZoom={(scene) => setZoom({ index: SCENES.indexOf(scene), step: lastStep(scene) })}

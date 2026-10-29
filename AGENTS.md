@@ -22,8 +22,8 @@ writes Arkiv entities from their phones, and watches them land, count down and e
 
 Change a contract only through the orchestrator. Every user-facing string is English.
 
-The talk runs on one screen, `/map` (outline v3, October 28): the title (S0) and the index (IX), then
-four parts that the outline bar across the top tracks. Why Arkiv (W1-W4) and the five steps (ST) are
+The talk runs on one screen, `/map` (outline v3, October 28): the title (S0), who I am (ME, an empty
+slide for now) and the index (IX), then four parts that the outline bar across the top tracks. Why Arkiv (W1-W4) and the five steps (ST) are
 slides with no QR. In "Build it, live" the room scans (S7) and each idea gets a slide followed by the map
 running it on their entities: write (L1, B2), query (B3, L3), own (L6), expire (L2), then encryption
 (B4) and the explorer (B5). Tools and prizes: Hub and docs (T1), your agent's MCP (T2), the prizes (PZ)

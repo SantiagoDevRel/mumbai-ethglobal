@@ -115,13 +115,13 @@ test("one idea per scene, in the outline's order", () => {
   const order = (id: Parameters<typeof sceneIndex>[0]) => sceneIndex(id);
   assert.deepEqual(
     SCENES.map((scene) => scene.id),
-    ["S0", "IX", "W1", "W2", "W3", "W4", "ST", "S7", "L1", "B2", "B3", "L3", "L6", "L2", "B4", "B5", "T1", "T2", "PZ", "L9"],
+    ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "S7", "L1", "B2", "B3", "L3", "L6", "L2", "B4", "B5", "T1", "T2", "PZ", "L9"],
   );
   assert.ok(order("B3") < order("L3"), "the query slide comes right before the query runs");
   assert.equal(new Set(SCENES.map((scene) => scene.title)).size, SCENES.length, "no title twice");
   for (let i = 1; i < SCENES.length; i++) assert.ok(SCENES[i]!.at > SCENES[i - 1]!.at, SCENES[i]!.id);
-  // The title and the index have no part; every other scene has one, and the parts run in order.
-  assert.deepEqual(SCENES.filter((scene) => !scene.section).map((scene) => scene.id), ["S0", "IX"]);
+  // The opening (title, who I am, index) has no part; every other scene has one, and the parts run in order.
+  assert.deepEqual(SCENES.filter((scene) => !scene.section).map((scene) => scene.id), ["S0", "ME", "IX"]);
   const parts = SCENES.filter((scene) => scene.section).map((scene) => SECTIONS.findIndex((section) => section.id === scene.section));
   assert.ok(parts.every((part, i) => part >= 0 && (i === 0 || part >= parts[i - 1]!)));
   assert.deepEqual([...new Set(parts)], SECTIONS.map((_, i) => i));

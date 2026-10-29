@@ -2,14 +2,15 @@
 
 // The outline bar across the top of both presenter screens: the talk's parts (SECTIONS in
 // shared/scenes.ts), how far through each one the presenter is, and which one is on now. Every →
-// moves it. Hidden on the title slide; the index (IX) introduces it. Drawn in stage pixels.
+// moves it. Hidden before the index (the title and who I am); the index (IX) introduces it. Drawn in
+// stage pixels.
 
 import { useScene } from "../../lib/stage/store";
-import { SECTIONS, sectionProgress } from "../../shared/scenes";
+import { SECTIONS, sceneIndex, sectionProgress } from "../../shared/scenes";
 
 export function OutlineBar() {
   const { scene, index, step } = useScene();
-  if (scene.id === "S0") return null;
+  if (index < sceneIndex("IX")) return null;
   const progress = sectionProgress(index, step);
   return (
     <nav className="outline-bar" aria-label="Talk outline">

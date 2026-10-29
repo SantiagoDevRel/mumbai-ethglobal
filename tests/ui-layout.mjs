@@ -80,6 +80,10 @@ try {
   await expect(page.locator(".globe-dots")).toHaveCount(1);
   await expect(page.locator(".join-qr,.outline-bar")).toHaveCount(0);
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S0.png") }); }
+  // Who I am (an empty slide for now) still has no QR and no outline bar.
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator('[data-screen="map"][data-scene="ME"]')).toBeVisible();
+  await expect(page.locator(".join-qr,.outline-bar,.app-hud")).toHaveCount(0);
   // The index lists the talk's parts; from here on the outline bar across the top follows them.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="IX"]')).toBeVisible();
@@ -501,9 +505,9 @@ try {
       await expect(boxes(target)).toHaveCount(0);
       evidence.push({ surface: "boxes", screen: target === page ? "map" : "slides", scene, leftDragDraws: false, rightDragDraws: true, rightClickClears: true });
     }
-    // /outline (October 29): every part folds, every scene shows its slide and a few short points,
-    // with no script and no times; a slide zooms in and steps through its reveals; the scene on
-    // screen is marked.
+    // /outline (October 29): every part folds and all start folded, every scene shows its slide and
+    // a few short points, with no script and no times; a slide zooms in and steps through its
+    // reveals; the scene on screen is marked; a link to a scene opens its part.
     const outline = await context.newPage();
     outline.on("pageerror", (error) => errors.push(error.message));
     await outline.setViewportSize({ width: 1440, height: 900 });
@@ -511,6 +515,13 @@ try {
     await expect(outline.getByRole("heading", { name: "From zero to hero with Arkiv", level: 1 })).toBeVisible({ timeout: 20000 });
     await expect(outline.getByRole("heading", { level: 2 })).toHaveCount(SECTIONS.length + 1);
     for (const section of SECTIONS) await expect(outline.getByRole("heading", { name: section.title, level: 2, exact: true })).toBeVisible();
+    const partButtons = outline.locator("button[aria-controls^='part-']");
+    await expect(partButtons).toHaveCount(SECTIONS.length + 1);
+    for (const button of await partButtons.all()) await expect(button).toHaveAttribute("aria-expanded", "false");
+    await expect(outline.locator("[id^='part-'][id$='-scenes'][inert]")).toHaveCount(SECTIONS.length + 1);
+    if (capture) await outline.screenshot({ path: path.join(capture, "outline-1440-start.png") });
+    await outline.getByRole("button", { name: "Expand all", exact: true }).click();
+    for (const button of await partButtons.all()) await expect(button).toHaveAttribute("aria-expanded", "true");
     await expect(outline.getByRole("heading", { level: 3 })).toHaveCount(SCENES.length);
     const outlineText = () => outline.evaluate(() => { const main = document.querySelector("main").cloneNode(true); main.querySelectorAll("[data-preview]").forEach((preview) => preview.remove()); return main.innerText; });
     const listed = await outlineText();
@@ -524,7 +535,7 @@ try {
     await commands(page, [go("S7")]);
     await expect(now.getByRole("heading", { level: 3 })).toHaveText(SCENES[sceneIndex("S7")].title);
     // Fold one part, then all, then open them again.
-    const build = outline.getByRole("button", { name: "Build it, live", exact: true });
+    const build = outline.getByRole("button", { name: SECTIONS.find((section) => section.id === "build").title, exact: true });
     await build.click();
     await expect(build).toHaveAttribute("aria-expanded", "false");
     await expect(outline.locator("#part-build-scenes")).toHaveAttribute("inert", "");
@@ -554,7 +565,17 @@ try {
       assert.equal(await outline.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `/outline at ${width}px`);
       if (capture) await outline.screenshot({ path: path.join(capture, `outline-${width}.png`), fullPage: true });
     }
-    evidence.push({ surface: "outline", parts: SECTIONS.length + 1, scenes: SCENES.length, marksSceneOnScreen: true, noTimesOrScript: true, folds: true, zoomSteps: true, noOverflow: [390, 768, 1440] });
+    // A link to a scene opens only that scene's part and lands on it.
+    const linked = await context.newPage();
+    linked.on("pageerror", (error) => errors.push(error.message));
+    await linked.setViewportSize({ width: 1440, height: 900 });
+    await linked.goto(`${origin}/outline#scene-W2`, { waitUntil: "domcontentloaded" });
+    const why = SECTIONS.find((section) => section.id === "why").title;
+    await expect(linked.getByRole("button", { name: why, exact: true })).toHaveAttribute("aria-expanded", "true", { timeout: 20000 });
+    for (const section of SECTIONS.filter((section) => section.id !== "why")) await expect(linked.getByRole("button", { name: section.title, exact: true })).toHaveAttribute("aria-expanded", "false");
+    await expect(linked.locator("#scene-W2")).toBeInViewport();
+    await linked.close();
+    evidence.push({ surface: "outline", parts: SECTIONS.length + 1, scenes: SCENES.length, startsFolded: true, linkOpensPart: true, marksSceneOnScreen: true, noTimesOrScript: true, folds: true, zoomSteps: true, noOverflow: [390, 768, 1440] });
     await context.close();
   }
 

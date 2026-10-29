@@ -16,6 +16,7 @@ import { L1, L2, L3, L6, L9 } from "./scenes/live";
 import { S0 } from "./scenes/S0";
 import { S7 } from "./scenes/S7";
 import { ST } from "./scenes/ST";
+import { Speaker } from "./scenes/Speaker";
 import { T1 } from "./scenes/T1";
 import { W1 } from "./scenes/W1";
 import { W2 } from "./scenes/W2";
@@ -24,6 +25,7 @@ import { W4 } from "./scenes/W4";
 
 export const deck: DeckRegistry = {
   S0: { Slide: S0, notes: NOTES.S0 },
+  ME: { Slide: Speaker, notes: NOTES.ME },
   IX: { Slide: IX, notes: NOTES.IX },
   W1: { Slide: W1, notes: NOTES.W1 },
   W2: { Slide: W2, notes: NOTES.W2 },
