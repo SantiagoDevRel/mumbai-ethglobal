@@ -116,11 +116,11 @@ function PartMap({ now, onPick }: { now: SceneId | null; onPick: (id: string) =>
             key={part.id}
             href={`#part-${part.id}`}
             onClick={() => onPick(part.id)}
-            className="group flex min-w-0 flex-col gap-3 rounded-[14px] border border-[var(--t-14)] bg-[rgba(17,17,17,0.5)] px-3.5 py-3 transition-colors hover:border-[var(--t-42)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--arkiv-orange)]"
+            className="group flex min-w-0 flex-col justify-between gap-3 rounded-[14px] border border-[var(--t-14)] bg-[rgba(17,17,17,0.5)] px-3.5 py-3 transition-colors hover:border-[var(--t-42)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--arkiv-orange)]"
           >
             <span className="flex items-baseline gap-2">
               <span className={`font-mono text-[13px] font-semibold ${live ? "text-[var(--arkiv-orange)]" : "text-[var(--t-56)]"}`}>{part.number ?? "0"}</span>
-              <span className="truncate text-[15px] font-semibold text-[var(--t-84)] group-hover:text-[var(--arkiv-sand)]">{part.title}</span>
+              <span className="text-[15px] font-semibold leading-[1.25] text-[var(--t-84)] group-hover:text-[var(--arkiv-sand)]">{part.title}</span>
             </span>
             <span className="flex gap-1" aria-hidden>
               {part.scenes.map((scene) => (
@@ -199,7 +199,7 @@ function SceneCard({ scene, now, onZoom }: { scene: SceneDef; now: boolean; onZo
   return (
     <li id={`scene-${scene.id}`} aria-current={now ? "step" : undefined} className="scroll-mt-6">
       <article
-        className="grid gap-4 rounded-[20px] border p-3 transition-colors sm:grid-cols-[minmax(0,320px)_minmax(0,1fr)] sm:gap-6 sm:p-4"
+        className="grid gap-4 rounded-[20px] border p-3 transition-colors sm:grid-cols-[minmax(0,320px)_minmax(0,1fr)] sm:gap-6 sm:p-4 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:gap-8"
         style={now ? { borderColor: "var(--arkiv-orange)", background: "rgba(254,116,70,0.08)" } : { borderColor: "var(--t-14)", background: "rgba(17,17,17,0.55)" }}
       >
         <button
@@ -312,7 +312,7 @@ function Zoom({ at, onMove, onClose }: { at: Zoomed; onMove: (next: Zoomed) => v
         event.preventDefault();
         if (next) onMove(next);
       }}
-      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-[rgba(5,6,22,0.97)] p-0 text-[var(--arkiv-sand)] backdrop:bg-[rgba(0,0,0,0.6)]"
+      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none border-0 bg-[#05061a] p-0 text-[var(--arkiv-sand)] backdrop:bg-[rgba(0,0,0,0.6)]"
     >
       <div className="flex h-full flex-col gap-4 px-4 py-4 sm:px-8 sm:py-6">
         <div className="flex items-center gap-3 sm:gap-4">
