@@ -4,8 +4,10 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Search, ChevronDown, Check } from "lucide-react";
 import { countryOptions } from "../../lib/data/countries";
 
-export function CountryPicker({ value, onChange }: { value: string; onChange: (code: string) => void }) {
-  const countries = useMemo(() => countryOptions(), []);
+/** Shows country names; `value` and `onChange` carry the lower-case ISO code the writer stores ("in"). */
+export function CountryPicker({ value: chosen, onChange }: { value: string; onChange: (code: string) => void }) {
+  const countries = useMemo(() => countryOptions().map((country) => ({ ...country, code: country.code.toLowerCase() })), []);
+  const value = chosen.toLowerCase();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [active, setActive] = useState(0);

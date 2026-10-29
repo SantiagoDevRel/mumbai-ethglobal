@@ -1,7 +1,8 @@
 "use client";
 
-// A1 · MCP: your agent asks Arkiv (scene T2). One step: the two-panel "disappointed" meme with BLOK
-// (Santiago, October 29). Top, BLOK smiling: with MCP your agent asks Arkiv and gets today's answer.
+// A1 · MCP: your agent asks Arkiv (scene T2). One step: the two-panel "disappointed" meme with the
+// mascot (Santiago, October 29; its name never goes in alt text, see Mascot.tsx). Top, the mascot
+// smiling: with MCP your agent asks Arkiv and gets today's answer.
 // Bottom, the same shot disappointed: without MCP it answers from old training data. Both pictures
 // (public/deck/memes, 1536x1024, same framing) are cropped to a wide strip around the eyes and mouth
 // so the panels stack like the original; the labels sit beside them, Sand for the good one and Stone
@@ -36,8 +37,8 @@ export function A1(_props: SceneContentProps) {
     <Slide headline="MCP: your agent asks Arkiv" under="MCP connects your coding agent to Arkiv's docs and tools.">
       {/* Ink shows through the 4 px gaps as the rules between the four cells. */}
       <Rise className="absolute left-[96px] top-[332px] grid h-[588px] w-[1728px] grid-cols-[560px_minmax(0,1fr)] grid-rows-2 gap-[4px] overflow-hidden rounded-[20px] bg-[var(--arkiv-ink)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
-        <Panel label="With MCP" src="/deck/memes/arkiv-meme-mcp-happy.webp" alt="BLOK, smiling" good />
-        <Panel label="Without MCP" src="/deck/memes/arkiv-meme-mcp-sad.webp" alt="BLOK, disappointed" good={false} />
+        <Panel label="With MCP" src="/deck/memes/arkiv-meme-mcp-happy.webp" alt="Arkiv mascot, smiling" good />
+        <Panel label="Without MCP" src="/deck/memes/arkiv-meme-mcp-sad.webp" alt="Arkiv mascot, disappointed" good={false} />
       </Rise>
       <Rise className="absolute left-[96px] top-[948px]">
         <a

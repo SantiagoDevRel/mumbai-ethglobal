@@ -1,6 +1,6 @@
-// Run of show (outline v3, October 28: MUMBAI-ETHGLOBAL/OUTLINE.md). Contract owned by the orchestrator.
-// The deck renders each scene's content (app/deck/registry.tsx); the stage engine
-// (lib/stage) moves through this list. Times are planned offsets from the start, in seconds.
+// Run of show (outline v3, October 28, with Santiago's October 29 feedback: MUMBAI-ETHGLOBAL/OUTLINE.md).
+// Contract owned by the orchestrator. The deck renders each scene's content (app/deck/registry.tsx);
+// the stage engine (lib/stage) moves through this list. Times are planned offsets from the start, in seconds.
 
 export type SceneId =
   | "S0"
@@ -17,8 +17,6 @@ export type SceneId =
   | "B2"
   | "B3"
   | "L3"
-  | "L6"
-  | "L2"
   | "B4"
   | "B5"
   | "T1"
@@ -30,8 +28,9 @@ export type SceneId =
  * `live`: the map is the stage; the deck draws only an overlay (caption, cards). */
 export type SceneKind = "slide" | "live";
 
-/** Where the camera should be when the scene starts. The app owns what each means. */
-export type CameraCue = "globe-idle" | "globe" | "india" | "mumbai-street" | "keep";
+/** Where the camera should be when the scene starts. The app owns what each means. `country:<iso2>`
+ * (lower case) frames one country: L3 flies there when the presenter filters by it. */
+export type CameraCue = "globe-idle" | "globe" | "india" | "mumbai-street" | "keep" | `country:${string}`;
 
 /** Which data layer the map shows. */
 export type MapMode = "dots" | "business" | "owner";
@@ -72,7 +71,9 @@ const CORNER_QR = { label: "Join the map", placement: "corner" } as const;
 
 // One idea per scene, never twice (Santiago, October 28). The room scans in "Build your entity" and
 // every idea after that is shown on the entities they just wrote: a slide for the idea, the map for
-// the result. October 29: "What Arkiv is not" (NT) follows the five steps.
+// the result. October 29: the Own it (L6) and Expire it (L2) scenes are gone (transfer and extension
+// stay in the entity card on any live scene), "What Arkiv is not" (NT) follows the five steps, and
+// L3 has no scripted filters: the presenter filters by hand.
 export const SCENES: readonly SceneDef[] = [
   { id: "S0", title: "Title", at: 0, kind: "slide", steps: 1, qr: NO_QR, camera: "globe-idle", map: "dots" },
   // Who I am, in 15 seconds (Santiago, October 29): an empty slide for now.
@@ -89,17 +90,15 @@ export const SCENES: readonly SceneDef[] = [
   { id: "L1", title: "Write it: your entities, live", at: 425, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
   { id: "B2", title: "Write it: the SDK call", at: 465, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
   { id: "B3", title: "Query it like a database", at: 515, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  // L3 opens on the whole globe; its last filter (AND country is India) flies the camera to India
-  // (lib/stage/choreography.ts), so the AND visibly narrows the map (Santiago, October 29).
-  { id: "L3", title: "Query it, live", at: 575, kind: "live", steps: 3, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
-  { id: "L6", title: "Own it", at: 625, kind: "live", steps: 2, qr: CORNER_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "L2", title: "Expire it", at: 670, kind: "live", steps: 2, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
-  { id: "B4", title: "Encrypt what's private", at: 715, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "B5", title: "Explore it with no code", at: 760, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "T1", title: "Hub and docs", at: 800, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
+  // L3 opens on the whole globe with no filter and no QR; the presenter filters by hand (name,
+  // country, color) and a country filter flies the camera to that country (lib/stage/choreography.ts).
+  { id: "L3", title: "Query it, live", at: 575, kind: "live", steps: 1, qr: NO_QR, camera: "globe", map: "dots", section: "build" },
+  { id: "B4", title: "Encrypt what's private", at: 705, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
+  { id: "B5", title: "Explore it with no code", at: 755, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
+  { id: "T1", title: "Hub and docs", at: 795, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
   { id: "T2", title: "Your agent knows Arkiv", at: 840, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
   { id: "PZ", title: "Arkiv prizes at ETHGlobal Mumbai", at: 875, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
-  { id: "L9", title: "Close", at: 960, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "tools" },
+  { id: "L9", title: "Close", at: 960, kind: "live", steps: 1, qr: NO_QR, camera: "globe", map: "dots", section: "tools" },
 ];
 
 export function sceneIndex(id: SceneId): number {

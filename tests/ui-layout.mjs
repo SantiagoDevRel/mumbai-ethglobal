@@ -4,7 +4,10 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
+import { getAddress } from "viem";
 import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
+import { NO_EXPIRY_BLOCK } from "../shared/types.ts";
+import { NOTHING_TO_EXTEND } from "../shared/arkiv/adapter.ts";
 import { startApp } from "./local-app.mjs";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
@@ -44,6 +47,17 @@ const go = (id) => ({ type: "goto", index: sceneIndex(id) });
 async function commands(page, list) {
   await page.evaluate((items) => { const channel = new BroadcastChannel("arkiv-mumbai-stage"); for (const cmd of items) channel.postMessage({ kind: "command", cmd }); channel.close(); }, list);
 }
+/** The leading /map's stage state: the store answers a hello on its channel. */
+async function stageState(page) {
+  return page.evaluate(() => new Promise((resolve) => {
+    const channel = new BroadcastChannel("arkiv-mumbai-stage");
+    const done = (state) => { clearTimeout(timer); channel.close(); resolve(state); };
+    const timer = setTimeout(() => done(null), 2000);
+    channel.onmessage = (event) => { if (event.data?.kind === "state") done(event.data.state); };
+    channel.postMessage({ kind: "hello" });
+  }));
+}
+const BUILD = SECTIONS.find((section) => section.id === "build").title;
 try {
   // The presenter pages ask for the password; one login unlocks both windows of the split screen.
   {
@@ -85,7 +99,7 @@ try {
   await expect(page.locator('[data-screen="map"][data-scene="ME"]')).toBeVisible();
   await expect(page.locator(".join-qr,.outline-bar,.app-hud")).toHaveCount(0);
   // The index lists the talk's parts; from here on the outline bar across the top follows them.
-  await page.keyboard.press("ArrowRight");
+  await commands(page, [go("IX")]);
   await expect(page.locator('[data-screen="map"][data-scene="IX"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "What we'll do" })).toBeVisible();
   const bar = page.getByRole("navigation", { name: "Talk outline" });
@@ -111,11 +125,12 @@ try {
   await expect(current).toContainText("Five steps");
   await expect(bar.locator('[data-state="done"]')).toContainText("Why Arkiv");
   assert.equal(await fill(bar.locator('[data-state="done"]')), 1);
-  // S7, in "Build your entity": the big QR, centered on the map itself; D swaps it for the 3 · 2 · 1 countdown and back.
+  // S7, in "Build your entity": the scan column (the QR on its own sand square) on the map itself; D
+  // swaps it for the 3 · 2 · 1 countdown and back.
   await commands(page, [go("S7")]);
   await expect(page.locator(".join-qr-scan")).toBeVisible();
   await expect(page.locator(".join-qr-corner")).toHaveCount(0);
-  await expect(current).toContainText("Build your entity");
+  await expect(current).toContainText(BUILD);
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7.png") }); }
   await page.keyboard.press("d");
   await expect(page.locator(".join-qr-scan")).toHaveCount(0);
@@ -130,144 +145,240 @@ try {
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
   await expect(page.locator(".app-hud")).toHaveCount(1);
-  await expect(page.getByText("Write it. Every dot is an entity you just wrote.")).toBeVisible();
+  // No caption, logo or status line on the stage (October 29): the counter, the list of writes and
+  // the corner QR. The data source and its status sit in the presenter's "?" card.
+  await expect(page.getByText("Write it. Every dot is an entity you just wrote.")).toHaveCount(0);
+  await expect(page.locator(".stage-logo,.source-label")).toHaveCount(0);
+  await expect(page.getByText(/Mock data|Live · Arkiv DB-Chain/)).toHaveCount(0);
+  await expect(page.locator(".stage-counter")).toBeVisible();
+  await expect(page.locator(".event-log")).toBeVisible();
+  await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1.png") }); }
+  await page.evaluate(() => document.fonts.ready);
+  const measure = () => page.evaluate(() => {
+    const rect = (selector) => { const element = document.querySelector(selector); if (!element) return null; const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
+    const url = document.querySelector(".join-qr-corner .qr-url");
+    return { qr: rect(".join-qr-corner"), url: rect(".join-qr-corner .qr-url"), urlFits: url ? url.scrollWidth <= url.clientWidth : null, counter: rect(".stage-counter"), counterValue: rect(".stage-counter strong"), events: rect(".event-log"), query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filter-bar"), track: rect(".outline-track"), overflow: document.documentElement.scrollWidth > innerWidth };
+  });
+  // The outline bar's labels and tracks end above the HUD's top row (counter, filter bar, QR card).
+  const clearOfBar = (layout) => {
+    for (const box of [layout.counter, layout.filters, layout.qr]) if (box) assert.ok(layout.track.y + layout.track.height <= box.y, "The outline bar sits above the HUD.");
+  };
+  // The counter moved to the top-left corner (top 56); the QR card and the list of writes share the
+  // right column. 960x1080 is half of a 1920x1080 screen: the HUD reaches the window's top.
+  for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720], [960, 1080]]) {
+    await page.setViewportSize({ width, height });
+    const scale = Math.min(width / 1920, height / 1080);
+    await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().width)), { timeout: 20000 }).toBe(Math.round(424 * scale));
+    const layout = await measure();
+    assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1 && Math.abs(layout.qr.y - 56 * scale) < 1, "The QR card sits at the top right.");
+    assert.ok(Math.abs(layout.counter.x - 32 * scale) < 1 && Math.abs(layout.counter.y - 56 * scale) < 1, "The counter sits at the top left.");
+    assert.ok(layout.events.y >= layout.qr.y + layout.qr.height, "The list of writes sits under the QR.");
+    clearOfBar(layout);
+    assert.equal(layout.counterValue.fontSize, "64px");
+    assert.equal(layout.url.whiteSpace, "nowrap");
+    assert.equal(layout.url.fontSize, "20px");
+    assert.equal(layout.urlFits, true);
+    assert.ok(layout.url.y + layout.url.height <= layout.qr.y + layout.qr.height);
+    assert.equal(layout.overflow, false);
+    evidence.push({ surface: "map", scene: "L1", viewport: `${width}x${height}`, layout });
+  }
+  await page.setViewportSize({ width: 1920, height: 1080 });
   // The SDK call is a slide: the map's QR and HUD step aside.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="B2"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Write it", exact: true })).toBeVisible();
   await expect(page.locator(".join-qr,.app-hud")).toHaveCount(0);
-  // L3 runs the B3 query (color is orange AND country is India), one filter per →.
-  await commands(page, [go("L3"), { type: "togglePanel", panel: "filters", open: true }]);
-  await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
-  await expect(page.getByText("Same query, on your entities.")).toBeVisible();
-  await expect(page.locator(".filter-bar")).toBeVisible();
+  // L3 (October 29): the whole globe with no QR, no caption and no scripted filters. The presenter
+  // filters by hand (name, color, country); each filter is its own marked line of the query and a
+  // country flies the camera there. The query panel and the filter bar open with the scene.
+  await commands(page, [go("L3")]);
+  await expect(page.locator('[data-screen="map"][data-scene="L3"]')).toBeVisible();
+  const filterBar = page.locator(".filter-bar");
+  await expect(filterBar).toBeVisible();
+  await expect(page.locator(".join-qr,.event-log")).toHaveCount(0);
+  await expect(page.getByText("Same query, on your entities.")).toHaveCount(0);
+  await expect(page.getByText(/Mock data|Live · Arkiv DB-Chain/)).toHaveCount(0);
+  await expect(filterBar).not.toContainText(/owner/i);
   await expect(page.locator(".filter-results")).toContainText(/\d+ results?/);
-  await commands(page, [{ type: "next" }]);
-  // The Query tab by default: the query text with AND, scope and filters only ($owner, never $creator).
-  await expect(page.locator('pre[aria-label="Executed query text"]')).toContainText("color = str('#fe7446')");
+  assert.equal((await stageState(page))?.camera.cue, "globe", "L3 opens on the whole globe.");
+  const queryText = page.locator('pre[aria-label="Executed query text"]');
+  const queryLines = page.locator(".query-panel .query-line");
+  const liveLines = page.locator(".query-panel .query-line[data-live]");
+  // The Query tab by default: the scope (app, kind, session), one predicate per line, nothing marked,
+  // and $owner, never $creator.
+  await expect(page.getByRole("tab", { name: "Query", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(queryLines).toHaveCount(3);
+  await expect(liveLines).toHaveCount(0);
   await expect(page.locator(".query-panel")).not.toContainText(/\$creator|createdBy/);
-  await expect(page.locator(".query-expand")).toHaveCount(0);
-  await expect(page.locator(".event-log")).toHaveCount(0);
-  await commands(page, [{ type: "next" }]);
-  await expect(page.locator('pre[aria-label="Executed query text"]')).toContainText("AND country = str('IN')");
-  await commands(page, [{ type: "prev" }]);
-  await expect(page.locator(".stage-toolbar")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Color · Orange", exact: true })).toBeVisible();
-  await expect(page.locator(".query-scope code")).not.toContainText(/,\s*(?:·|$)/);
-  await expect(page.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
-  await expect(page.locator(".qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
-  await page.evaluate(() => document.fonts.ready);
+  // A name: Arkiv compares strings exactly and every stored string is lower case, so the field is too.
+  const nameField = filterBar.getByPlaceholder("Starts with…");
+  await nameField.fill("PRI");
+  await expect(nameField).toHaveValue("pri");
+  await expect(queryText).toContainText('AND name STARTSWITH str("pri")');
+  // A color from the list: "Any color", then the phone's colors, each with its swatch.
+  const colorField = filterBar.getByRole("combobox", { name: "Color", exact: true });
+  await expect(colorField).toContainText("Any color");
+  await colorField.click();
+  const colorList = page.getByRole("listbox", { name: "Colors" });
+  await expect(colorList.getByRole("option")).toHaveCount(1 + PALETTE.length);
+  await expect(colorList.locator(".filter-swatch")).toHaveCount(1 + PALETTE.length);
+  if (capture) await page.screenshot({ path: path.join(capture, "map-1920-L3-colors.png") });
+  await colorList.getByRole("option", { name: "Orange", exact: true }).click();
+  await expect(colorList).toHaveCount(0);
+  await expect(colorField).toContainText("Orange");
+  await expect(queryText).toContainText("AND color = str('#fe7446')");
+  // A country: its stored lower-case code, and the camera flies there.
+  const countryField = filterBar.getByPlaceholder("Any country");
+  await countryField.fill("India");
+  await expect(queryText).toContainText("AND country = str('in')");
+  await expect(queryLines).toHaveCount(6);
+  await expect(liveLines).toHaveCount(3);
+  await expect.poll(async () => (await stageState(page))?.camera.cue).toBe("country:in");
+  // The Code tab: the same predicates as the SDK's builder calls, marked the same way, no createdBy.
+  await page.getByRole("tab", { name: "Code", exact: true }).click();
+  await expect(queryText).toContainText('startsWith("name", "pri")');
+  await expect(liveLines).toHaveCount(3);
+  await expect(page.locator(".query-panel")).not.toContainText(/\$creator|createdBy/);
+  await page.getByRole("tab", { name: "Query", exact: true }).click();
   await page.locator(".query-panel").evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
-  const measure = () => page.evaluate(() => {
-    const rect = (selector) => { const element = document.querySelector(selector); const box = element.getBoundingClientRect(); const css = getComputedStyle(element); return { x: box.x, y: box.y, width: box.width, height: box.height, fontSize: css.fontSize, whiteSpace: css.whiteSpace }; };
-    const url = document.querySelector(".qr-url");
-    return { qr: rect(".join-qr-corner"), url: rect(".qr-url"), events: document.querySelectorAll(".event-log").length, urlFits: url.scrollWidth <= url.clientWidth, query: rect(".query-panel"), code: rect('pre[aria-label="Executed query text"]'), filters: rect(".filter-bar"), counter: rect(".stage-counter strong"), logo: rect(".stage-logo"), track: rect(".outline-track"), overflow: document.documentElement.scrollWidth > innerWidth };
-  });
-  // The outline bar's labels and tracks end above the HUD's top row (logo, source label, QR card).
-  const clearOfBar = (layout) => {
-    for (const box of [layout.qr, layout.logo, layout.filters]) assert.ok(layout.track.y + layout.track.height <= box.y, "The outline bar sits above the HUD.");
-  };
-  for (const [width, height] of [[1920, 1080], [1536, 864], [1280, 720]]) {
+  if (capture) { await page.waitForTimeout(1500); await page.screenshot({ path: path.join(capture, "map-1920-L3.png") }); }
+  // Every line fits without scrolling, in both tabs, on a full screen and on a 1920x960 one.
+  for (const [width, height] of [[1920, 1080], [1920, 960], [1536, 864], [1280, 720]]) {
     await page.setViewportSize({ width, height });
-    await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().width)), { timeout: 20000 }).toBe(Math.round(424 * width / 1920));
+    const scale = Math.min(width / 1920, height / 1080);
+    await expect.poll(() => page.locator(".query-panel").evaluate((element) => Math.round(element.getBoundingClientRect().width)), { timeout: 20000 }).toBe(Math.round(984 * scale));
     const layout = await measure();
-    const scale = width / 1920;
-    assert.ok(Math.abs(layout.qr.x - 1464 * scale) < 1);
-    assert.ok(Math.abs(layout.qr.y - 56 * scale) < 1);
-    assert.ok(Math.abs(layout.query.y - (1080 - 32 - 216) * scale) < 1);
+    assert.ok(Math.abs(layout.query.x - 32 * scale) < 1 && Math.abs(layout.query.y + layout.query.height - (height - 32 * scale)) < 1, "The query panel sits at the bottom left.");
+    assert.ok(Math.abs(layout.counter.y - 56 * scale) < 1 && Math.abs(layout.filters.y - 56 * scale) < 1, "The counter and the filter bar share the top row.");
+    assert.ok(layout.counter.x + layout.counter.width <= layout.filters.x);
     assert.ok(layout.filters.y + layout.filters.height <= layout.query.y);
     clearOfBar(layout);
     assert.equal(layout.code.fontSize, "24px");
-    assert.equal(layout.counter.fontSize, "64px");
-    assert.equal(layout.url.whiteSpace, "nowrap");
-    assert.equal(layout.url.fontSize, "20px");
-    assert.equal(layout.urlFits, true);
-    assert.ok(layout.url.y + layout.url.height <= layout.qr.y + layout.qr.height);
-    assert.equal(layout.events, 0, "L3 hides the list of writes.");
+    assert.equal(layout.counterValue.fontSize, "64px");
+    assert.equal(layout.qr, null, "No QR on L3.");
+    assert.equal(layout.events, null, "L3 hides the list of writes.");
     assert.equal(layout.overflow, false);
-    evidence.push({ surface: "map", viewport: `${width}x${height}`, layout });
+    const scrolls = {};
+    for (const tab of ["Code", "Query"]) {
+      await page.getByRole("tab", { name: tab, exact: true }).click();
+      scrolls[tab] = await queryText.evaluate((element) => element.scrollHeight > element.clientHeight + 1 || element.scrollWidth > element.clientWidth + 1);
+      assert.equal(scrolls[tab], false, `The ${tab} tab needs no scroll at ${width}x${height}.`);
+    }
+    evidence.push({ surface: "map", scene: "L3", viewport: `${width}x${height}`, layout, scrolls });
   }
   // Half of a 1920x1080 screen: the HUD reaches the window's top and bottom instead of a letterbox.
   {
     await page.setViewportSize({ width: 960, height: 1080 });
-    await expect.poll(() => page.locator(".join-qr-corner").evaluate((element) => Math.round(element.getBoundingClientRect().y)), { timeout: 20000 }).toBe(28);
+    await expect.poll(() => page.locator(".stage-counter").evaluate((element) => Math.round(element.getBoundingClientRect().y)), { timeout: 20000 }).toBe(28);
     const layout = await measure();
     assert.ok(Math.abs(layout.query.y + layout.query.height - (1080 - 16)) < 1, "The query panel sits at the bottom edge.");
-    assert.ok(Math.abs(layout.qr.x - 1464 * 0.5) < 1);
     assert.ok(layout.filters.y + layout.filters.height <= layout.query.y);
     clearOfBar(layout);
     assert.equal(layout.overflow, false);
     if (capture) await page.screenshot({ path: path.join(capture, "map-960x1080-L3.png") });
-    evidence.push({ surface: "map", viewport: "960x1080", layout });
+    evidence.push({ surface: "map", scene: "L3", viewport: "960x1080", layout });
   }
-  // Own it: the entity card shows $owner (highlighted) and no $creator.
+  // Clearing the country flies the camera back to the whole globe.
   await page.setViewportSize({ width: 1920, height: 1080 });
-  await commands(page, [{ type: "togglePanel", panel: "filters", open: false }, go("L1")]);
-  await expect(page.locator('.event-log li[data-event="created"] button').first()).toBeVisible({ timeout: 10000 });
-  await page.locator('.event-log li[data-event="created"] button').first().click();
-  await commands(page, [go("L6")]);
-  await expect(page.locator(".inspector-columns")).toBeVisible();
-  const columns = await page.locator(".inspector-columns").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length);
-  assert.equal(columns, 2);
-  await expect(page.locator(".badge-highlight")).toHaveAttribute("data-field", "$owner");
-  await expect(page.locator('.inspector-panel [data-field="$creator"]')).toHaveCount(0);
-  await expect(page.locator(".inspector-panel")).not.toContainText("$creator");
-  await expect(page.getByText("One wallet, ours, owns every entity on this map.")).toBeVisible();
-  {
-    const inside = await page.locator(".inspector-columns").evaluate((element) => {
-      const box = element.getBoundingClientRect();
-      const longitude = element.querySelector("div:first-child dl>div:last-child").getBoundingClientRect();
-      return longitude.bottom <= box.bottom + 1;
-    });
-    assert.equal(inside, true, "All five user columns must fit beside the highlighted badge.");
-  }
-  if (capture) {
-    for (const [width, height] of [[1280, 720], [1920, 1080]]) {
-      await page.setViewportSize({ width, height });
-      await expect.poll(() => page.locator(".inspector-panel").evaluate((element) => Math.round(element.getBoundingClientRect().width))).toBe(Math.round(856 * width / 1920));
-      await page.locator(".inspector-panel:has(.inspector-columns)").screenshot({ path: path.join(capture, `${width}-L6-owner.png`), timeout: 60000 });
-    }
-  }
-  // The real transfer: a wallet address and Transfer ownership (Rabby), from the same card.
-  await page.setViewportSize({ width: 1280, height: 720 });
-  await expect(page.locator(".inspector-actions")).toBeVisible({ timeout: 15000 });
-  await expect(page.locator(".explorer-link")).toHaveAttribute("href", /\/entity\/0x[0-9a-f]+$/i);
-  await page.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
-  await expect(page.locator(".transfer-form")).toBeVisible();
-  await expect(page.locator(".owner-panel,.owner-small-print")).toHaveCount(0);
+  await countryField.fill("");
+  await expect(queryText).not.toContainText("country");
+  await expect(liveLines).toHaveCount(2);
+  await expect.poll(async () => (await stageState(page))?.camera.cue).toBe("globe");
+  // The entity card, on any live scene (October 29: the Own it and Expire it scenes are gone): every
+  // attribute the entity stores in one table, $owner and never $creator, and the actions.
+  await commands(page, [go("L1")]);
+  await expect(page.locator(".filter-bar,.query-panel")).toHaveCount(0);
+  const entityCard = page.locator(".inspector-panel");
+  const timed = page.locator('.event-log li[data-event="created"] button').filter({ hasNotText: "no expiration" });
+  await expect(timed.first()).toBeVisible({ timeout: 10000 });
+  await timed.first().click();
+  await expect(entityCard.locator(".inspector-columns")).toBeVisible();
+  assert.equal(await entityCard.locator(".inspector-columns").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length), 2);
+  await expect(entityCard.locator(".stored-attributes thead th")).toHaveText(["name", "type", "value"]);
+  await expect(entityCard.locator(".stored-attributes tbody th")).toHaveText(["app", "kind", "session", "name", "color", "country", "category", "lat", "lng"]);
+  await expect(entityCard.locator('[data-field="$creator"]')).toHaveCount(0);
+  await expect(entityCard).not.toContainText("$creator");
+  await expect(entityCard.locator(".badge-highlight,.owner-note")).toHaveCount(0);
+  await expect(entityCard.locator('[data-field="$expiresAt"] small')).toHaveText("can be extended");
+  await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Extend", exact: true })).toBeEnabled();
+  await expect(entityCard.locator(".explorer-link")).toHaveAttribute("href", /\/entity\/0x[0-9a-f]+$/i);
   await expect(page.getByRole("button", { name: /Make it a business/ })).toHaveCount(0);
-  const transfer = page.getByRole("button", { name: "Transfer ownership", exact: true });
+  // Nothing in the card scrolls and nothing spills out of it.
+  const fits = () => entityCard.evaluate((element) => {
+    const box = element.getBoundingClientRect();
+    const inside = (selector) => [...element.querySelectorAll(selector)].every((item) => { const rect = item.getBoundingClientRect(); return rect.bottom <= box.bottom + 1 && rect.right <= box.right + 1; });
+    const scrolling = [element, ...element.querySelectorAll("*")].filter((item) => /auto|scroll/.test(getComputedStyle(item).overflowY) && item.scrollHeight > item.clientHeight + 1).length;
+    return { rows: inside(".stored-attributes tr"), fields: inside(".inspector-columns dl > div"), actions: inside(".inspector-actions, .transfer-form"), scrolling };
+  });
+  const FITS = { rows: true, fields: true, actions: true, scrolling: 0 };
+  for (const [width, height] of [[1280, 720], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    await expect.poll(() => entityCard.evaluate((element) => Math.round(element.getBoundingClientRect().width))).toBe(Math.round(856 * width / 1920));
+    assert.deepEqual(await fits(), FITS, `The entity card fits at ${width}x${height}.`);
+    if (capture) await entityCard.screenshot({ path: path.join(capture, `${width}-L1-entity-card.png`), timeout: 60000 });
+  }
+  // Transfer: "0x" then Space fills in a fresh checksummed wallet, so nobody pastes one on stage. Mock
+  // data applies the transfer at once; the read-back $owner is marked and the card says what it means.
+  await entityCard.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
+  const transferForm = entityCard.locator(".transfer-form");
+  await expect(transferForm).toBeVisible();
+  const transfer = transferForm.getByRole("button", { name: "Transfer ownership", exact: true });
+  const wallet = transferForm.getByLabel("New owner wallet");
   await expect(transfer).toBeDisabled();
-  await page.getByLabel("New owner wallet").fill("0x1234");
+  await wallet.fill("0x1234");
   await expect(transfer).toBeDisabled();
-  await page.getByLabel("New owner wallet").fill("0x2F6E6aDB6bc8F79799CB479FB5Cb237fa3Caa690");
+  await wallet.fill("0x");
+  await wallet.press("Space");
+  const newOwner = await wallet.inputValue();
+  assert.match(newOwner, /^0x[0-9a-fA-F]{40}$/);
+  assert.equal(getAddress(newOwner), newOwner, "A checksummed wallet, as a wallet app shows it.");
+  assert.equal((await stageState(page))?.sceneIndex, sceneIndex("L1"), "Space in the field never moves the talk.");
   await expect(transfer).toBeEnabled();
-  await commands(page, [{ type: "next" }]);
-  await expect(page.getByText("Transfer it: paste a wallet, sign once.")).toBeVisible();
+  assert.deepEqual(await fits(), FITS, "The transfer form keeps the card's height.");
+  await transfer.click();
+  await expect(entityCard.locator(".badge-highlight")).toHaveAttribute("data-field", "$owner", { timeout: 10000 });
+  await expect(entityCard.locator('[data-field="$owner"] dd')).toHaveAttribute("title", newOwner);
+  await expect(entityCard.locator(".owner-note")).toHaveText("Only this wallet can now update, transfer or delete it.");
+  await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true })).toBeDisabled();
+  // These dots allow permissionless extension: a new owner doesn't stop anyone extending them.
+  await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Extend", exact: true })).toBeEnabled();
+  assert.deepEqual(await fits(), FITS, "The marked $owner and its note still fit.");
+  if (capture) await entityCard.screenshot({ path: path.join(capture, "1920-L1-entity-card-transferred.png"), timeout: 60000 });
+  evidence.push({ surface: "entity-card", scene: "L1", storedRows: 9, creatorShown: false, randomWalletChecksummed: true, transferMarksOwner: true, extendAfterTransfer: true });
   // A click on the globe away from any dot closes the entity card.
   await page.mouse.click(200, 250);
-  await expect(page.locator(".inspector-panel")).toHaveCount(0);
-  // L2 keeps the same corner QR to /scan, clear of the event log below it.
-  await commands(page, [go("L2")]);
-  await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
-  await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
-  {
-    const qr = await page.locator(".join-qr-corner").boundingBox();
-    for (const panel of await page.locator(".event-log,.inspector-panel,.owner-panel").all()) assert.ok((await panel.boundingBox()).y >= qr.y + qr.height, "No panel sits behind the QR.");
-  }
-  // The close: no panels, the closing lines on the map and the links under the QR.
+  await expect(entityCard).toHaveCount(0);
+  // The close (L9): the closing card has the screen. The map stays quiet behind it: no counter, no list
+  // of writes, no panel and no QR, nothing from the HUD in the card's column (x ≥ 1400), and no
+  // entity card opens there. The closing card itself belongs to the finale (app/deck/scenes/finale).
   await page.setViewportSize({ width: 1920, height: 1080 });
   await commands(page, [go("L9")]);
-  await expect(page.locator(".query-panel,.filters-panel,.inspector-panel,.event-log,.stage-toolbar")).toHaveCount(0);
-  await expect(page.getByText("Thank you.")).toBeVisible();
-  await expect(page.getByText("docs.arkiv.network")).toBeVisible();
-  await page.waitForTimeout(1500);
+  await expect(page.locator('[data-screen="map"][data-scene="L9"]')).toBeVisible();
+  // The finale: the mascot says the four verbs (the first one holds 1.5 s), THANK YOU in bricks, and
+  // real links that open in a new tab.
+  await expect(page.getByText("Write it.")).toBeVisible();
+  await expect(page.getByRole("img", { name: "Thank you" })).toBeVisible();
+  for (const href of ["https://docs.arkiv.network", "https://hub.arkiv.network", "https://mcp.arkiv.network", "https://ethglobal.com/events/mumbai/prizes/arkiv"])
+    await expect(page.locator(`a[href="${href}"][target="_blank"][rel="noreferrer"]`)).toBeVisible();
   {
-    const qr = await page.locator(".join-qr-corner").boundingBox();
+    // A click on a link reaches the link, not the globe under it.
+    const box = await page.locator('a[href="https://hub.arkiv.network"]').boundingBox();
+    const hit = await page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest("a")?.getAttribute("href") ?? null, [box.x + box.width / 2, box.y + box.height / 2]);
+    assert.equal(hit, "https://hub.arkiv.network");
+  }
+  await expect(page.locator(".stage-counter,.event-log,.query-panel,.filter-bar,.inspector-panel,.join-qr,.stage-toolbar")).toHaveCount(0);
+  await commands(page, [{ type: "inspect", key: "0x01" }]);
+  await page.waitForTimeout(500);
+  await expect(page.locator(".inspector-panel")).toHaveCount(0);
+  assert.equal(await page.locator(".app-hud *").evaluateAll((elements, edge) => elements.filter((element) => element.getBoundingClientRect().right > edge).length, 1400), 0, "Nothing from the HUD reaches x 1400 on L9.");
+  await commands(page, [{ type: "inspect", key: null }]);
+  // The show ends on the bricks and the small mascot waving, under the links.
+  await expect(page.locator('[data-finale="done"]')).toHaveCount(1, { timeout: 30000 });
+  {
     const links = await page.getByText("START BUILDING").locator("..").boundingBox();
     const mascot = await page.getByRole("img", { name: "Arkiv mascot waving" }).boundingBox();
-    assert.ok(links.y >= qr.y + qr.height, "The links sit under the QR.");
     assert.ok(links.y + links.height <= mascot.y + 1, "The links end above the mascot.");
   }
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L9.png") }); }
@@ -278,12 +389,11 @@ try {
   await slides.setViewportSize({ width: 1280, height: 720 });
   await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
   await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible({ timeout: 20000 });
-  await expect(slides.getByText("Thank you.")).toBeVisible();
   await commands(page, [go("S7")]);
   // The follower changes scene once the leader, still drawing the 1920 px globe in software WebGL,
   // handles the command: as long as the other waits in this block.
   await expect(slides.locator('[data-scene="S7"]')).toBeVisible({ timeout: 20000 });
-  // The big QR sits centered on the slide (x 960 of 1920).
+  // The scan column sits in the middle of the slide (x 960 of 1920) until S7's → moves it aside.
   await expect.poll(async () => { const box = await slides.locator(".join-qr-scan").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(960 * 1280 / 1920));
   await expect(slides.locator(".join-qr-scan .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await slides.keyboard.press("d");
@@ -296,16 +406,21 @@ try {
   await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
   await expect(slides.getByText("ON THE MAP →")).toBeVisible();
   await expect(slides.getByRole("heading", { name: "Write it: your entities, live", exact: true })).toBeVisible();
-  // The live card explains the map in plain words, with the 3D mascot.
+  // The live card explains the map in plain words, with the 3D mascot; the map itself has no caption.
   await expect(slides.getByText("Your phone sends one request.")).toBeVisible();
   await expect(slides.getByRole("img", { name: "Arkiv mascot typing on a laptop" })).toBeVisible();
-  await expect(page.getByText("Write it. Every dot is an entity you just wrote.").first()).toBeVisible();
+  await expect(page.getByText("Write it. Every dot is an entity you just wrote.")).toHaveCount(0);
   // /slides shows the same outline bar, on the same part.
-  await expect(slides.getByRole("navigation", { name: "Talk outline" }).locator('[aria-current="step"]')).toContainText("Build your entity");
+  await expect(slides.getByRole("navigation", { name: "Talk outline" }).locator('[aria-current="step"]')).toContainText(BUILD);
   // Half a screen: the slide keeps 16:9 inside its window, nothing scrolls.
   await slides.setViewportSize({ width: 960, height: 1080 });
   assert.equal(await slides.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
   if (capture) await slides.screenshot({ path: path.join(capture, "slides-960x1080-L1.png") });
+  // L3's card says how the presenter filters by hand.
+  await commands(page, [go("L3")]);
+  await expect(slides.getByText("The map is one query.")).toBeVisible({ timeout: 20000 });
+  await expect(slides.getByText("Filter it live: name, country or color.")).toBeVisible();
+  await expect(slides.getByRole("img", { name: "Arkiv mascot with a magnifying glass" })).toBeVisible();
   // A second /map window follows the first instead of running the talk twice (two Rabby prompts).
   await commands(page, [go("B5")]);
   const secondMap = await context.newPage();
@@ -365,11 +480,11 @@ try {
   await expect(card).toHaveCount(0);
   await expect(page.locator('[data-screen="map"][data-scene="IX"]')).toBeVisible();
   await commands(page, [{ type: "goto", index: 0 }]);
-  // The data source still switches from the map's "?" toolbar; the HUD shows on live scenes.
+  // The data source and its status sit in the map's "?" card, never on the stage (October 29).
   await commands(page, [go("L1")]);
   await page.keyboard.press("?");
   await page.getByRole("combobox", { name: "Data source" }).selectOption("live");
-  await expect(page.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
+  await expect(card.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 15000 });
   // The update blinker next to the label: this fixture rejects chain reads, so it says so.
   await expect(page.locator(".source-label")).toHaveAttribute("data-status", "error", { timeout: 15000 });
   await expect(page.locator(".source-label .refresh-detail")).toHaveText("Reconnecting…");
@@ -391,7 +506,28 @@ try {
   await expect.poll(() => reads, { timeout: 10000 }).toBeGreaterThan(paused);
   page.off("request", countRead);
   await page.getByRole("combobox", { name: "Data source" }).selectOption("mock");
-  await expect(page.getByText("Mock data", { exact: true })).toBeVisible();
+  await expect(card.getByText("Mock data", { exact: true })).toBeVisible();
+  await commands(page, [{ type: "togglePanel", panel: "controls", open: false }]);
+  await expect(card).toHaveCount(0);
+  await expect(page.getByText(/Mock data|Live · Arkiv DB-Chain/)).toHaveCount(0);
+  // No expiration: the fresh mock writes two such entities in its first block. Their card shows
+  // $expiresAt = 2**64 − 1, counts nothing down and has nothing to extend; extending one alone says so.
+  const endless = page.locator('.event-log li[data-event="created"] button').filter({ hasText: "no expiration" });
+  await expect(endless).toHaveCount(2, { timeout: 15000 });
+  await endless.first().click();
+  await expect(entityCard.locator(".field-countdown")).toHaveText("2**64 − 1 · no expiration");
+  await expect(entityCard.locator('[data-field="$expiresAt"] dd')).toContainText(`block ${NO_EXPIRY_BLOCK}`);
+  await expect(entityCard.locator('[data-field="$expiresAt"] small')).toHaveText("no expiration");
+  await expect(entityCard.locator(".extend-suggestion")).toHaveCount(0);
+  await expect(entityCard).not.toContainText(/can be extended|min left|under a minute|Less than 60 s/);
+  await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Extend", exact: true })).toBeDisabled();
+  const endlessKey = await entityCard.locator('[data-field="$key"] dd').getAttribute("title");
+  await commands(page, [{ type: "select", keys: [endlessKey], mode: "set" }, { type: "extend", scope: "selected" }]);
+  await expect(page.locator(".presenter-notice")).toHaveText(NOTHING_TO_EXTEND);
+  if (capture) await entityCard.screenshot({ path: path.join(capture, "1920-L1-entity-card-no-expiration.png"), timeout: 60000 });
+  await entityCard.getByRole("button", { name: "Close inspector" }).click();
+  await expect(entityCard).toHaveCount(0);
+  evidence.push({ surface: "entity-card", scene: "L1", noExpiry: true, extendDisabled: true, extendSelectedSkipsIt: true });
   // A presenter notice must not stay on stage for the rest of the talk.
   await commands(page, [{ type: "select", keys: [], mode: "set" }, { type: "extend", scope: "selected" }]);
   await expect(page.locator(".presenter-notice")).toHaveText("Select an entity first.");
@@ -464,7 +600,7 @@ try {
         requestAnimationFrame(check);
       }), [from, to]);
     };
-    for (const [target, from, to] of [[slides, "W2", "W3"], [page, "W2", "W3"]]) {
+    for (const [target, from, to] of [[slides, "B5", "T1"], [page, "W2", "W3"]]) {
       assert.equal(SCENES[sceneIndex(from)].steps, 1);
       const samples = [];
       for (let i = 0; i < 3; i++) samples.push(await sample(target, from, to));
@@ -538,7 +674,7 @@ try {
     await commands(page, [go("S7")]);
     await expect(now.getByRole("heading", { level: 3 })).toHaveText(SCENES[sceneIndex("S7")].title);
     // Fold one part, then all, then open them again.
-    const build = outline.getByRole("button", { name: SECTIONS.find((section) => section.id === "build").title, exact: true });
+    const build = outline.getByRole("button", { name: BUILD, exact: true });
     await build.click();
     await expect(build).toHaveAttribute("aria-expanded", "false");
     await expect(outline.locator("#part-build-scenes")).toHaveAttribute("inert", "");

@@ -3,7 +3,7 @@
 // D7 · Transfer ownership. You own the four businesses you added; each real owner waits below.
 // → Chai Corner's owner asks for their data; → you sign changeOwnership: your link breaks and the
 // entity drops under its owner ($creator stays you); → the same for the other three; → only each
-// owner can change, transfer or delete it now. Sets up L6, the owner view.
+// owner can change, transfer or delete it now.
 // Steps: 0 you own 4 · 1 the ask · 2 first transfer · 3 the other three · 4 who can do what.
 
 import { motion, type Transition } from "motion/react";

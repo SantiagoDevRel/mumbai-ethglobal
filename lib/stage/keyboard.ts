@@ -11,6 +11,7 @@ export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "E / Shift+E", action: "Extend the selected dots / every live dot (Rabby)" },
   { keys: "F, I, Q", action: "Filters, inspector, query panel" },
   { keys: "H", action: "Hide the selected dot (local)" },
+  { keys: "0x, Space", action: "New owner field: fill in a random wallet address" },
   { keys: "R", action: "Reset the camera" },
   { keys: "P", action: "Plan B: replay mode" },
   { keys: "Right-drag", action: "Draw a box to point at something (a right-click clears them)" },

@@ -353,6 +353,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       const event = decodeEventLog({ abi: ENTITY_EVENTS_ABI, data: log.data, topics: log.topics });
       if (event.eventName === "EntityCreated") {
         if (event.args.owner.toLowerCase() !== address || !(event.args.creationFlags & 2)) throw new Error("Create event differs from the workshop policy.");
+        // Any deadline is accepted, NO_EXPIRY_BLOCK (2**64 - 1) included; it is stored as exact text.
         created.push({ key: event.args.entityKey, expiresAt: event.args.expiresAt });
       }
     }
@@ -380,6 +381,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     rpcMetrics.ticketQueries++;
     let pages = 1;
     // The query supplies its canonical block: no per-phone block-number RPC. Page size is 200.
+    // One session only: entities with no expiration from earlier sessions never enter this read.
     let page = await reader.select({ key: true, expiresAt: true }).createdBy(writerAddress)
       .where(eq("app", APP_ID), eq("session", session)).limit(200).fetch();
     const block = page.blockNumber;
@@ -464,6 +466,8 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
   async function submit(request: Request): Promise<Response> {
     const parsed = SubmitRequest.safeParse(await jsonBody(request));
     if (!parsed.success) fail("invalid", 400, "Check your name, color, country and lifetime.");
+    // Name, color and country are already in lower case, whatever the client sent: every check below
+    // (blocklist, placement) and the stored entity see what Arkiv will compare exactly.
     const data = parsed.data;
     const current = await readMeta();
     // Phones send no session: they join whatever session is running when they press the button.
@@ -476,7 +480,8 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     if (!token) fail("invalid", 400, "A valid device token is required.");
     const ticketId = crypto.randomUUID();
     // Many phones pick the same country (India): keep each new dot away from the ones already there.
-    const placed = await db.query<{ lat: number; lng: number }>(`select lat, lng from ${t("tickets")} where session = $1 and dot->>'country' = $2 order by accepted_at desc limit 400`, [session, data.country]);
+    // lower(): tickets accepted before country codes were stored in lower case still count.
+    const placed = await db.query<{ lat: number; lng: number }>(`select lat, lng from ${t("tickets")} where session = $1 and lower(dot->>'country') = $2 order by accepted_at desc limit 400`, [session, data.country]);
     const point = placeDot(data.country, ticketId, placed);
     if (!point) fail("invalid", 400, "Choose a supported country.");
     // Every entity is a business of a random kind (cafe, restaurant, bookstore, parking).
@@ -486,7 +491,8 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     const deviceId = `device:${session}:${hash}`;
     // A phone may keep several entities live (up to MAX_ENTITIES_PER_DEVICE per session).
     const [device] = await db.query<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1`, [deviceId]);
-    const dot: DotCreate = { session, name: data.name, color: data.color.toLowerCase(), country: data.country, category, lifetimeSec: data.lifetimeSec, ...point };
+    // "No expiration" travels with the ticket to dotToCreate, which writes ExpirationTime.permanent().
+    const dot: DotCreate = { session, name: data.name, color: data.color, country: data.country, category, lifetimeSec: data.lifetimeSec, ...(data.noExpiry ? { noExpiry: true } : {}), ...point };
     const position = await db.transaction(async q => {
       const meta = await lockMeta(q);
       if (session !== meta.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");

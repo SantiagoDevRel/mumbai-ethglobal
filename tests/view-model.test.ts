@@ -9,7 +9,7 @@ test("opening hours wrap midnight and exclude closing time", () => {
   assert.equal(mumbaiMinutes(Date.UTC(2026, 9, 24, 20, 0)), 90);
 });
 test("custom overlays are filtered app-side without modifying chain attributes", () => {
-  const entity: LiveEntity = { key: "0x01", owner: "0x02", creator: "0x02", createdAtBlock: 1n, expiresAtBlock: 50n, raw: [], attrs: { kind: "dot", name: "Priya", country: "IN", color: "#000000", lat: 19, lng: 73, session: "TEST" } };
+  const entity: LiveEntity = { key: "0x01", owner: "0x02", creator: "0x02", createdAtBlock: 1n, expiresAtBlock: 50n, raw: [], attrs: { kind: "dot", name: "priya", country: "in", color: "#000000", lat: 19, lng: 73, session: "TEST" } };
   const result = applyAppFilters([entity], { custom: { name: "vegan", value: "yes" } }, { "0x01": { vegan: "yes" } }, 0);
   assert.equal(result.entities.length, 1);
   assert.equal("vegan" in entity.attrs, false);

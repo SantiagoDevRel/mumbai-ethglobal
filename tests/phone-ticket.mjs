@@ -1,6 +1,7 @@
 // Full phone lifecycle against writer fixtures: nothing on load, one submit that answers once the
-// block is in, then a countdown on the phone's own clock with no more requests. Any RPC or other
-// external request is a failure.
+// block is in, then a countdown on the phone's own clock with no more requests. The name is lower
+// case as you type, and "No expiration" shows the deadline 2**64 - 1 with no countdown. Any RPC or
+// other external request is a failure.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -14,6 +15,9 @@ const capture = process.argv[2];
 if (capture) await mkdir(capture, { recursive: true });
 const raw = "An unknown RPC error occurred. Details: RPC request rejected (429). Version: viem@2.57.11";
 const key = `0x${"12".repeat(32)}`;
+const foreverKey = `0x${"34".repeat(32)}`;
+// ExpirationTime.permanent(): the largest block a u64 holds.
+const NO_EXPIRY_BLOCK = "18446744073709551615";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const results = [];
 const errors = [];
@@ -39,6 +43,7 @@ try {
       if (phase === "closed") return route.fulfill({ status: 409, json: { error: "doors_closed", message: "Not open yet." } });
       if (phase === "error") return route.fulfill({ status: 500, json: { error: "internal", message: raw } });
       if (phase === "queued") return route.fulfill({ json: { ...accepted, status: "queued" } });
+      if (phase === "forever") return route.fulfill({ json: { ...accepted, status: "written", entityKey: foreverKey, block: "100", expiresAtBlock: NO_EXPIRY_BLOCK } });
       return route.fulfill({ json: { ...accepted, status: "written", entityKey: key, block: "100", expiresAtBlock: "250" } });
     });
     async function tick(ms) { await page.clock.runFor(ms); await page.waitForTimeout(100); }
@@ -72,7 +77,14 @@ try {
       await expect(nameField).toBeFocused();
     }
     assert.deepEqual(api, [], "A blank name sends nothing.");
+    // Lower case as you type or paste (October 29), with the caret staying where you type.
+    await expect(nameField).toHaveAttribute("autocapitalize", "none");
+    await nameField.fill("se test");
+    await nameField.press("Home");
+    await page.keyboard.type("AB");
+    await expect(nameField).toHaveValue("abse test");
     await nameField.fill("SE test");
+    await expect(nameField).toHaveValue("se test");
     await expect(page.locator("#name-missing")).toHaveCount(0);
     await page.locator('input[type="range"]').focus();
     await page.keyboard.press("Home");
@@ -89,6 +101,9 @@ try {
     await write.click();
     await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
     await expect(page.locator('.phone-notice[role="alert"]')).toHaveCount(0);
+    await expect(page.locator(".phone-entity h2")).toHaveText("se test");
+    assert.equal(submissions.at(-1).body.name, "se test");
+    assert.equal(submissions.at(-1).body.country, "in", "Country codes are stored in lower case.");
     const clock = page.getByLabel("Time left");
     await expect(clock).toHaveText("5:00");
     await fits(clock);
@@ -120,10 +135,50 @@ try {
     await expect(page.locator(".phone-mine li")).toHaveCount(2);
     await tick(60000);
     assert.equal(api.length, before + 2, "A queued answer is not followed by polling.");
+    // No expiration (October 29): one tap under the slider switches it off; the written entity
+    // shows its deadline, 2**64 - 1, and never counts down.
+    const forever = page.getByRole("button", { name: "No expiration", exact: true });
+    await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Ada FOREVER");
+    await expect(page.getByRole("textbox", { name: "Your name", exact: true })).toHaveValue("ada forever");
+    await expect(forever).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".lifetime-value")).toHaveText("15 min");
+    const type = (selector) => page.locator(selector).first().evaluate((element) => { const style = getComputedStyle(element); return `${style.fontFamily}|${style.fontSize}|${style.fontWeight}`; });
+    const readout = await type(".lifetime-value");
+    // Same type roles as the rest of the phone: the toggle is a field like the country picker.
+    assert.equal(await type(".lifetime-forever"), await type(".country-trigger"));
+    assert.equal(await forever.evaluate((element) => getComputedStyle(element).height), "52px");
+    await forever.click();
+    await expect(forever).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("slider", { name: "How long should this data (entity) live?" })).toBeDisabled();
+    await expect(page.locator(".lifetime-value")).toHaveText("No expiration");
+    assert.equal(await type(".lifetime-value"), readout, "The readout keeps its type when it says No expiration.");
+    await fits(forever);
+    await snapshot("no-expiration-form");
+    phase = "forever";
+    await write.click();
+    await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
+    await expect(page.locator(".phone-entity h2")).toHaveText("ada forever");
+    const status = page.locator(".phone-entity .phone-lifetime-status");
+    await expect(status).toHaveText("No expiration");
+    // Written as on the map's entity card: 2**64 − 1, then the block number itself.
+    await expect(page.locator(".phone-expires-at span")).toHaveText("$expiresAt = 2**64 − 1");
+    await expect(page.locator(".phone-expires-at")).toContainText(NO_EXPIRY_BLOCK);
+    assert.equal(await type(".phone-expires-at"), readout, "The deadline reads like the lifetime it replaces.");
+    await expect(page.getByLabel("Time left")).toHaveCount(0);
+    await fits(page.locator(".phone-expires-at"));
+    await snapshot("no-expiration-written");
+    await tick(20 * 60_000);
+    await expect(status).toHaveText("No expiration");
+    await expect(page.getByText(/Time’s up/)).toHaveCount(0);
+    await expect(page.locator(".phone-mine li")).toHaveCount(3);
+    await expect(page.locator(".phone-mine-time").first()).toHaveText("no expiration");
+    assert.equal(submissions.at(-1).body.noExpiry, true);
+    assert.equal(submissions.at(-1).body.name, "ada forever");
+    assert.equal(api.length, before + 3, "No expiration is still one request.");
     assert.deepEqual(rpc, [], "The phone must never attempt an RPC.");
     assert.ok(submissions.every((item) => !("session" in item.body)), "Phones send no session code.");
     assert.ok(submissions.every((item) => /^[a-f0-9-]{36}$/i.test(item.device)));
-    results.push({ width, colorScheme, requests: api.length, rpcRequests: rpc.length, quietOnLoad: true, oneRequestPerWrite: true, localCountdown: true });
+    results.push({ width, colorScheme, requests: api.length, rpcRequests: rpc.length, quietOnLoad: true, oneRequestPerWrite: true, localCountdown: true, lowerCaseName: true, noExpiration: true });
     await context.close();
   }
   assert.deepEqual(errors, []);

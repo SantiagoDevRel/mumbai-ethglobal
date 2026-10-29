@@ -1,7 +1,9 @@
 // In-memory adapter so the UI can be built before the chain is wired. It simulates blocks,
-// Entity Expiration and Lifetime Extension. Never shown as live: the stage labels mock data.
+// Entity Expiration (and entities with no expiration) and Lifetime Extension. Never shown as live:
+// the stage labels mock data.
 
 import type { ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter";
+import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter";
 import { getProfile, WRITER_ADDRESS } from "./profiles";
 import type {
   BlockInfo,
@@ -14,7 +16,7 @@ import type {
   RawAttribute,
   WriteResult,
 } from "../types";
-import { APP_ID, DOT_CATEGORIES, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC } from "../types";
+import { APP_ID, DOT_CATEGORIES, hasNoExpiry, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC, NO_EXPIRY_BLOCK } from "../types";
 import { DOT_PALETTE, encodeCoord, encodeRating } from "../encoding";
 
 export interface MockOptions {
@@ -84,16 +86,17 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
   const currentBlock = () => BigInt(1_000_000 + Math.floor((Date.now() - genesis) / blockTimeMs));
   const blocksFor = (sec: number) => BigInt(Math.ceil((sec * 1000) / blockTimeMs));
 
-  const write = (items: { attrs: EntityAttrs; lifetimeSec: number }[]): WriteResult => {
+  const write = (items: { attrs: EntityAttrs; lifetimeSec: number; noExpiry?: boolean }[]): WriteResult => {
     const block = currentBlock();
-    const keys = items.map(({ attrs, lifetimeSec }) => {
+    const keys = items.map(({ attrs, lifetimeSec, noExpiry }) => {
       const key = randomHex(32);
       store.set(key, {
         key,
         owner: WRITER_ADDRESS,
         creator: WRITER_ADDRESS,
         createdAtBlock: block,
-        expiresAtBlock: block + blocksFor(lifetimeSec),
+        // No expiration is ExpirationTime.permanent(): the largest block a u64 holds.
+        expiresAtBlock: noExpiry ? NO_EXPIRY_BLOCK : block + blocksFor(lifetimeSec),
         attrs,
         raw: rawOf(attrs),
       });
@@ -121,10 +124,11 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
     return true;
   };
 
-  const names = ["Priya", "Arjun", "Ananya", "Rohan", "Meera", "Kabir", "Sara", "Diego", "Lena", "Yuki", "Omar", "Ada"];
+  // Lower case, like everything the writer stores (Santiago, October 29).
+  const names = ["priya", "arjun", "ananya", "rohan", "meera", "kabir", "sara", "diego", "lena", "yuki", "omar", "ada"];
   const spots: [string, number, number][] = [
-    ["IN", 19.07, 72.88], ["IN", 28.61, 77.21], ["IN", 12.97, 77.59], ["IN", 22.57, 88.36], ["IN", 26.91, 75.79],
-    ["CO", 6.24, -75.58], ["DE", 52.52, 13.4], ["US", 37.77, -122.42], ["BR", -23.55, -46.63], ["JP", 35.68, 139.69],
+    ["in", 19.07, 72.88], ["in", 28.61, 77.21], ["in", 12.97, 77.59], ["in", 22.57, 88.36], ["in", 26.91, 75.79],
+    ["co", 6.24, -75.58], ["de", 52.52, 13.4], ["us", 37.77, -122.42], ["br", -23.55, -46.63], ["jp", 35.68, 139.69],
   ];
   const spawnRandom = () => {
     const [country, lat, lng] = spots[Math.floor(Math.random() * spots.length)]!;
@@ -142,6 +146,12 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
       lifetimeSec: LIFETIME_MIN_SEC + LIFETIME_STEP_SEC * Math.floor(Math.random() * ((LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) / LIFETIME_STEP_SEC + 1)),
     }]);
   };
+  // Two phones that chose "No expiration" ($expiresAt = NO_EXPIRY_BLOCK), so mock mode shows from
+  // the start how the stage draws an entity that never expires.
+  write([
+    { attrs: { kind: "dot", session: "MOCK", name: "ada", color: "#14f195", country: "in", category: "cafe", lat: 19.12, lng: 72.85 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },
+    { attrs: { kind: "dot", session: "MOCK", name: "omar", color: "#00c2ff", country: "co", category: "bookstore", lat: 4.71, lng: -74.07 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },
+  ]);
   const timer = opts.autoSpawnMs ? setInterval(spawnRandom, opts.autoSpawnMs) : null;
 
   return {
@@ -167,7 +177,8 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
     },
     describe: (filters) => describeFilters(filters, WRITER_ADDRESS),
     async createDots(dots: DotCreate[]) {
-      return write(dots.map(({ lifetimeSec, ...d }) => ({ attrs: { kind: "dot", ...d }, lifetimeSec })));
+      // As in the SDK adapter, `lifetimeSec` and `noExpiry` set the deadline and are not attributes.
+      return write(dots.map(({ lifetimeSec, noExpiry, ...d }) => ({ attrs: { kind: "dot", ...d }, lifetimeSec, noExpiry })));
     },
     async createBusinesses(items: BusinessCreate[]) {
       return write(items.map(({ lifetimeSec, ...b }) => ({ attrs: { kind: "business", ...b }, lifetimeSec })));
@@ -176,11 +187,12 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
       return write(items.map(({ lifetimeSec, ...r }) => ({ attrs: { kind: "review", ...r }, lifetimeSec })));
     },
     async extend(keys: Hex[], addSeconds: number) {
-      for (const k of keys) {
-        const e = store.get(k);
-        if (e) e.expiresAtBlock += blocksFor(addSeconds);
-      }
-      return { txHash: randomHex(32), block: currentBlock(), keys };
+      // Same rule as the SDK adapter: an entity with no expiration has nothing to extend.
+      const known = keys.flatMap((k) => store.get(k) ?? []);
+      const expiring = known.filter((e) => !hasNoExpiry(e.expiresAtBlock));
+      if (known.length && !expiring.length) throw new WriteNotSentError(NOTHING_TO_EXTEND);
+      for (const e of expiring) e.expiresAtBlock += blocksFor(addSeconds);
+      return { txHash: randomHex(32), block: currentBlock(), keys: expiring.map((e) => e.key) };
     },
     async patch(key: Hex, fields: PatchFields, current: EntityAttrs) {
       const e = store.get(key);

@@ -1,9 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createArkivAdapter, dotToCreate, encodedFields } from "../shared/arkiv/sdk-0.8.ts";
+import { ExpirationTime } from "@arkiv-network/sdk/utils";
+import { createArkivAdapter, dotToCreate, encodedFields, extensionsFor } from "../shared/arkiv/sdk-0.8.ts";
+import { NOTHING_TO_EXTEND, WriteNotSentError } from "../shared/arkiv/adapter.ts";
 import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
 import { getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
-import { APP_ID, type Hex } from "../shared/types.ts";
+import { APP_ID, NO_EXPIRY_BLOCK, type Hex } from "../shared/types.ts";
 
 test("adapter walks every immutable page and describes the exact query sent", async () => {
   const original = globalThis.fetch;
@@ -101,5 +103,61 @@ test("the stage relay reads without any fetch: no browser touches the public RPC
       read: { kind: "relay", send: async (method) => { calls.push(method); return method === "eth_chainId" ? "0x7614d1" : "0x10"; } } });
     assert.equal(await reader.getBlockNumber(), 16n);
     assert.deepEqual(calls, ["eth_blockNumber"]);
+  } finally { globalThis.fetch = original; }
+});
+
+// "No expiration" on the phone (Santiago, October 29) is the largest deadline a u64 holds.
+test("no expiration writes ExpirationTime.permanent(), and neither lifetime choice is an attribute", () => {
+  const dot = { session: "TEST", name: "asha", country: "in", color: "#fe7446", lat: 19.1, lng: 72.9, lifetimeSec: 900 };
+  const forever = dotToCreate({ ...dot, noExpiry: true });
+  assert.deepEqual(forever.expires, ExpirationTime.permanent());
+  assert.equal(forever.expires.expiresAt, NO_EXPIRY_BLOCK);
+  for (const timed of [dotToCreate(dot), dotToCreate({ ...dot, noExpiry: false })]) assert.deepEqual(timed.expires, ExpirationTime.fromSeconds(900));
+  for (const create of [forever, dotToCreate(dot)]) {
+    const attributes = create.attributes as Record<string, unknown>;
+    assert.equal("noExpiry" in attributes, false);
+    assert.equal("lifetimeSec" in attributes, false);
+    assert.equal(attributes.country, "in");
+  }
+});
+
+test("Lifetime Extension skips entities with no expiration and refuses when none is left", () => {
+  const timed = `0x${"1".repeat(64)}` as Hex, endless = `0x${"2".repeat(64)}` as Hex;
+  // atBlock(NO_EXPIRY_BLOCK + n) would not fit the u64 deadline: the entity with no expiration stays as it is.
+  assert.deepEqual(extensionsFor([{ key: timed, expiresAt: 128n }, { key: endless, expiresAt: NO_EXPIRY_BLOCK }], 600n),
+    [{ entityKey: timed, expires: ExpirationTime.atBlock(728n) }]);
+  assert.throws(() => extensionsFor([{ key: endless, expiresAt: NO_EXPIRY_BLOCK }], 600n), (error: unknown) => error instanceof WriteNotSentError && error.message === NOTHING_TO_EXTEND);
+});
+
+test("extending only entities with no expiration signs nothing and leaves the next write free", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("A relay read must not fetch."); };
+  const timed = `0x${"4".repeat(64)}` as Hex, endless = `0x${"3".repeat(64)}` as Hex;
+  const methods: string[] = [];
+  let walletCalls = 0;
+  const row = (key: Hex) => ({ key, owner: WRITER_ADDRESS, creator: WRITER_ADDRESS, createdAt: "0x60", updatedAt: "0x60",
+    expiresAt: key === endless ? "0xffffffffffffffff" : "0x80",
+    attributes: [{ name: "app", type: "str", value: APP_ID }, { name: "kind", type: "str", value: "dot" }] });
+  const answers: Record<string, (params: unknown) => unknown> = {
+    eth_chainId: () => "0x7614d1",
+    eth_getBlockByNumber: () => ({ number: "0x64", timestamp: "0x6720f000", hash: `0x${"5".repeat(64)}` }),
+    arkiv_getBlockTiming: () => ({ current_block: 100, current_block_time: 1_730_000_000, duration: 2 }),
+    // getEntity is one keyed query: answer with the entity whose key it names.
+    arkiv_query: (params) => ({ blockNumber: "0x64", data: [row(String((params as [string])[0]).match(/0x[0-9a-f]{64}/i)![0].toLowerCase() as Hex)] }),
+  };
+  try {
+    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
+      read: { kind: "relay", send: async (method, params) => { methods.push(method); const answer = answers[method]; if (!answer) throw new Error(`Unexpected RPC method ${method}`); return answer(params); } },
+      wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { walletCalls++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } } } });
+    // Refused before signing, so no uncertainty barrier: the second try gets the same refusal.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await assert.rejects(adapter.extend([endless], 20 * 60), (error: unknown) => error instanceof WriteNotSentError && error.message === NOTHING_TO_EXTEND);
+    }
+    assert.equal(walletCalls, 0);
+    assert.ok(methods.includes("arkiv_query"));
+    assert.equal(methods.some(method => method.startsWith("eth_send")), false);
+    // With an entity that expires in the set, the extension goes on to the wallet.
+    await assert.rejects(adapter.extend([timed, endless], 20 * 60));
+    assert.ok(walletCalls > 0);
   } finally { globalThis.fetch = original; }
 });

@@ -46,6 +46,14 @@ test("country placement stays inside the polygon, is deterministic, and spreads 
   assert.equal(placeDot("XX", "submission"), null);
 });
 
+// The writer stores country codes in lower case (Santiago, October 29); placement reads them the same.
+test("a lower-case country code places a dot exactly like the upper-case one", () => {
+  for (let index = 0; index < 10; index++) assert.deepEqual(placeDot("in", `submission-${index}`), placeDot("IN", `submission-${index}`));
+  assert.deepEqual(placeDot("co", "submission"), placeDot("CO", "submission"));
+  assert.ok(placeDot("in", "submission"));
+  assert.equal(placeDot("xx", "submission"), null);
+});
+
 test("many dots in one country spread out instead of piling up", () => {
   const nearest = (points: { lat: number; lng: number }[]) => Math.min(...points.map((p, i) => Math.min(...points.filter((_, j) => j !== i).map((q) => Math.hypot(p.lat - q.lat, (p.lng - q.lng) * Math.cos(((p.lat + q.lat) / 2) * Math.PI / 180))))));
   const spread: { lat: number; lng: number }[] = [];

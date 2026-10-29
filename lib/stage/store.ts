@@ -11,7 +11,7 @@
 import { useSyncExternalStore } from "react";
 import { SCENES, type CameraCue, type MapMode } from "../../shared/scenes.ts";
 import type { AppSideFilters, ChainFilters, Hex } from "../../shared/types.ts";
-import { choreograph, stepCamera } from "./choreography.ts";
+import { choreograph, filterCamera } from "./choreography.ts";
 
 export type Panel = "filters" | "inspector" | "query" | "controls";
 
@@ -171,8 +171,13 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
       };
     case "unhideAll":
       return { ...state, hidden: [] };
-    case "setChainFilters":
-      return { ...state, chainFilters: cmd.filters };
+    case "setChainFilters": {
+      // A camera that follows the filters (L3's country) flies only when its cue changes, so typing
+      // a name leaves a camera the presenter moved by hand where it is.
+      const cue = filterCamera(scene.id, cmd.filters);
+      const camera = cue && cue !== state.camera.cue ? { cue, nonce: state.camera.nonce + 1 } : state.camera;
+      return { ...state, chainFilters: cmd.filters, camera };
+    }
     case "setAppFilters":
       return { ...state, appFilters: cmd.filters };
     case "setOverlay": {
@@ -182,7 +187,7 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
       return { ...state, overlays: { ...state.overlays, [cmd.key]: current } };
     }
     case "resetCamera":
-      return { ...state, camera: { cue: stepCamera(scene.id, state.step) ?? (scene.camera === "keep" ? "globe" : scene.camera), nonce: state.camera.nonce + 1 } };
+      return { ...state, camera: { cue: filterCamera(scene.id, state.chainFilters) ?? (scene.camera === "keep" ? "globe" : scene.camera), nonce: state.camera.nonce + 1 } };
     case "camera":
       return { ...state, camera: { cue: cmd.cue, nonce: state.camera.nonce + 1 } };
     case "replay":

@@ -120,7 +120,8 @@ function ScanColumn({ image, label, step }: { image: string | null; label: QrLab
         <div className="qr-scan-form">
           <p>Name. Color. Country.</p>
           <p>
-            <span>Lifetime: {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} minutes.</span>
+            <span>Lifetime: {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} minutes,</span>{" "}
+            <span>or no expiration.</span>
           </p>
         </div>
       </motion.aside>

@@ -1,119 +1,19 @@
 "use client";
 
-// Overlays for the live scenes (L1, L3, L6, L2, L9): the caption pill and scene copy only (handoff
-// 4). The map, counter, QR card, event log, filters, inspector, owner panel and the query panel
-// (with its app-side row) belong to the app. Captions sit at (432, 60), or (352, 60) when the right
-// column holds a wide panel, below the outline bar.
+// Overlays for the live scenes L1 and L3 (L9, the close, is the finale: ./finale/Finale.tsx). The
+// map, counter, QR card, event log, filters, entity card and the query panel (with its app-side row)
+// belong to the app. October 29 (Santiago): L1 and L3 have no caption, so their overlays draw nothing
+// and the map keeps the whole stage; the Own it (L6) and Expire it (L2) scenes are gone, and transfer
+// and extension stay in the entity card.
 
-import { AnimatePresence, motion } from "motion/react";
-import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { Mascot } from "../Mascot";
-import { Caption, EASE, GLASS, OverlayShell, PANEL_EASE, REVEAL_TIME, Rise, T } from "../ui";
 
-/** Swaps the caption text with a short cross-fade (panel in 240 ms, out 160 ms). */
-function SwapCaption({ id, children, wide = false }: { id: string; children: ReactNode; wide?: boolean }) {
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={id}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0, transition: { duration: 0.24, ease: PANEL_EASE } }}
-        exit={{ opacity: 0, y: 12, transition: { duration: 0.16, ease: PANEL_EASE } }}
-      >
-        <Caption wide={wide}>{children}</Caption>
-      </motion.div>
-    </AnimatePresence>
-  );
-}
-
+/** Write it, live: no caption. The room's dots, the counter and the corner QR say it. */
 export function L1(_props: SceneContentProps) {
-  return (
-    <OverlayShell>
-      <SwapCaption id="l1">Write it. Every dot is an entity you just wrote.</SwapCaption>
-    </OverlayShell>
-  );
+  return null;
 }
 
-export function L2({ step }: SceneContentProps) {
-  return (
-    <OverlayShell>
-      {step === 0 ? (
-        <SwapCaption id="before">Entity Expiration: no cron job, no cleanup script.</SwapCaption>
-      ) : (
-        <SwapCaption id="after">Expire it. Or extend it.</SwapCaption>
-      )}
-    </OverlayShell>
-  );
-}
-
+/** Query it, live: no caption. The presenter filters by hand and the query panel shows the query. */
 export function L3(_props: SceneContentProps) {
-  return (
-    <OverlayShell>
-      <SwapCaption id="l3">Same query, on your entities.</SwapCaption>
-    </OverlayShell>
-  );
-}
-
-/** L6: "Own it." The inspector holds a real transfer: a wallet address and Transfer ownership (Rabby).
- * The line lives in the caption pill, on its glass, so it never sits over the dots and their labels
- * (it was a 48px line over South India until October 29). */
-export function L6({ step }: SceneContentProps) {
-  return (
-    <OverlayShell>
-      {step >= 1 ? (
-        <SwapCaption id="l6-transfer" wide>
-          Transfer it: paste a wallet, sign once.
-        </SwapCaption>
-      ) : (
-        <SwapCaption id="l6-own" wide>
-          Own it. One wallet, ours, owns every entity on this map.
-        </SwapCaption>
-      )}
-    </OverlayShell>
-  );
-}
-
-/** Where to start building, under the corner QR: the event log stays hidden on L9. */
-const LINKS: { name: string; where: string; url?: boolean }[] = [
-  { name: "Docs", where: "docs.arkiv.network", url: true },
-  { name: "Hub", where: "hub.arkiv.network", url: true },
-  { name: "MCP", where: "mcp.arkiv.network", url: true },
-  { name: "Prizes", where: "ethglobal.com/events/mumbai/prizes/arkiv", url: true },
-];
-
-export function L9(_props: SceneContentProps) {
-  return (
-    <OverlayShell>
-      <Rise className={`${GLASS} absolute left-[1464px] top-[292px] flex w-[424px] flex-col gap-4 px-8 py-7`}>
-        <p className="text-[20px] font-bold tracking-[0.1em]" style={{ color: T.t64 }}>START BUILDING</p>
-        {LINKS.map(({ name, where, url }) => (
-          <div key={name} className="flex flex-col gap-1">
-            <span className="text-[28px] font-semibold">{name}</span>
-            {/* A long address breaks after a slash, never inside a word. */}
-            <span className={`text-[24px] ${url ? "font-mono text-[var(--arkiv-orange)]" : ""}`} style={url ? undefined : { color: T.t84 }}>
-              {where.split("/").join("/​")}
-            </span>
-          </div>
-        ))}
-      </Rise>
-      {/* The closing lines sit bottom-left; the mascot stands under the links card, below its
-          bottom edge (about 810). */}
-      <Rise className="absolute left-[96px] top-[820px]">
-        <p className="text-[72px] font-bold leading-[1.05] [text-shadow:0_4px_24px_rgba(0,0,0,0.8)]">
-          Write it. Query it. Own it. Expire it.
-          <br />
-          <span className="text-[var(--arkiv-orange)]">Thank you.</span>
-        </p>
-      </Rise>
-      <motion.div
-        className="absolute left-[1620px] top-[824px]"
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: REVEAL_TIME, ease: EASE }}
-      >
-        <Mascot pose="wave" height={232} />
-      </motion.div>
-    </OverlayShell>
-  );
+  return null;
 }

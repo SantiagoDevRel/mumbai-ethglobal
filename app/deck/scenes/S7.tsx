@@ -45,7 +45,8 @@ function EntityCard() {
       <div className="flex flex-col gap-1 rounded-[12px] border-[2px] border-[var(--arkiv-orange)] bg-[rgba(254,116,70,0.12)] px-5 py-4">
         <span className="text-[22px] font-semibold" style={{ color: T.t84 }}>Entity Expiration</span>
         <span className="text-[30px] font-semibold leading-[1.25] text-[var(--arkiv-orange)]">
-          <span className="whitespace-nowrap">in {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} minutes</span>
+          <span className="whitespace-nowrap">in {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} minutes,</span>{" "}
+          <span className="whitespace-nowrap">or no expiration</span>
         </span>
       </div>
     </div>

@@ -90,7 +90,7 @@ try {
     if (stopped) { phone.error = "Not submitted: balance guard stopped the campaign."; return; }
     phone.submittedAt = Date.now();
     try {
-      const accepted = await writerRequest<{ ticket: string }>("/api/submit", { session: code, name: `Phone ${phone.index + 1}`, color: "#fe7446", country: "IN", lifetimeSec: 300 }, { "x-device-token": randomUUID() });
+      const accepted = await writerRequest<{ ticket: string }>("/api/submit", { session: code, name: `phone ${phone.index + 1}`, color: "#fe7446", country: "in", lifetimeSec: 300 }, { "x-device-token": randomUUID() });
       phone.acceptedAt = Date.now(); phone.ticket = accepted.ticket;
       const deadline = Date.now() + 120_000;
       while (Date.now() < deadline && !stopped) {

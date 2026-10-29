@@ -11,7 +11,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "node --import ./tests/ts-resolve.mjs --test --experimental-strip-types \"shared/**/*.test.ts\" \"tests/*.test.ts\"",
+    "test": "node --import ./tests/ts-resolve.mjs --test --experimental-strip-types \"shared/**/*.test.ts\" \"app/**/*.test.ts\" \"tests/*.test.ts\"",
     "check:network": "node --experimental-strip-types scripts/check-network.ts",
     "seed": "node --experimental-strip-types scripts/seed.ts",
     "loadtest": "node --experimental-strip-types scripts/loadtest.ts"

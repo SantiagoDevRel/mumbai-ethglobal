@@ -5,9 +5,10 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { open, readFile } from "node:fs/promises";
 import { chromium, expect } from "@playwright/test";
-import { decodeFunctionData, parseAbi } from "viem";
+import { decodeFunctionData, getAddress, parseAbi } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { SCENES, TALK_LENGTH_SEC } from "../shared/scenes.ts";
+import { hasNoExpiry } from "../shared/types.ts";
 import { getProfile, WRITER_ADDRESS, explorerUrl } from "../shared/arkiv/profiles.ts";
 import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
 import { createArkivAdapter } from "../shared/arkiv/sdk-0.8.ts";
@@ -41,7 +42,7 @@ const report = {
   scriptSha256: createHash("sha256").update(await readFile(new URL(import.meta.url))).digest("hex"),
   mapHtmlSha256: createHash("sha256").update(await (await fetch(`${ORIGIN}/map`, { headers: PROTECTION })).text()).digest("hex"),
   startedAt: new Date().toISOString(), plannedTalkMs: TALK_LENGTH_SEC * 1000,
-  timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; synthetic lifetimes are 15 minutes (the phone default), so the room is still alive when the map returns at L2. L2 selected then all run promptly. Scene starts more than 1000 ms late count as overruns.",
+  timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; every phone writes a 15-minute lifetime (the phone's default and longest), so the room is still alive at L3. Every entity has an expiration: the rehearsal never writes one with no expiration. L1 opens the entity card and fills the transfer form without sending it. L3 opens unfiltered; the presenter filters by hand (name, color, country), clears the filters, then extends the selected entity and every live one, promptly. Scene starts more than 1000 ms late count as overruns.",
   writer: "the app's own /api (Vercel function)",
   scenes: [], operations: [], transactions: [], phones: [], balances: [], pageErrors: [], requestFailures: [], dataErrors: [],
   ownership: { mode: "transfer form checked, never sent", allowedWalletOperationTags: [3], onChainTransfers: 0 },
@@ -181,10 +182,26 @@ async function signedAction(name, trigger, verify) {
   });
 }
 async function entity(key) { return clients.reader.getEntity(key); }
+// The writer stores text in lower case, so the card shows the typed "Rehearsal phone" as "rehearsal phone".
 async function inspect(key) {
   await command({ type: "inspect", key });
-  await expect(stage.locator(".inspector-panel")).toContainText("Rehearsal phone", { timeout: 20000 });
+  await expect(stage.locator(".inspector-panel")).toContainText("rehearsal phone", { timeout: 20000 });
 }
+/** The data source and its blinker sit in the "?" presenter card, never on the stage (October 29). */
+async function sourceStatus() {
+  const card = stage.getByRole("dialog", { name: "Presenter controls" });
+  await expect(stage.locator(".source-label")).toHaveCount(0);
+  await command({ type: "togglePanel", panel: "controls", open: true });
+  let detail;
+  try {
+    await expect(card.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
+    await expect(card.locator(".source-label .refresh-detail")).toHaveText(/^Updated · block #\d+$/, { timeout: 20000 });
+    detail = await card.locator(".source-label .refresh-detail").textContent();
+  } finally { await command({ type: "togglePanel", panel: "controls", open: false }); }
+  await expect(card).toHaveCount(0);
+  return detail;
+}
+const cameraCue = () => stage.evaluate(() => window.__rehearsalState?.camera.cue);
 function observe(page, label) {
   page.on("pageerror", (error) => report.pageErrors.push({ page: label, scene: currentScene, atMs: now(), message: safeMessage(error) }));
   page.on("requestfailed", (request) => report.requestFailures.push({ page: label, scene: currentScene, atMs: now(), origin: new URL(request.url()).origin, path: new URL(request.url()).pathname, reason: request.failure()?.errorText }));
@@ -200,7 +217,8 @@ function observe(page, label) {
 let phoneKey;
 async function submitSynthetic(index) {
   return op(`synthetic phone ${index + 1}`, async () => {
-    const draft = { session, name: `Rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "IN" : "CO", color: index % 2 ? GREEN : ORANGE, lifetimeSec: 900 };
+    // Lower case, as the writer stores it; never `noExpiry`, so the testnet keeps no entity for good.
+    const draft = { session, name: `rehearsal ${String(index + 1).padStart(2, "0")}`, country: index % 3 ? "in" : "co", color: index % 2 ? GREEN : ORANGE, lifetimeSec: 900 };
     const submittedAtMs = now();
     const response = await fetch(`${WRITER}/api/submit`, { method: "POST", headers: { "content-type": "application/json", ...PROTECTION, "x-device-token": crypto.randomUUID(), origin: ORIGIN }, body: JSON.stringify(draft), signal: AbortSignal.timeout(20000) });
     assert.equal(response.status, 200);
@@ -238,13 +256,15 @@ async function phoneWave() {
       const href = await phone.getByRole("link", { name: "View in explorer" }).getAttribute("href");
       phoneKey = href.split("/").at(-1); assert.match(phoneKey, /^0x[0-9a-f]{64}$/i);
       const included = await entity(phoneKey);
-      const item = { kind: "browser", name: "Rehearsal phone", country: "IN", color: GREEN, submittedAtMs, confirmedAtMs: now(), entityKey: phoneKey, block: included.createdAt.toString(), expiresAtBlock: included.expiresAt.toString() };
+      const item = { kind: "browser", name: "rehearsal phone", country: "in", color: GREEN, submittedAtMs, confirmedAtMs: now(), entityKey: phoneKey, block: included.createdAt.toString(), expiresAtBlock: included.expiresAt.toString() };
       report.phones.push(item);
-      await expect(stage.locator(".event-log").getByRole("button", { name: /Rehearsal phone/ }).first()).toBeVisible({ timeout: 20000 });
+      assert.equal(hasNoExpiry(BigInt(included.expiresAt)), false, "The real phone wrote an entity with no expiration.");
+      await expect(stage.locator(".event-log").getByRole("button", { name: /rehearsal phone/ }).first()).toBeVisible({ timeout: 20000 });
       item.visibleAtMs = now(); item.submitToVisibleMs = now() - submittedAtMs;
+      // The dot is painted in its stored color: Green, #14f195.
       await expect.poll(() => stage.locator(".globe-dots").evaluate((canvas) => {
         const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
-        let count = 0; for (let i = 0; i < data.length; i += 4) if (data[i] === 61 && data[i + 1] === 220 && data[i + 2] === 151 && data[i + 3] > 100) count++;
+        let count = 0; for (let i = 0; i < data.length; i += 4) if (data[i] === 20 && data[i + 1] === 241 && data[i + 2] === 149 && data[i + 3] > 100) count++;
         return count;
       }), { timeout: 15000 }).toBeGreaterThan(0);
       item.paintedAtMs = now();
@@ -263,52 +283,89 @@ async function sceneWork(id, step) {
     await wave; if (waveError) throw waveError; assert.equal(report.phones.length, 21);
     const status = await presenter("status"); assert.equal(status.written, 21); assert.equal(status.failed, 0);
   });
-  if (id === "L2" && step === 0) await signedAction("extend selected", async () => {
-    await inspect(phoneKey); const before = await entity(phoneKey); report.selectedExpiryBefore = before.expiresAt.toString();
-    await stage.getByRole("button", { name: "Extend", exact: true }).click();
-  }, async () => { const after = await entity(phoneKey); assert.ok(after.expiresAt > BigInt(report.selectedExpiryBefore)); report.selectedExpiryAfter = after.expiresAt.toString(); });
-  if (id === "L2" && step === 1) {
+  // The entity card: $owner (never $creator) and every stored attribute, in lower case as written.
+  // "0x" then Space fills the transfer form with a fresh checksummed wallet; it is cancelled, so
+  // nothing is sent and the owner stays ours.
+  if (id === "L1") await op("entity card and transfer form, nothing sent", async () => {
+    await inspect(phoneKey);
+    const card = stage.locator(".inspector-panel");
+    await expect(card.locator('[data-field="$owner"] dd')).toHaveAttribute("title", new RegExp(`^${WRITER_ADDRESS}$`, "i"));
+    await expect(card).not.toContainText("$creator");
+    await expect(card.locator(".badge-highlight, .owner-note")).toHaveCount(0);
+    const stored = Object.fromEntries(await card.locator(".stored-attributes tbody tr").evaluateAll((rows) => rows.map((row) => [row.querySelector("th").textContent, row.querySelectorAll("td")[1].textContent])));
+    assert.deepEqual({ name: stored.name, color: stored.color, country: stored.country }, { name: "rehearsal phone", color: GREEN, country: "in" });
+    const before = await entity(phoneKey), sends = report.transactions.length;
+    await card.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
+    const field = card.getByLabel("New owner wallet");
+    await field.fill("0x"); await field.press("Space");
+    await expect(field).toHaveValue(/^0x[0-9a-fA-F]{40}$/);
+    const filled = await field.inputValue();
+    assert.equal(getAddress(filled), filled, "The field holds a checksummed wallet address.");
+    await expect(card.getByRole("button", { name: "Transfer ownership", exact: true })).toBeEnabled();
+    await expect(stage.locator('[data-scene="L1"]')).toBeVisible();
+    await card.getByRole("button", { name: "Cancel transfer", exact: true }).click();
+    await sleep(2000); const after = await entity(phoneKey);
+    assert.equal(after.owner, before.owner); assert.equal(report.transactions.length, sends);
+    report.ownership = { ...report.ownership, key: phoneKey, ownerBefore: before.owner, ownerAfter: after.owner, filledNewOwner: filled, walletSendsDuringDemo: report.transactions.length - sends };
+    await command({ type: "inspect", key: null });
+  });
+  // L3 opens on the whole globe with no filter and no QR. The presenter filters by hand (a country
+  // flies the camera there), clears the filters, then extends the selected entity and every live one.
+  if (id === "L3" && step === 0) {
+    const bar = stage.locator(".filter-bar"), live = stage.locator(".query-panel .query-line[data-live]");
+    const pickColor = async (name) => {
+      await bar.getByRole("combobox", { name: "Color" }).click();
+      await bar.getByRole("listbox", { name: "Colors" }).getByRole("option", { name, exact: true }).click();
+    };
+    await op("opens unfiltered, no QR", async () => {
+      await command({ type: "inspect", key: null });
+      await expect(bar).toBeVisible(); await expect(stage.locator(".query-panel")).toBeVisible();
+      await expect(stage.locator(".join-qr")).toHaveCount(0);
+      await expect(live).toHaveCount(0);
+      await expect.poll(cameraCue).toBe("globe");
+    });
+    await op("filter by hand: name, color, country", async () => {
+      await bar.getByPlaceholder("Starts with…").fill("rehearsal");
+      await expect(live.filter({ hasText: "rehearsal" })).toHaveCount(1, { timeout: 20000 });
+      await pickColor("Orange");
+      await expect(live.filter({ hasText: `color = str('${ORANGE}')` })).toHaveCount(1, { timeout: 20000 });
+      await bar.getByPlaceholder("Any country").fill("India");
+      await expect(live.filter({ hasText: "country = str('in')" })).toHaveCount(1, { timeout: 20000 });
+      await expect.poll(cameraCue, { timeout: 10000 }).toBe("country:in");
+      const run = await adapter.query({ kinds: ["dot"], session, namePrefix: "rehearsal", color: ORANGE, country: "in" });
+      assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.name.startsWith("rehearsal") && item.attrs.color === ORANGE && item.attrs.country === "in"));
+      await expect(bar.locator(".filter-results strong")).toHaveText(String(run.entities.length), { timeout: 20000 });
+      report.filterEvidence = { query: run.description.query, block: run.block.toString(), keys: run.entities.map((item) => item.key) };
+      // Cleared by hand: the whole room again, and the camera back on the globe.
+      await bar.getByPlaceholder("Starts with…").fill("");
+      await bar.getByPlaceholder("Any country").fill("");
+      await pickColor("Any color");
+      await expect(live).toHaveCount(0, { timeout: 20000 });
+      await expect.poll(cameraCue, { timeout: 10000 }).toBe("globe");
+      await expect(bar.locator(".filter-results strong")).toHaveText(String(report.phones.length), { timeout: 20000 });
+    });
+    await signedAction("extend selected", async () => {
+      await inspect(phoneKey); const before = await entity(phoneKey); report.selectedExpiryBefore = before.expiresAt.toString();
+      await stage.locator(".inspector-actions").getByRole("button", { name: "Extend", exact: true }).click();
+    }, async () => { const after = await entity(phoneKey); assert.ok(after.expiresAt > BigInt(report.selectedExpiryBefore)); report.selectedExpiryAfter = after.expiresAt.toString(); });
+    // Extend all leaves out an entity with no expiration (nothing to extend); the rehearsal writes none.
     const before = await adapter.query({ kinds: ["dot"], session });
-    report.extendAllBefore = before.entities.map((item) => ({ key: item.key, expiresAtBlock: item.expiresAtBlock.toString() }));
+    report.extendAllBefore = before.entities.filter((item) => !hasNoExpiry(item.expiresAtBlock)).map((item) => ({ key: item.key, expiresAtBlock: item.expiresAtBlock.toString() }));
     await signedAction("extend all", async () => { await command({ type: "extend", scope: "all" }); }, async () => {
       const after = await adapter.query({ kinds: ["dot"], session });
       for (const item of report.extendAllBefore) assert.ok(after.entities.some((value) => value.key === item.key && value.expiresAtBlock > BigInt(item.expiresAtBlock)));
-      report.extendedEntities = after.entities.length;
+      report.extendedEntities = report.extendAllBefore.length;
     });
+    await command({ type: "inspect", key: null });
   }
-  // L3 runs the B3 query by itself, one filter per →: color is orange, then AND country is India.
-  if (id === "L3" && step === 0) await op("show filters and exact query", async () => { await command({ type: "inspect", key: null }); await expect(stage.locator(".query-panel")).toBeVisible(); await expect(stage.locator(".filter-bar")).toBeVisible(); });
-  if (id === "L3" && step === 1) await op("color filter orange", async () => {
-    await expect(stage.locator(".query-panel")).toContainText(`color = str('${ORANGE}')`, { timeout: 20000 });
-    const run = await adapter.query({ kinds: ["dot"], session, color: ORANGE }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.color === ORANGE));
-  });
-  if (id === "L3" && step === 2) await op("AND country India", async () => {
-    await expect(stage.locator(".query-panel")).toContainText("AND country = str('IN')", { timeout: 20000 });
-    const run = await adapter.query({ kinds: ["dot"], session, color: ORANGE, country: "IN" }); assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.color === ORANGE && item.attrs.country === "IN"));
-    report.filterEvidence = { query: run.description.query, block: run.block.toString(), keys: run.entities.map((item) => item.key) };
-  });
-  // Own it: the card shows $owner and no $creator; the transfer form is checked but never sent.
-  if (id === "L6" && step === 0) await op("entity card shows $owner, not $creator", async () => {
-    await inspect(phoneKey);
-    await expect(stage.locator(".inspector-panel .badge-highlight")).toHaveAttribute("data-field", "$owner");
-    await expect(stage.locator(".inspector-panel")).not.toContainText("$creator");
-  });
-  if (id === "L6" && step === 1) await op("transfer form ready, nothing sent", async () => {
-    const before = await entity(phoneKey), sends = report.transactions.length;
-    await stage.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
-    await stage.getByLabel("New owner wallet").fill(WRITER_ADDRESS);
-    await expect(stage.getByRole("button", { name: "Transfer ownership", exact: true })).toBeEnabled();
-    await sleep(2000); const after = await entity(phoneKey);
-    assert.equal(after.owner, before.owner); assert.equal(report.transactions.length, sends);
-    report.ownership = { ...report.ownership, key: phoneKey, ownerBefore: before.owner, ownerAfter: after.owner, walletSendsDuringDemo: report.transactions.length - sends };
-  });
-  if (id === "L9") await op("QR still opens the phone form and writing stays open", async () => {
-    await expect(stage.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  // The close keeps the map quiet (no counter, list or panels) while phones can still write.
+  if (id === "L9") await op("close: quiet map, writing stays open", async () => {
+    for (const selector of [".stage-counter", ".event-log", ".query-panel", ".filter-bar", ".inspector-panel"]) await expect(stage.locator(selector)).toHaveCount(0);
     const status = await presenter("status");
     assert.equal(status.phase, "talk"); assert.equal(status.doors, "open");
-    report.closingQrOpensScan = true;
+    report.closeWritingOpen = true;
   });
-  if (id === "L9") await op("closing globe remains live", async () => { await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible(); assert.ok(proxyReads > 0); });
+  if (id === "L9") await op("closing globe remains live", async () => { report.closingSourceStatus = await sourceStatus(); assert.ok(proxyReads > 0); });
 }
 try {
   await clients.checkNetwork();
@@ -333,9 +390,9 @@ try {
   await stage.goto(`${ORIGIN}/map`, { waitUntil: "domcontentloaded" });
   await stage.evaluate(() => window.__rehearsalChannel.postMessage({ kind: "hello" }));
   await expect.poll(() => stage.evaluate(() => window.__rehearsalState?.sceneIndex)).toBe(0);
-  // The HUD is only mounted in live scenes; check its live source briefly, then reset before the clock.
+  // Check the live source on a live scene (in the "?" card, never on the stage), then reset before the clock.
   await command({ type: "goto", index: SCENES.findIndex((scene) => scene.id === "L1") });
-  await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
+  report.setupSourceStatus = await sourceStatus();
   await command({ type: "goto", index: 0 });
   if (preflight) {
     // A separate browser profile exercises selectors and real readback only. It
@@ -343,12 +400,16 @@ try {
     await command({ type: "session", code: status.session });
     await command({ type: "goto", index: SCENES.findIndex((scene) => scene.id === "L3") });
     await command({ type: "togglePanel", panel: "filters", open: true });
-    await stage.locator(".filters-panel").getByRole("combobox", { name: /^Country/ }).selectOption("IN");
-    await expect(stage.locator(".query-panel")).toContainText("country = str('IN')", { timeout: 20000 });
-    { const more = stage.locator(".filters-panel .more-filters"); await more.evaluate((element) => { element.open = true; }); await more.getByRole("button", { name: "Filter color Green", exact: true }).click(); }
+    // The filter bar, as the presenter uses it at L3: a country by name (the camera flies there), then a color.
+    const bar = stage.locator(".filter-bar");
+    await bar.getByPlaceholder("Any country").fill("India");
+    await expect(stage.locator(".query-panel")).toContainText("country = str('in')", { timeout: 20000 });
+    await expect.poll(cameraCue, { timeout: 10000 }).toBe("country:in");
+    await bar.getByRole("combobox", { name: "Color" }).click();
+    await bar.getByRole("listbox", { name: "Colors" }).getByRole("option", { name: "Green", exact: true }).click();
     await expect(stage.locator(".query-panel")).toContainText(`color = str('${GREEN}')`, { timeout: 20000 });
     assert.ok(proxyReads > 0); assert.equal(report.pageErrors.length, 0);
-    console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0, filters: ["IN", GREEN] }));
+    console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0, filters: ["in", GREEN] }));
   }
   else {
     session = (await presenter("session/start", {})).code; report.session = session;

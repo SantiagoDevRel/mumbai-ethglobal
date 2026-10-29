@@ -27,7 +27,19 @@ export interface DotCreate {
   lng: number;
   category?: BusinessCategory;
   lifetimeSec: number;
+  /** No expiration: created with `ExpirationTime.permanent()`, so `$expiresAt` is `NO_EXPIRY_BLOCK`
+   * and `lifetimeSec` is ignored. Neither is written as an attribute. */
+  noExpiry?: boolean;
 }
+
+/** A write refused before anything was signed or sent. Unlike a failed send it leaves nothing to
+ * reconcile, so the adapter takes the next write. */
+export class WriteNotSentError extends Error {
+  constructor(message: string) { super(message); this.name = "WriteNotSentError"; }
+}
+
+/** Why a Lifetime Extension of entities that all have no expiration sends nothing (stage copy). */
+export const NOTHING_TO_EXTEND = "Nothing to extend: an entity with no expiration never expires.";
 
 export type BusinessCreate = Omit<BusinessAttrs, "kind"> & { lifetimeSec: number };
 export type ReviewCreate = Omit<ReviewAttrs, "kind"> & { lifetimeSec: number };
@@ -54,11 +66,12 @@ export interface ArkivAdapter {
   createDots(dots: DotCreate[]): Promise<WriteResult>;
   createBusinesses(items: BusinessCreate[]): Promise<WriteResult>;
   createReviews(items: ReviewCreate[]): Promise<WriteResult>;
-  /** Lifetime Extension of each key by `addSeconds` (one batch). */
+  /** Lifetime Extension of each key by `addSeconds` (one batch), returning the keys it extended.
+   * Entities with no expiration are skipped; if none is left it rejects with `WriteNotSentError`. */
   extend(keys: Hex[], addSeconds: number): Promise<WriteResult>;
   /** Real patch: keeps existing attributes, sets the given ones. */
   patch(key: Hex, fields: PatchFields, current: EntityAttrs): Promise<WriteResult>;
-  /** Not used on stage (the ownership finale is a demo view); shown in L7. */
+  /** The entity card's Transfer ownership (signed in Rabby by the workshop wallet; the mock moves $owner in place). */
   changeOwner(key: Hex, newOwner: Hex): Promise<WriteResult>;
 }
 

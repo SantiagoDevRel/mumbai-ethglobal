@@ -53,7 +53,14 @@ try {
     channel.close();
   }, [session, sceneIndex("L1")]);
   await expect(stage.locator('[data-scene="L1"]')).toBeVisible();
-  await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
+  // The data source and its status sit in the presenter's "?" card, not on the stage.
+  const controls = stage.getByRole("dialog", { name: "Presenter controls" });
+  const showControls = (open) => stage.evaluate((value) => { const channel = new BroadcastChannel("arkiv-mumbai-stage"); channel.postMessage({ kind: "command", cmd: { type: "togglePanel", panel: "controls", open: value } }); channel.close(); }, open);
+  await expect(stage.getByText("Live · Arkiv DB-Chain", { exact: true })).toHaveCount(0);
+  await showControls(true);
+  await expect(controls.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 20000 });
+  await showControls(false);
+  await expect(controls).toHaveCount(0);
   const phone = await context.newPage();
   await phone.setViewportSize({ width: 390, height: 844 });
   const phoneWriterRequests = [];
@@ -81,20 +88,23 @@ try {
   const entityHref = await phone.getByRole("link", { name: "View in explorer" }).getAttribute("href");
   const key = entityHref?.split("/").at(-1);
   assert.match(key ?? "", /^0x[0-9a-f]{64}$/i);
-  await expect(stage.locator(".event-log").getByRole("button", { name: /App smoke/ }).first()).toBeVisible({ timeout: 15000 });
+  // Typed as "App smoke"; the phone and the writer store it in lower case.
+  await expect(stage.locator(".event-log").getByRole("button", { name: /app smoke/ }).first()).toBeVisible({ timeout: 15000 });
   await expect.poll(() => stage.locator(".globe-dots").evaluate((canvas) => {
     const pixels = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
     let colored = 0;
     for (let i = 0; i < pixels.length; i += 4) if (pixels[i] === 20 && pixels[i + 1] === 241 && pixels[i + 2] === 149 && pixels[i + 3] > 100) colored++;
     return colored;
   }), { timeout: 15000 }).toBeGreaterThan(0);
-  await stage.locator(".event-log").getByRole("button", { name: /App smoke/ }).first().click();
-  await expect(stage.locator(".inspector-panel")).toContainText("App smoke");
+  await stage.locator(".event-log").getByRole("button", { name: /app smoke/ }).first().click();
+  await expect(stage.locator(".inspector-panel")).toContainText("app smoke");
   await expect(phone.getByLabel("Time left")).toHaveText(/^[45]:\d\d$/);
   // The slider's minimum lifetime is five minutes; the map drops the dot when it expires and the
   // phone's own countdown reaches zero.
   await expect(stage.locator(".inspector-panel")).toContainText("Select a dot on the map", { timeout: 360000 });
-  const expired = await stage.locator(".source-label .refresh-detail").textContent();
+  await showControls(true);
+  const expired = await controls.locator(".source-label .refresh-detail").textContent();
+  await showControls(false);
   await expect(phone.getByRole("button", { name: "Create new entity", exact: true })).toBeVisible({ timeout: 30000 });
   // The phone's whole conversation with the writer is the one submit.
   assert.deepEqual(phoneWriterRequests.map((request) => request.path), ["/api/submit"], "A phone makes exactly one request.");

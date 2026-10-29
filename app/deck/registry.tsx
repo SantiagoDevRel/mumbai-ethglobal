@@ -11,13 +11,14 @@ import { B2 } from "./scenes/B2";
 import { B3 } from "./scenes/B3";
 import { B5 } from "./scenes/B5";
 import { D6 } from "./scenes/data/D6";
+import { L9 } from "./scenes/finale/Finale";
 import { IX } from "./scenes/IX";
-import { L1, L2, L3, L6, L9 } from "./scenes/live";
+import { L1, L3 } from "./scenes/live";
 import { NT } from "./scenes/NT";
 import { S0 } from "./scenes/S0";
 import { S7 } from "./scenes/S7";
-import { ST } from "./scenes/ST";
 import { Speaker } from "./scenes/Speaker";
+import { ST } from "./scenes/ST";
 import { T1 } from "./scenes/T1";
 import { W1 } from "./scenes/W1";
 import { W2 } from "./scenes/W2";
@@ -39,8 +40,6 @@ export const deck: DeckRegistry = {
   B2: { Slide: B2, notes: NOTES.B2 },
   B3: { Slide: B3, notes: NOTES.B3 },
   L3: { Overlay: L3, notes: NOTES.L3 },
-  L6: { Overlay: L6, notes: NOTES.L6 },
-  L2: { Overlay: L2, notes: NOTES.L2 },
   B4: { Slide: D6, notes: NOTES.B4 },
   B5: { Slide: B5, notes: NOTES.B5 },
   T1: { Slide: T1, notes: NOTES.T1 },

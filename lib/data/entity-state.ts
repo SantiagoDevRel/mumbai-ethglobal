@@ -1,13 +1,17 @@
-import type { BlockInfo, LiveEntity, QueryRun, StageEvent } from "../../shared/types.ts";
+import { hasNoExpiry, type BlockInfo, type LiveEntity, type QueryRun, type StageEvent } from "../../shared/types.ts";
 
 export interface VisualStageEvent extends StageEvent {
   color?: string;
   country?: string;
   lifetimeBlocks: bigint;
+  /** Written with no expiration (`$expiresAt` = 2**64 - 1): the event log says so instead of a lifetime. */
+  noExpiry: boolean;
 }
 
-/** Interpolation is visual only. The query remains the authority for disappearance. */
+/** Interpolation is visual only. The query remains the authority for disappearance. An entity with
+ * no expiration never runs out: Infinity, so nothing draws a countdown for it. */
 export function remainingSeconds(entity: LiveEntity, block: BlockInfo | null, now: number): number {
+  if (hasNoExpiry(entity.expiresAtBlock)) return Infinity;
   if (!block || block.blockTimeMs <= 0) return 0;
   const elapsed = Math.max(0, Math.min(now - block.timestampMs, block.blockTimeMs));
   return Math.max(0, (Number(entity.expiresAtBlock - block.number) * block.blockTimeMs - elapsed) / 1000);
@@ -22,7 +26,8 @@ export function diffEntities(previous: LiveEntity[], run: QueryRun, sameQuery: b
       name: "name" in entity.attrs ? entity.attrs.name : "Review", detail, block: run.block, at: run.ranAt,
       color: "color" in entity.attrs ? entity.attrs.color : undefined,
       country: "country" in entity.attrs ? entity.attrs.country : undefined,
-      lifetimeBlocks: entity.expiresAtBlock - entity.createdAtBlock });
+      lifetimeBlocks: entity.expiresAtBlock - entity.createdAtBlock,
+      noExpiry: hasNoExpiry(entity.expiresAtBlock) });
   }
   for (const entity of run.entities) {
     const old = before.get(entity.key);
@@ -50,7 +55,8 @@ export function snapshotEntities(entities: LiveEntity[]): LiveEntity[] {
 /**
  * Dots this screen has seen that are past their expiration and gone from the query. App-side
  * memory: the DB-Chain no longer has them, so the map draws them grey and never selects them.
- * `seen` keeps the latest copy of every dot, so an extension seen in time keeps it alive.
+ * `seen` keeps the latest copy of every dot, so an extension seen in time keeps it alive. A dot with
+ * no expiration is never past its deadline (no block reaches 2**64 - 1), so it is never remembered.
  */
 export function rememberExpired(seen: Map<string, LiveEntity>, run: QueryRun): LiveEntity[] {
   const live = new Set(run.entities.map((entity) => entity.key));

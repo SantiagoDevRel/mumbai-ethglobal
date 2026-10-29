@@ -30,20 +30,26 @@ export function hasVisibleName(name: string): boolean {
   return name.replace(BLANK_CHARS, "").length > 0;
 }
 
-/** POST /api/submit */
+/** POST /api/submit. Text is stored in lower case (Santiago, October 29): Arkiv compares strings
+ * exactly, so parsing lowercases name, color and country first, whatever the client sent, and the
+ * length checks, the blocklist and placement all see the lowercased values. */
 export const SubmitRequest = z.object({
   /** Optional: without it the writer uses the session that is running. Phones send none. */
   session: z.string().min(4).max(16).optional(),
-  name: z.string().trim().min(1).max(NAME_MAX_CHARS).refine(hasVisibleName, "the name needs a visible character"),
+  name: z.string().trim().toLowerCase().min(1).max(NAME_MAX_CHARS).refine(hasVisibleName, "the name needs a visible character"),
   /** One of the seven preset colors. */
-  color: z.enum(DOT_PALETTE),
-  country: z.string().regex(/^[A-Z]{2}$/),
+  color: z.string().toLowerCase().pipe(z.enum(DOT_PALETTE)),
+  /** ISO 3166-1 alpha-2 (`in`). */
+  country: z.string().toLowerCase().regex(/^[a-z]{2}$/),
+  /** Checked even with `noExpiry` (the phone always sends the slider's value); ignored then. */
   lifetimeSec: z
     .number()
     .int()
     .min(LIFETIME_MIN_SEC)
     .max(LIFETIME_MAX_SEC)
     .refine((v) => v % LIFETIME_STEP_SEC === 0, `lifetime must be a multiple of ${LIFETIME_STEP_SEC} s`),
+  /** No expiration: the writer creates the entity with `ExpirationTime.permanent()`. */
+  noExpiry: z.boolean().optional(),
 });
 export type SubmitRequest = z.infer<typeof SubmitRequest>;
 

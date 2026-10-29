@@ -19,7 +19,7 @@ import { W4_NOTES } from "./scenes/W4";
 
 export const NOTES: Record<SceneId, string[]> = {
   S0: [
-    "Hi, I'm Santiago from Arkiv. In twenty minutes you'll write, query, own and expire your own entities, from your phone. Keep it in your pocket for a moment.",
+    "Hi, I'm Santiago from Arkiv. In twenty minutes you'll write your own entity from your phone, and we'll query it, transfer it and extend it live on the map. Keep your phone in your pocket for a moment.",
     "Start the session first (presenter controls, ?). → starts the timer.",
   ],
   ME: ["Who I am, in 15 seconds. The slide comes later."],
@@ -33,27 +33,17 @@ export const NOTES: Record<SceneId, string[]> = {
   ST: ST_NOTES,
   NT: NT_NOTES,
   S7: [
-    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out. Scan the code and fill the form: name, color, country and a lifetime from 5 to 15 minutes. Don't press Write yet: we write together.",
-    "→ shows what your form becomes: one entity. Three attributes anyone can query by, and an Entity Expiration. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
+    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out. Scan the code and fill the form: name, color, country and a lifetime from 5 to 15 minutes, or no expiration at all. Everything is saved in lowercase. Don't press Write yet: we write together.",
+    "→ shows what your form becomes: one entity. Three attributes anyone can query by, and an Entity Expiration, or none. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
   ],
   L1: [
-    "Every dot is an entity you just wrote. Your phone sent one request; our wallet signed for the room. Find yourself on the map: the list on the right shows every write as it lands.",
+    "Every dot is an entity you just wrote. Your phone sent one request; our wallet signed for the room. Find yourself on the map: the list on the right shows every write as it lands. Click a dot to open its entity card: an entity with no expiration shows $expiresAt = 2**64 − 1.",
   ],
   B2: B2_NOTES,
   B3: B3_NOTES,
   L3: [
-    "Same query, on your entities. Step 1 · no filter yet: every entity in this session, on the whole globe.",
-    "Step 2 · color is orange.",
-    "Step 3 · AND country is India, and the camera flies to India. The query panel at the bottom shows the query text, with AND.",
-  ],
-  L6: [
-    "Step 1 · \"One wallet, ours, owns every entity on this map: we signed for the room.\" The entity card shows its $owner.",
-    "Step 2 · The real transfer: in the entity card, paste a wallet address and press Transfer ownership. Rabby (the MUMBAI account, the writer wallet) asks to sign. $owner changes on the next query. In your app, each user can own their own entities. And anyone can write any attribute, so when you only trust your own writes, filter by $owner too.",
-  ],
-  L2: [
-    "Entity Expiration: no cron job, no cleanup script. The DB-Chain forgets on time.",
-    "Select three dots → E → Rabby → rings refill. \"Anyone can extend these. We switched on permissionless extension.\"",
-    "Step 2 · the caption \"Expire it. Or extend it.\" \"The ones nobody extended drop out of every query.\"",
+    "The same kind of query, on your entities. No filter yet: every entity in this session, on the whole globe. Filter by hand in the bar at the top: a name, a country (the camera flies there) or a color. The query panel shows each clause on its own line, joined by AND.",
+    "Own it: click a dot, press Transfer ownership, type 0x and a space for a fresh random wallet (or paste one), then sign once in Rabby (the MUMBAI account, the writer wallet). $owner changes on the next query, and only that wallet can update or delete the entity now. Extend: press Extend in the card (or select dots and E), sign in Rabby, and the ring refills: we switched on permissionless extension, so anyone can extend these.",
   ],
   B4: D6_NOTES,
   B5: B5_NOTES,
@@ -61,8 +51,7 @@ export const NOTES: Record<SceneId, string[]> = {
   T2: A1_NOTES,
   PZ: PRIZES_NOTES,
   L9: [
-    "Write it. Query it. Own it. Expire it. Thank you. The links are on the right.",
-    "The corner QR still opens the form: anyone who arrives late can still write an entity.",
+    "The mascot says the four verbs, one pose each: Write it. Query it. Own it. Expire it. Then it comes apart into bricks that build THANK YOU, and a small copy waves. A click on the bricks plays it again. Thank you. The START BUILDING links (docs, Hub, MCP, prizes) open in a new tab.",
   ],
 };
 
@@ -81,9 +70,7 @@ export const REVEALS: Record<SceneId, string[]> = {
   L1: [],
   B2: [],
   B3: ["one more clause: AND name"],
-  L3: ["filter: color is orange", "filter: country is India"],
-  L6: ["the caption: Transfer it: paste a wallet, sign once."],
-  L2: ["the caption: Expire it. Or extend it."],
+  L3: [],
   B4: ["owner_phone, encrypted", "the arkiv-encryption skill and npm package"],
   B5: [],
   T1: ["Docs"],

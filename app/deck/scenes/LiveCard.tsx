@@ -1,19 +1,20 @@
 "use client";
 
 // What /slides shows during a live scene: the scene's name, what is happening on the map in plain
-// words (it follows the step), and the mascot. Every detail itself (the dots, the query, the
-// entity's fields) lives on the map; this half of the screen only explains what to look at. The
-// lines describe how it works, never that something already happened: /slides can't see the chain.
+// words, and the mascot. Every detail itself (the dots, the query, the entity's fields) lives on the
+// map; this half of the screen only explains what to look at. The lines describe how it works, never
+// that something already happened: /slides can't see the chain. October 29: L3 has no scripted
+// filters (the presenter filters by hand) and the Own it (L6) and Expire it (L2) scenes are gone.
 
 import { MotionConfig, AnimatePresence, motion } from "motion/react";
 import type { SceneDef, SceneId } from "../../../shared/scenes";
 import { Mascot, type MascotPose } from "../Mascot";
 import { EASE, Logo, PANEL_EASE, REVEAL_TIME, Rise, T } from "../ui";
 
-/** `cumulative`: each step adds a line, so the newest (last) line is the bold one. */
-type Explainer = { pose: MascotPose; lines: string[]; steps?: string[][]; cumulative?: boolean };
+/** The first line is the bold one. */
+type Explainer = { pose: MascotPose; lines: string[] };
 
-/** Per live scene: lines shown on entry, and optionally different lines for each → step. */
+/** Per live scene (each has one step): the lines shown on entry. */
 const EXPLAIN: Partial<Record<SceneId, Explainer>> = {
   L1: {
     pose: "laptop",
@@ -21,32 +22,13 @@ const EXPLAIN: Partial<Record<SceneId, Explainer>> = {
   },
   L3: {
     pose: "magnifier",
-    cumulative: true,
-    lines: ["The map is one query.", "Each → adds one filter."],
-    steps: [["The map is one query:", "every entity in this session."], ["+ color is orange"], ["+ color is orange", "+ country is India"]],
-  },
-  L6: {
-    pose: "key",
-    lines: ["One wallet owns every entity on this map."],
-    steps: [
-      ["One wallet owns every entity on this map.", "Ours: we signed for the room."],
-      ["Transfer it: paste a wallet, sign once.", "$owner becomes that wallet.", "Only the owner can change or delete it."],
-    ],
-  },
-  L2: {
-    pose: "hourglass",
-    lines: ["Every entity has an expiration.", "When its time runs out, the DB-Chain deletes it.", "No cleanup script."],
-    steps: [
-      ["Every entity has an expiration.", "When its time runs out, the DB-Chain deletes it.", "No cleanup script."],
-      ["Anyone can extend these: we switched on permissionless extension.", "Entities nobody extends drop out of every query."],
-    ],
+    lines: ["The map is one query.", "Filter it live: name, country or color.", "Pick a country: the camera flies there."],
   },
 };
 
 export function LiveCard({ scene, step }: { scene: SceneDef; step: number }) {
   const explainer = EXPLAIN[scene.id];
-  const lines = explainer?.steps?.[step] ?? explainer?.lines ?? [];
-  const bold = explainer?.cumulative && step > 0 ? lines.length - 1 : 0;
+  const lines = explainer?.lines ?? [];
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
@@ -68,7 +50,7 @@ export function LiveCard({ scene, step }: { scene: SceneDef; step: number }) {
               exit={{ opacity: 0, y: 14, transition: { duration: 0.16, ease: PANEL_EASE } }}
             >
               {lines.map((line, i) => (
-                <p key={line} className={`leading-[1.2] ${i === bold ? "text-[52px] font-semibold" : "text-[46px]"}`} style={i === bold ? undefined : { color: T.t84 }}>
+                <p key={line} className={`leading-[1.2] ${i === 0 ? "text-[52px] font-semibold" : "text-[46px]"}`} style={i === 0 ? undefined : { color: T.t84 }}>
                   {line}
                 </p>
               ))}

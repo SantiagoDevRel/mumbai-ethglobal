@@ -6,8 +6,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac, randomBytes } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
+import { ExpirationTime } from "@arkiv-network/sdk/utils";
 import { createDb } from "../lib/server/db.ts";
 import { createWriter } from "../lib/server/writer.ts";
+import { dotToCreate } from "../shared/arkiv/sdk-0.8.ts";
+import type { DotCreate } from "../shared/arkiv/adapter.ts";
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const testKey = `0x${"11".repeat(32)}` as const;
@@ -316,4 +319,27 @@ test("two instances never send at once, and hold stops a batch that was not admi
     assert.equal(status.queued, 1);
     assert.equal(calls.some(rpc => rpc.method.startsWith("eth_send")), false);
   } finally { release(); await dispose(); }
+});
+
+// Santiago, October 29: text is stored in lower case, and "No expiration" reaches the create as
+// ExpirationTime.permanent().
+test("the writer stores lower-case text and keeps No expiration for the create", opts, async () => {
+  const { db, call, dispose } = await fixture();
+  try {
+    const { data: { code } } = await call("/api/presenter/session/start", {});
+    assert.equal((await call("/api/presenter/hold", {})).data.idle, true);
+    const phone = (device: string) => ({ "x-device-token": device, "content-type": "application/json", origin: "https://app.example" });
+    const forever = await call("/api/submit", { name: "  ASHA Rao ", color: "#FE7446", country: "IN", lifetimeSec: 300, noExpiry: true }, phone("lower-case-phone-device-1"));
+    assert.equal(forever.status, 200, JSON.stringify(forever.data));
+    const timed = await call("/api/submit", { name: "Ravi", color: "#fe7446", country: "in", lifetimeSec: 300 }, phone("lower-case-phone-device-2"));
+    assert.equal(timed.status, 200, JSON.stringify(timed.data));
+    assert.equal((await call("/api/submit", { name: "ravi", color: "#fe7446", country: "IND", lifetimeSec: 300 }, phone("lower-case-phone-device-3"))).data.error, "invalid");
+    const rows = await db.query<{ dot: DotCreate }>(`select dot from ${db.t("tickets")} where session = $1 order by seq`, [code]);
+    assert.deepEqual(rows.map(({ dot }) => [dot.name, dot.color, dot.country, dot.noExpiry]), [["asha rao", "#fe7446", "in", true], ["ravi", "#fe7446", "in", undefined]]);
+    assert.deepEqual(dotToCreate(rows[0]!.dot).expires, ExpirationTime.permanent());
+    assert.deepEqual(dotToCreate(rows[1]!.dot).expires, ExpirationTime.fromSeconds(300));
+    // Placement read the lower-case code: both dots are in India.
+    for (const { data } of [forever, timed]) assert.ok(data.lat > 6 && data.lat < 36 && data.lng > 68 && data.lng < 98, JSON.stringify(data));
+    assert.equal(calls.some(rpc => rpc.method.startsWith("eth_send")), false);
+  } finally { await dispose(); }
 });

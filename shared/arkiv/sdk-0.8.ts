@@ -3,9 +3,10 @@ import { ExpirationTime } from "@arkiv-network/sdk/utils";
 import { eq, gte, lte, or, startsWith } from "@arkiv-network/sdk/query";
 import type { Entity } from "@arkiv-network/sdk/types";
 import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter.ts";
+import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
 import { createSdkClients } from "./clients-0.8.ts";
 import { decodeCoord, decodeRating, encodeCoord, encodeRating } from "../encoding.ts";
-import { APP_ID, type BlockInfo, type ChainFilters, type EntityAttrs, type Hex, type LiveEntity, type QueryDescription, type WriteResult } from "../types.ts";
+import { APP_ID, hasNoExpiry, type BlockInfo, type ChainFilters, type EntityAttrs, type Hex, type LiveEntity, type QueryDescription, type WriteResult } from "../types.ts";
 
 export const LIVE_SELECTION = { key: true, owner: true, creator: true, createdAt: true, updatedAt: true, expiresAt: true, attributes: true } as const;
 
@@ -21,7 +22,8 @@ function isUserRejection(error: unknown): boolean {
 export function encodedFields(fields: Record<string, unknown>): AttributeInputs {
   const result: Record<string, AttributeInputs[string]> = {};
   for (const [name, value] of Object.entries(fields)) {
-    if (value === undefined || name === "lifetimeSec") continue;
+    // How long an entity lives is the create's `expires`, never an attribute.
+    if (value === undefined || name === "lifetimeSec" || name === "noExpiry") continue;
     if (name === "photo" && (typeof value !== "string" || !/^(?:0x)?[a-f0-9]{64}$/i.test(value))) throw new Error("Photo must be a plain Swarm reference.");
     if (name === "lat" || name === "lng") result[name] = i32(encodeCoord(value as number));
     else if (name === "rating") result[name] = i32(encodeRating(value as number));
@@ -41,18 +43,32 @@ export function describeExtend(addSeconds: number): { code: string } {
     `const extraBlocks = BigInt(Math.ceil(${ms} / blockTimeMs))`,
     `const entities = await Promise.all(`,
     `  keys.map((key) => reader.getEntity(key)))`,
-    `await writer.executeBatch({ extensions: entities.map((entity) => ({`,
+    `// No expiration ($expiresAt = 2n ** 64n - 1n): nothing to extend`,
+    `const expiring = entities.filter((entity) => entity.expiresAt !== 2n ** 64n - 1n)`,
+    `await writer.executeBatch({ extensions: expiring.map((entity) => ({`,
     `  entityKey: entity.key,`,
     `  expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks),`,
     `})) })`,
   ].join("\n") };
 }
 
+/** The extensions `extend` sends: each deadline `extraBlocks` later. An entity with no expiration is
+ * skipped: it already sits at NO_EXPIRY_BLOCK, the largest block a u64 holds, so `atBlock(expiresAt + n)`
+ * would not fit (the SDK refuses it at send). When that leaves nothing, nothing is signed or sent. */
+export function extensionsFor(entities: readonly { key: Hex; expiresAt: bigint }[], extraBlocks: bigint) {
+  const extensions = entities.filter(entity => !hasNoExpiry(entity.expiresAt))
+    .map(entity => ({ entityKey: entity.key, expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks) }));
+  if (!extensions.length) throw new WriteNotSentError(NOTHING_TO_EXTEND);
+  return extensions;
+}
+
+/** "No expiration" is `ExpirationTime.permanent()`: `$expiresAt` becomes NO_EXPIRY_BLOCK, 2**64 - 1. */
 export function dotToCreate(dot: DotCreate) {
   return {
     attributes: { app: APP_ID, kind: "dot", ...encodedFields(dot as unknown as Record<string, unknown>) },
     payload: new Uint8Array(), contentType: "application/octet-stream",
-    flags: { permissionlessExtension: true }, expires: ExpirationTime.fromSeconds(dot.lifetimeSec),
+    flags: { permissionlessExtension: true },
+    expires: dot.noExpiry ? ExpirationTime.permanent() : ExpirationTime.fromSeconds(dot.lifetimeSec),
   };
 }
 
@@ -140,6 +156,8 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       await checkNetwork();
       try { return await work(); }
       catch (error) {
+        // Refused before signing: nothing reached the chain, so nothing needs reconciling.
+        if (error instanceof WriteNotSentError) throw error;
         uncertain = !isUserRejection(error);
         // A canonical revert proves the operations did not apply. A new explicit
         // action may proceed; an uncertain or successful-but-undecoded write may not.
@@ -200,9 +218,9 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       if (!keys.length || !Number.isFinite(addSeconds) || addSeconds <= 0 || new Set(keys).size !== keys.length) throw new Error("Invalid Lifetime Extension.");
       const block = await getBlock();
       const extraBlocks = BigInt(Math.ceil(addSeconds * 1000 / block.blockTimeMs));
-      const entities = await Promise.all(keys.map(key => reader.getEntity(key)));
-      const result = await requireWriter().executeBatch({ extensions: entities.map(entity => ({ entityKey: entity.key, expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks) })) });
-      return finish(result.txHash, keys);
+      const extensions = extensionsFor(await Promise.all(keys.map(key => reader.getEntity(key))), extraBlocks);
+      const result = await requireWriter().executeBatch({ extensions });
+      return finish(result.txHash, extensions.map(extension => extension.entityKey));
     }),
     patch: (key: Hex, fields: PatchFields, _current: EntityAttrs) => serializeWrite(async () => {
       const result = await requireWriter().patchEntity({ entityKey: key, set: encodedFields(fields as Record<string, unknown>) });

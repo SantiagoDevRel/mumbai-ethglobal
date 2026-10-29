@@ -64,7 +64,7 @@ export async function runPhaseZero(db: Db, env: WriterEnv, writerAddress: Hex): 
   await save();
   try {
     const result = await writer!.executeBatch({ creates: [{
-      attributes: { app: APP_ID, kind: "dot", session: "phase-zero", name: "Writer check", color: "#fe7446", country: "IN", lat: i32(19_076_000), lng: i32(72_877_700) },
+      attributes: { app: APP_ID, kind: "dot", session: "phase-zero", name: "writer check", color: "#fe7446", country: "in", lat: i32(19_076_000), lng: i32(72_877_700) },
       payload: new Uint8Array(), contentType: "application/octet-stream",
       flags: { permissionlessExtension: true }, expires: ExpirationTime.fromSeconds(120),
     }] }, { nonce: proof.nonce });

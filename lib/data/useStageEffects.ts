@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { ArkivAdapter } from "../../shared/arkiv/adapter";
+import { NOTHING_TO_EXTEND, type ArkivAdapter } from "../../shared/arkiv/adapter";
 import type { Hex, LiveEntity } from "../../shared/types";
-import { STAGE_EXTENSION_SEC } from "../../shared/types";
+import { hasNoExpiry, STAGE_EXTENSION_SEC } from "../../shared/types";
 import { HoldResponse } from "../../shared/writer-api";
 import { WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { stage } from "../stage/store";
@@ -75,13 +75,19 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
         let held = false;
         let heartbeat: ReturnType<typeof setInterval> | undefined;
         try {
-          let keys = command.type === "extend" ? state.selected.filter((key) => latest.current.some((entity) => entity.key === key)) : [command.key];
-          if (command.type === "extend" && command.scope === "all") {
-            if (source === "live" && !state.session) throw new Error("No session yet. Press Reset.");
-            const everyone = await adapter.query({ kinds: ["dot", "business"], session: source === "mock" ? "MOCK" : state.session! });
-            keys = everyone.entities.map((entity) => entity.key);
+          let keys: Hex[] = command.type === "extend" ? [] : [command.key];
+          if (command.type === "extend") {
+            let targets = latest.current.filter((entity) => state.selected.includes(entity.key));
+            if (command.scope === "all") {
+              if (source === "live" && !state.session) throw new Error("No session yet. Press Reset.");
+              targets = (await adapter.query({ kinds: ["dot", "business"], session: source === "mock" ? "MOCK" : state.session! })).entities;
+            }
+            if (!targets.length) throw new Error("Select an entity first.");
+            // An entity with no expiration already has the largest deadline a u64 holds: one more
+            // block would overflow, so it is left out, and with nothing else to extend no wallet opens.
+            keys = targets.filter((entity) => !hasNoExpiry(entity.expiresAtBlock)).map((entity) => entity.key);
+            if (!keys.length) throw new Error(NOTHING_TO_EXTEND);
           }
-          if (!keys.length) throw new Error("Select an entity first.");
           let writer = adapter;
           if (source === "live") {
             // Finish wallet setup before reserving the writer's bounded hold window.

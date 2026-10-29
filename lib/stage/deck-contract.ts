@@ -14,7 +14,7 @@ export interface DeckEntry {
   /** Full slide for `kind: "slide"` scenes. Drawn in a 1920x1080 box scaled to fit;
    * design in CSS pixels at 1920x1080. The globe keeps running behind it. */
   Slide?: ComponentType<SceneContentProps>;
-  /** Overlay for `kind: "live"` scenes (captions, L6 small print, L9 tagline). Drawn in the
+  /** Overlay for `kind: "live"` scenes (L9's close; L1 and L3 draw nothing). Drawn in the
    * same 1920x1080 box above the map with `pointer-events: none`; opt back in per element. */
   Overlay?: ComponentType<SceneContentProps>;
   /** The scene's script, one paragraph per item (reference only; not shown on screen). */

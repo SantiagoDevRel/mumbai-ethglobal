@@ -3,14 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as GLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import type { BlockInfo, Hex, LiveEntity } from "../../shared/types";
+import { hasNoExpiry, type BlockInfo, type Hex, type LiveEntity } from "../../shared/types";
 import { stage, type StageState } from "../../lib/stage/store";
+import { quietMap } from "../../lib/stage/choreography";
 import { darkStyle } from "../../lib/map/style";
 import { mapViewport } from "../../lib/map/viewport";
+import { COUNTRY_PADDING, countryView } from "../../lib/map/country-view";
+import { countryBox } from "../../lib/data/countries";
 import { remainingSeconds } from "../../lib/data/entity-state";
 import { StageBox, stageGeometry, usePrefersReducedMotion, useStageScale } from "../stage/StageFrame";
 import { businessPresentation } from "../../lib/data/view-model";
 import { SCENES } from "../../shared/scenes";
+
+/** The deck's camera ease: slow out, slow in. */
+const FLIGHT_EASING = (t: number) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 const CATEGORY_PATHS = {
   cafe: "M4 8h12v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4ZM16 8h2a3 3 0 0 1 0 6h-2M7 3v2M11 3v2",
@@ -72,6 +78,8 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
       // The first touch cancels any camera flight in progress. The globe never turns on its own.
       for (const gesture of ["mousedown", "touchstart", "wheel"] as const) map.getCanvas().addEventListener(gesture, () => { map.stop(); }, { passive: true });
       map.on("click", (event) => {
+        // The close (L9) keeps the map a backdrop: a click opens and closes nothing.
+        if (quietMap(SCENES[current.current.state.sceneIndex]!.id)) return;
         const hit = current.current.entities.map((entity) => {
           if (entity.attrs.kind === "review") return { entity, distance: Infinity };
           const point = map.project([entity.attrs.lng, entity.attrs.lat]);
@@ -154,6 +162,7 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
         const labels: { x: number; y: number; width: number; name: string; suffix: string; hot: boolean; appSide: boolean }[] = [];
         // Under a slide the globe is backdrop: dots without their labels, so no name shows through a headline.
         const backdrop = SCENES[state.sceneIndex]?.kind === "slide";
+        const quiet = quietMap(SCENES[state.sceneIndex]!.id);
         const sorted = [...entities, ...[...leaving.values()].map((item) => item.entity)].sort((a, b) => Number(state.selected.includes(b.key)) - Number(state.selected.includes(a.key)) || Number(b.createdAtBlock - a.createdAtBlock));
         for (const entity of sorted) {
           if (entity.attrs.kind === "review") continue;
@@ -172,10 +181,12 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
           const color = a.color ?? "#fe7446";
           const seconds = remainingSeconds(entity, block, Date.now());
           const total = block ? Math.max(1, Number(entity.expiresAtBlock - entity.createdAtBlock) * block.blockTimeMs / 1000) : 1;
+          // No expiration ($expiresAt = 2**64 - 1): a full ring that never drains and no countdown.
+          const endless = hasNoExpiry(entity.expiresAtBlock);
           if (state.map === "owner" && !state.transferred) {
             ctx.strokeStyle = "rgba(246,244,239,0.42)"; ctx.lineWidth = 1.5 * scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo(box.x + 180 * scale, box.y + 528 * scale); ctx.stroke();
           }
-          if (state.panels.inspector && state.inspected === entity.key) {
+          if (state.panels.inspector && state.inspected === entity.key && !quiet) {
             ctx.strokeStyle = "rgba(246,244,239,.42)"; ctx.lineWidth = scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo(box.x + (state.map === "business" ? 1464 : 1032) * scale, box.y + 340 * scale); ctx.stroke();
           }
           const selected = state.selected.includes(entity.key);
@@ -191,8 +202,8 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
             ctx.save(); ctx.translate(-12, -50); ctx.strokeStyle = "#111111"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke(categoryIcons[business.category]!); ctx.restore();
           } else {
             ctx.strokeStyle = "rgba(246,244,239,.2)"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
-            ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, seconds / total)); ctx.stroke();
-            if (seconds <= 0) { ctx.save(); ctx.globalAlpha *= .35; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+            ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (endless ? 1 : Math.min(1, seconds / total))); ctx.stroke();
+            if (!endless && seconds <= 0) { ctx.save(); ctx.globalAlpha *= .35; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
             ctx.fillStyle = color; ctx.strokeStyle = "#f6f4ef"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
             if (!reducedMotion && age < 900) {
               const phase = age / 900;
@@ -206,11 +217,11 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
             const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.kind === "dot" ? `${a.name} · ${a.country}` : a.name;
             const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
             // Whole minutes, like the entity card: the label changes about once a minute, never ticks.
-            const left = seconds <= 0 ? "expired" : seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;
+            const left = endless ? "no expiration" : seconds <= 0 ? "expired" : seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;
             const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : left;
             ctx.font = `600 16px ${fontFamily}`;
             const labelWidth = ctx.measureText(name).width + suffix.length * 8.5 + 36;
-            const label = { x: point.x + (state.map === "business" ? 28 : 22) * scale, y: y - (state.map === "business" ? 52 : 15) * scale, width: labelWidth, name, suffix, hot: seconds < 60 || state.map === "business", appSide: state.map === "business" && business.appSide };
+            const label = { x: point.x + (state.map === "business" ? 28 : 22) * scale, y: y - (state.map === "business" ? 52 : 15) * scale, width: labelWidth, name, suffix, hot: (!endless && seconds < 60) || state.map === "business", appSide: state.map === "business" && business.appSide };
             if (!labels.some((other) => label.x < other.x + other.width * scale + 8 && label.x + label.width * scale + 8 > other.x && label.y < other.y + 36 * scale && label.y + 36 * scale > other.y)) labels.push(label);
           }
         }
@@ -236,8 +247,17 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
     if (!map || !ready || state.camera.cue === "keep") return;
     const cue = state.camera.cue;
     const scale = stageScale;
+    const flight = { duration: reduced ? 0 : 1200, easing: FLIGHT_EASING };
+    // A country filter on L3 (`country:<iso2>`) frames that country in the part of the stage the
+    // panels leave free, with the same flight; an unknown code falls back to the whole globe.
+    const box = cue.startsWith("country:") ? countryBox(cue.slice("country:".length)) : undefined;
+    if (box) {
+      const view = countryView(box);
+      map.flyTo({ ...flight, center: view.center, zoom: view.zoom + Math.log2(scale), pitch: 0, bearing: 0, padding: { left: COUNTRY_PADDING.left * scale, right: COUNTRY_PADDING.right * scale, top: COUNTRY_PADDING.top * scale, bottom: COUNTRY_PADDING.bottom * scale } });
+      return;
+    }
     const view = cue === "india" ? { center: [82, 19.2] as [number, number], zoom: 4.5, pitch: 0 } : cue === "mumbai-street" ? { center: [72.8335, 18.9275] as [number, number], zoom: 15.9, pitch: 60 } : { center: [72, 19] as [number, number], zoom: 2.38, pitch: 0 };
-    map.flyTo({ ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 200 * scale, bottom: (cue === "mumbai-street" ? 300 : 272) * scale }, bearing: cue === "mumbai-street" ? -22 : 0, duration: reduced ? 0 : 1200, easing: (t) => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2 });
+    map.flyTo({ ...flight, ...view, zoom: view.zoom + Math.log2(scale), padding: { left: 0, right: 456 * scale, top: 200 * scale, bottom: (cue === "mumbai-street" ? 300 : 272) * scale }, bearing: cue === "mumbai-street" ? -22 : 0 });
   }, [ready, reduced, state.camera, stageScale]);
   return <div className="globe-shell"><div ref={container} className="globe-map" aria-label="Interactive globe of Arkiv entities" /><canvas key={source} data-source={source} ref={canvas} className="globe-dots" aria-hidden="true" /><StageBox><details className="map-attribution pointer-events-auto"><summary aria-label="Map attribution">i</summary><p><a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://openmaptiles.org" target="_blank" rel="noreferrer">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a></p></details></StageBox>{error && <p className="map-error" role="status">{error}</p>}</div>;
 }

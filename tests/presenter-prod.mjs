@@ -1,9 +1,11 @@
 // Production check of the presenter pages: the password gate, a shared login across /map and
-// /slides, and every chain read going through the writer's keyed proxy (never the public RPC).
+// /slides, the corner QR on L1, the data source's status in the "?" presenter card (never on the
+// stage), and every chain read going through the writer's keyed proxy (never the public RPC).
 // Reads only; opening /map starts a writer session when none is running, as it does on stage.
 // Usage: PRESENTER_PASSWORD=… node tests/presenter-prod.mjs [origin]
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
+import { sceneIndex } from "../shared/scenes.ts";
 import { protectionHeaders } from "./local-app.mjs";
 
 const origin = process.argv[2] ?? "https://mumbai-ethglobal.vercel.app";
@@ -30,15 +32,31 @@ try {
   await expect(map.locator('.gate-card [role="alert"]')).toHaveText("Wrong password.");
   await map.getByLabel("Password").fill(process.env.PRESENTER_PASSWORD);
   await map.getByRole("button", { name: "Enter", exact: true }).click();
-  await expect(map.locator(".qr-image img")).toBeVisible({ timeout: 20000 });
-  await expect(map.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
-  await expect(map.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 30000 });
+  // The title has no QR; the corner card ("Join the map") first shows on L1.
+  await expect(map.locator('[data-scene="S0"]')).toBeVisible({ timeout: 20000 });
+  await expect(map.locator(".join-qr")).toHaveCount(0);
+  await map.evaluate((index) => {
+    const channel = new BroadcastChannel("arkiv-mumbai-stage");
+    channel.postMessage({ kind: "command", cmd: { type: "goto", index } });
+    channel.close();
+  }, sceneIndex("L1"));
+  await expect(map.locator('[data-scene="L1"]')).toBeVisible();
+  await expect(map.locator(".join-qr-corner .qr-image img")).toBeVisible({ timeout: 20000 });
+  await expect(map.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  // The data source and its blinker sit in the "?" presenter card, never on the stage (October 29).
+  await expect(map.getByText("Live · Arkiv DB-Chain", { exact: true })).toHaveCount(0);
+  await expect(map.locator(".source-label")).toHaveCount(0);
+  await map.keyboard.press("?");
+  const card = map.getByRole("dialog", { name: "Presenter controls" });
+  await expect(card.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 30000 });
   await expect.poll(() => reads.proxy, { timeout: 20000 }).toBeGreaterThan(0);
   // The blinker names each new block as its query lands (Tiramisu: one block about every 2 s).
-  const detail = map.locator(".source-label .refresh-detail");
+  const detail = card.locator(".source-label .refresh-detail");
   await expect(detail).toHaveText(/^Updated · block #\d+$/, { timeout: 20000 });
   const firstUpdate = await detail.textContent();
   await expect(detail).not.toHaveText(firstUpdate, { timeout: 10000 });
+  await map.keyboard.press("Escape");
+  await expect(card).toHaveCount(0);
   const slides = await context.newPage();
   slides.on("pageerror", (error) => errors.push(error.message));
   await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });

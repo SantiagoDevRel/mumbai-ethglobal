@@ -15,21 +15,36 @@ export const LIFETIME_STEP_SEC = 60;
 /** The phone slider starts here. */
 export const LIFETIME_DEFAULT_SEC = LIFETIME_MAX_SEC;
 
+/** `$expiresAt` of an entity with no expiration: the largest block a u64 holds, 2**64 - 1. The SDK's
+ * `ExpirationTime.permanent()` writes exactly this deadline; there is no other permanence flag.
+ * The phone offers it next to the lifetime slider (Santiago, October 29). */
+export const NO_EXPIRY_BLOCK = (1n << 64n) - 1n;
+
+/** True for an entity whose `$expiresAt` is `NO_EXPIRY_BLOCK`: show "no expiration", never a countdown. */
+export function hasNoExpiry(expiresAtBlock: bigint): boolean {
+  return expiresAtBlock === NO_EXPIRY_BLOCK;
+}
+
 export const NAME_MAX_CHARS = 24;
 export const MAX_ENTITIES_PER_SESSION = 400;
 export const MAX_ENTITIES_PER_DEVICE = 10;
 
-/** Seconds added by Santiago's live extension on stage (L2: "+20 minutes"). */
+/** Seconds added by Extend in the entity card ("+20 minutes"). */
 export const STAGE_EXTENSION_SEC = 20 * 60;
 
-/** Columns a participant chooses (before the writer places them). */
+/** Columns a participant chooses (before the writer places them). Text is stored in lower case
+ * (Santiago, October 29): Arkiv compares strings exactly, so "Chai" would not match "chai". */
 export interface DotDraft {
+  /** Lower case. */
   name: string;
-  /** `#RRGGBB`, any color. */
+  /** `#rrggbb`, any color, lower case. */
   color: string;
-  /** ISO 3166-1 alpha-2, upper case. */
+  /** ISO 3166-1 alpha-2, lower case (`in`). */
   country: string;
   lifetimeSec: number;
+  /** No expiration: written with `ExpirationTime.permanent()`, so `$expiresAt` is `NO_EXPIRY_BLOCK`
+   * and `lifetimeSec` is ignored. */
+  noExpiry?: boolean;
 }
 
 /** Attribute values as decoded for the UI. Coordinates are plain degrees here. */

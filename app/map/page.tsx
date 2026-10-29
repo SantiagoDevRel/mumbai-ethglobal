@@ -1,11 +1,12 @@
 "use client";
 
-// /map: the whole talk on one screen. Live scenes show the globe, its HUD, the QR and the scene's
-// caption; slide scenes show the slide over the globe. The leader window: it runs the scene engine,
-// reads the DB-Chain through the writer and signs Rabby transactions. /slides can still sit beside
-// it on a split screen and follows the same scene.
+// /map: the whole talk on one screen. Live scenes show the globe, its HUD and, where the scene has
+// one, the QR (October 29: no caption, logo or status line on any scene); slide scenes show the
+// slide over the globe. The data source and its status sit in the presenter's "?" card. The leader
+// window: it runs the scene engine, reads the DB-Chain through the writer and signs Rabby
+// transactions. /slides can still sit beside it on a split screen and follows the same scene.
 
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { MapFrame, StageBox } from "../../components/stage/StageFrame";
 import { PresenterBar, PresenterGate, usePresenterSession, WritingSwitch } from "../../components/stage/Presenter";
 import { usePresenterKeys } from "../../lib/stage/keyboard";
@@ -14,7 +15,7 @@ import { useLiveData } from "../../lib/data/useLiveData";
 import { useLiveBlock } from "../../lib/data/useLiveBlock";
 import { Globe } from "../../components/map/Globe";
 import { JoinQR } from "../../components/stage/JoinQR";
-import { StageHud } from "../../components/stage/StageHud";
+import { LiveStatus, StageHud } from "../../components/stage/StageHud";
 import { applyAppFilters } from "../../lib/data/view-model";
 import { useStageEffects } from "../../lib/data/useStageEffects";
 import "../../components/stage/app-stage.css";
@@ -42,20 +43,6 @@ function MapStage() {
   const filters: ChainFilters = { ...state.chainFilters, kinds: state.map !== "dots" ? ["dot", "business"] : state.chainFilters.kinds };
   const data = useLiveData(filters, state.session);
   const scene = SCENES[state.sceneIndex]!;
-  // L6 opens on one entity, once per entry: closing the card keeps it closed, so "On the map" comes
-  // back. It picks the dot with the most time left, so the transfer has time to land.
-  const picked = useRef<number | null>(null);
-  useEffect(() => {
-    if (scene.id !== "L6") { picked.current = null; return; }
-    if (picked.current === state.sceneIndex) return;
-    if (data.run?.entities.some((entity) => entity.key === state.inspected)) { picked.current = state.sceneIndex; return; }
-    const candidate = data.run?.entities.filter((entity) => entity.attrs.kind === "dot").sort((a, b) => Number(b.expiresAtBlock - a.expiresAtBlock))[0];
-    if (candidate) {
-      picked.current = state.sceneIndex;
-      stage.dispatch({ type: "inspect", key: candidate.key });
-      stage.dispatch({ type: "select", keys: [candidate.key], mode: "set" });
-    }
-  }, [data.run, scene.id, state.inspected, state.sceneIndex]);
   const block = useLiveBlock();
   const notice = useStageEffects(data.adapter, data.source, data.run?.entities ?? []);
   // An expired entity leaves the map completely (Santiago, October 28): no grey dot stays behind.
@@ -81,7 +68,7 @@ function MapStage() {
     slide={Slide ? <Slide scene={scene} step={state.step} /> : undefined}
     hud={live && <StageBox><div className="app-hud"><StageHud data={data} block={block} state={state} entities={view.entities} appSteps={appSteps} reviews={NO_REVIEWS} described={described} />{status}</div></StageBox>}
     qr={<StageBox><JoinQR screen="map" />{!live && status ? <div className="slide-notice">{status}</div> : null}</StageBox>}
-    bar={<PresenterBar inline />}
+    bar={<><LiveStatus data={data} /><PresenterBar inline /></>}
     writing={<WritingSwitch />}
   />;
 }
