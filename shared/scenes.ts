@@ -83,7 +83,9 @@ export const SCENES: readonly SceneDef[] = [
   { id: "L1", title: "Write it: your entities, live", at: 400, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
   { id: "B2", title: "Write it: the SDK call", at: 440, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
   { id: "B3", title: "Query it like a database", at: 500, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "L3", title: "Query it, live", at: 560, kind: "live", steps: 3, qr: CORNER_QR, camera: "india", map: "dots", section: "build" },
+  // L3 opens on the whole globe; its last filter (AND country is India) flies the camera to India
+  // (lib/stage/choreography.ts), so the AND visibly narrows the map (Santiago, October 29).
+  { id: "L3", title: "Query it, live", at: 560, kind: "live", steps: 3, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
   { id: "L6", title: "Own it", at: 620, kind: "live", steps: 2, qr: CORNER_QR, camera: "keep", map: "dots", section: "build" },
   { id: "L2", title: "Expire it", at: 695, kind: "live", steps: 2, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
   { id: "B4", title: "Encrypt what's private", at: 755, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "build" },

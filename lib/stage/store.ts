@@ -11,7 +11,7 @@
 import { useSyncExternalStore } from "react";
 import { SCENES, type CameraCue, type MapMode } from "../../shared/scenes.ts";
 import type { AppSideFilters, ChainFilters, Hex } from "../../shared/types.ts";
-import { choreograph } from "./choreography.ts";
+import { choreograph, stepCamera } from "./choreography.ts";
 
 export type Panel = "filters" | "inspector" | "query" | "controls";
 
@@ -182,7 +182,7 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
       return { ...state, overlays: { ...state.overlays, [cmd.key]: current } };
     }
     case "resetCamera":
-      return { ...state, camera: { cue: scene.camera === "keep" ? "globe" : scene.camera, nonce: state.camera.nonce + 1 } };
+      return { ...state, camera: { cue: stepCamera(scene.id, state.step) ?? (scene.camera === "keep" ? "globe" : scene.camera), nonce: state.camera.nonce + 1 } };
     case "camera":
       return { ...state, camera: { cue: cmd.cue, nonce: state.camera.nonce + 1 } };
     case "replay":

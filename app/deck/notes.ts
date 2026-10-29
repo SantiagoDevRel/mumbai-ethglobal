@@ -39,9 +39,9 @@ export const NOTES: Record<SceneId, string[]> = {
   B2: B2_NOTES,
   B3: B3_NOTES,
   L3: [
-    "Same query, on your entities. Step 1 · no filter yet: every entity in this session, and the camera flies to India.",
+    "Same query, on your entities. Step 1 · no filter yet: every entity in this session, on the whole globe.",
     "Step 2 · color is orange.",
-    "Step 3 · AND country is India. The query panel at the bottom shows the query text, with AND.",
+    "Step 3 · AND country is India, and the camera flies to India. The query panel at the bottom shows the query text, with AND.",
   ],
   L6: [
     "Step 1 · \"One wallet, ours, owns every entity on this map: we signed for the room.\" The entity card shows its $owner.",

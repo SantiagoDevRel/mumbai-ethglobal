@@ -4,7 +4,7 @@
 // Only pure state lives here: panels, filters, map layer and camera.
 // Chain writes (extend, transfer) run from the inspector; the effect handlers run them.
 
-import type { SceneId } from "../../shared/scenes.ts";
+import type { CameraCue, SceneId } from "../../shared/scenes.ts";
 import type { ChainFilters } from "../../shared/types.ts";
 import type { Panel, StageState } from "./store.ts";
 
@@ -28,6 +28,13 @@ function queryItFilters(base: ChainFilters, step: number): ChainFilters {
   return filters;
 }
 
+/** A camera cue that changes with the step, where a scene has one: L3 stays on the globe until its
+ * last filter (AND country is India), then flies to India; stepping back flies out again. */
+export function stepCamera(sceneId: SceneId, step: number): CameraCue | null {
+  if (sceneId === "L3") return step >= 2 ? "india" : "globe";
+  return null;
+}
+
 /**
  * The stage state for `state.sceneIndex` at `state.step`, given the scene was just entered
  * (`entered`) or a step changed inside it.
@@ -39,6 +46,10 @@ export function choreograph(state: StageState, sceneId: SceneId, entered: boolea
     // L3 filters belong to L3: every other scene queries everything again.
     if (sceneId !== "L3") next = { ...next, chainFilters: queryItFilters(next.chainFilters, 0) };
   }
+  // A camera that follows the step flies only when its cue changes, so a step that keeps the cue
+  // leaves a camera the presenter moved by hand where it is.
+  const cue = stepCamera(sceneId, next.step);
+  if (cue && cue !== next.camera.cue) next = { ...next, camera: { cue, nonce: next.camera.nonce + 1 } };
   if (sceneId === "L3") return { ...next, chainFilters: queryItFilters(next.chainFilters, next.step) };
   return next;
 }

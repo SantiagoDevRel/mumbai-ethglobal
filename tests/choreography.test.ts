@@ -24,6 +24,27 @@ test("L3 runs the B3 query one filter per step, and stepping back removes it", (
   assert.equal(state.chainFilters.color, "#fe7446");
 });
 
+test("L3 stays on the globe until AND country is India, then flies to India, and back on ←", () => {
+  let state = at("L3");
+  assert.equal(state.camera.cue, "globe");
+  const entered = state.camera.nonce;
+  state = next(state);
+  assert.equal(state.camera.cue, "globe");
+  assert.equal(state.camera.nonce, entered, "the color filter leaves the camera where it is");
+  state = next(state);
+  assert.equal(state.camera.cue, "india");
+  assert.equal(state.camera.nonce, entered + 1);
+  assert.equal(reduce(state, { type: "resetCamera" }).camera.cue, "india", "R puts the camera back on this step's view");
+  state = prev(state);
+  assert.equal(state.camera.cue, "globe");
+  // Coming back from Own it lands on L3's last step, on India.
+  let back = at("L6");
+  back = prev(back);
+  assert.equal(SCENES[back.sceneIndex]!.id, "L3");
+  assert.equal(back.step, 2);
+  assert.equal(back.camera.cue, "india");
+});
+
 test("leaving L3 clears its filters and opens the entity card for Own it", () => {
   let state = at("L3");
   for (let i = 0; i < 2; i++) state = next(state);
