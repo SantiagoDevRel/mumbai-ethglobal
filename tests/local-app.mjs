@@ -27,16 +27,22 @@ export async function startApp() {
     if (attempt > 120) { child.kill(); throw new Error(`next start did not answer: ${log}`); }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
+  // `next start` closes idle keep-alive sockets; a request that lands on one gets ECONNRESET, so it
+  // is sent once more on a fresh connection.
+  const fetchLocal = async (route) => {
+    const url = new URL(route.request().url());
+    const options = { url: local + url.pathname + url.search };
+    try { return await route.fetch(options); } catch (error) {
+      if (!String(error?.message).includes("ECONNRESET")) throw error;
+      return route.fetch(options);
+    }
+  };
   return {
     /** Routes `origin` page requests (not /api) to the local server. Register before the /api fixtures. */
     serve: (context, origin) => context.route((url) => url.origin === origin && !url.pathname.startsWith("/api/"), async (route) => {
-      const url = new URL(route.request().url());
-      await route.fulfill({ response: await route.fetch({ url: local + url.pathname + url.search }) });
+      await route.fulfill({ response: await fetchLocal(route) });
     }),
-    proxy: async (route) => {
-      const url = new URL(route.request().url());
-      return route.fulfill({ response: await route.fetch({ url: local + url.pathname + url.search }) });
-    },
+    proxy: async (route) => route.fulfill({ response: await fetchLocal(route) }),
     stop: () => { child.kill(); },
   };
 }
