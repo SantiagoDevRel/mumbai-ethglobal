@@ -1,11 +1,25 @@
 "use client";
 
-// The deck's mascot art, fetched and decoded as soon as /map or /slides opens, so no slide waits for
-// its picture the first time it comes up (October 28: the first pass through the deck stuttered on
-// the slides with a mascot).
+// The deck's pictures (mascot art, the memes and the logos), fetched and decoded as soon as /map or
+// /slides opens, so no slide waits for its picture the first time it comes up (October 28: the first
+// pass through the deck stuttered on the slides with a mascot).
 
 import { useEffect } from "react";
 import { MASCOT_ART } from "./mascot-art";
+
+/** Pictures the slides use besides the mascot art: the W2 and T2 memes and the W4 and NT logos. */
+const DECK_PICTURES = [
+  "/deck/memes/arkiv-meme-distracted.webp",
+  "/deck/memes/arkiv-meme-mcp-happy.webp",
+  "/deck/memes/arkiv-meme-mcp-sad.webp",
+  "/deck/logos/ethereum-diamond-purple.svg",
+  "/deck/logos/base-square-blue.svg",
+  "/deck/logos/op-mainnet-symbol.svg",
+  "/deck/logos/arbitrum-logomark.svg",
+  "/deck/logos/swarm-logo.svg",
+  "/brand/a-white.svg",
+  "/brand/a-orange.svg",
+];
 
 /** Kept for the whole talk, so the decoded images stay in memory. */
 const held: HTMLImageElement[] = [];
@@ -13,9 +27,10 @@ const held: HTMLImageElement[] = [];
 export function useDeckPreload() {
   useEffect(() => {
     if (held.length) return;
-    for (const art of Object.values(MASCOT_ART)) {
+    const sources = [...Object.values(MASCOT_ART).map((art) => `/deck/mascot/${art.file}`), ...DECK_PICTURES];
+    for (const src of sources) {
       const image = new Image();
-      image.src = `/deck/mascot/${art.file}`;
+      image.src = src;
       image.decode().catch(() => { /* A missing picture shows on its own slide; nothing to do here. */ });
       held.push(image);
     }

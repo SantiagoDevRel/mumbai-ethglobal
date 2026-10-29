@@ -13,6 +13,7 @@ import { B5 } from "./scenes/B5";
 import { D6 } from "./scenes/data/D6";
 import { IX } from "./scenes/IX";
 import { L1, L2, L3, L6, L9 } from "./scenes/live";
+import { NT } from "./scenes/NT";
 import { S0 } from "./scenes/S0";
 import { S7 } from "./scenes/S7";
 import { ST } from "./scenes/ST";
@@ -32,6 +33,7 @@ export const deck: DeckRegistry = {
   W3: { Slide: W3, notes: NOTES.W3 },
   W4: { Slide: W4, notes: NOTES.W4 },
   ST: { Slide: ST, notes: NOTES.ST },
+  NT: { Slide: NT, notes: NOTES.NT },
   S7: { Slide: S7, notes: NOTES.S7 },
   L1: { Overlay: L1, notes: NOTES.L1 },
   B2: { Slide: B2, notes: NOTES.B2 },

@@ -37,6 +37,18 @@ export const GLASS = `${PANEL} backdrop-blur-[16px]`;
 /** How long a reveal takes to land on its → (seconds). The slide change itself is StageFrame's. */
 export const REVEAL_TIME = 0.3;
 
+/** How far a slide's backdrop reaches past the 1920x1080 box on each side, in stage pixels. A slide
+ * fits the window ("contain"), so a window wider or taller than 16:9 has bands beside or above the
+ * box; the backdrop fills them (windows from about 1:3 to 6:1) and StageBox's window-sized wrapper
+ * clips the rest. Santiago, October 29: on B3 the globe showed in a band on the left. */
+export const BLEED = 2400;
+
+/** A slide's backdrop over the whole window: `background` covers the box and the bands around it.
+ * A gradient's stops run across the whole backdrop, so the box's x 0 is at `BLEED` px. */
+export function Wash({ background }: { background: string }) {
+  return <div aria-hidden="true" className="absolute" style={{ inset: -BLEED, background }} />;
+}
+
 /** Fade-and-rise entrance. Respects reduced motion through the MotionConfig in `Slide`. Scenes in the
  * talk enter all at once on the arrow, so they pass no `delay` (only cut scenes still do). Short, so
  * it lands with the slide instead of after it. */
@@ -113,10 +125,11 @@ export function Logo({ height, className, style }: { height: number; className?:
 }
 
 /**
- * The slide shell: the space color over the globe (the globe shows through at 1 - `wash`), the
- * logo, a headline (8 words or fewer, 2 lines max) and at most one line under it. The headline
- * stops at x 1432 so the corner QR card stays clear. The headline doesn't rise on its own: it comes
- * in with the slide's fade, so two slides' headlines never show offset during a change.
+ * The slide shell: the space color over the globe, across the whole window (`Wash`; the globe shows
+ * through at 1 - `wash`), the logo, a headline (8 words or fewer, 2 lines max) and at most one line
+ * under it. The headline stops at x 1432 so the corner QR card stays clear. The headline doesn't rise
+ * on its own: it comes in with the slide's fade, so two slides' headlines never show offset during a
+ * change.
  */
 export function Slide({
   headline,
@@ -136,7 +149,7 @@ export function Slide({
   return (
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
-        <div className="absolute inset-0" style={{ background: `rgba(8,9,31,${wash})` }} />
+        <Wash background={`rgba(8,9,31,${wash})`} />
         <Logo height={28} className="absolute left-[96px] top-[72px]" />
         <div className="absolute left-[96px] top-[160px] w-[1336px]">
           <h1 className="font-semibold leading-[1.05] tracking-[-0.015em]" style={{ fontSize: size }}>

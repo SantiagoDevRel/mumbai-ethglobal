@@ -115,7 +115,7 @@ test("one idea per scene, in the outline's order", () => {
   const order = (id: Parameters<typeof sceneIndex>[0]) => sceneIndex(id);
   assert.deepEqual(
     SCENES.map((scene) => scene.id),
-    ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "S7", "L1", "B2", "B3", "L3", "L6", "L2", "B4", "B5", "T1", "T2", "PZ", "L9"],
+    ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "NT", "S7", "L1", "B2", "B3", "L3", "L6", "L2", "B4", "B5", "T1", "T2", "PZ", "L9"],
   );
   assert.ok(order("B3") < order("L3"), "the query slide comes right before the query runs");
   assert.equal(new Set(SCENES.map((scene) => scene.title)).size, SCENES.length, "no title twice");
@@ -134,7 +134,8 @@ test("the outline bar fills each part on every → and finishes it before the ne
   assert.ok(w1.why! > 0 && w1.why! < 1);
   assert.ok(progress("W1", 1).why! > w1.why!, "a reveal step moves the bar");
   assert.equal(progress("W4", 1).why, 1);
-  assert.deepEqual(progress("ST"), { why: 1, start: 1 / 5, build: 0, tools: 0 });
+  // "Five steps" holds ST (five reveals) and NT (three): eight units.
+  assert.deepEqual(progress("ST"), { why: 1, start: 1 / 8, build: 0, tools: 0 });
   assert.equal(progress("L9").tools, 1);
   // Walking every scene and step, the bar never moves backwards.
   let last = -1;

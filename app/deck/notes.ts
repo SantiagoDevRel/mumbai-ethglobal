@@ -9,6 +9,7 @@ import { B2_NOTES } from "./scenes/B2";
 import { B3_NOTES } from "./scenes/B3";
 import { B5_NOTES } from "./scenes/B5";
 import { D6_NOTES } from "./scenes/data/D6";
+import { NT_NOTES } from "./scenes/NT";
 import { ST_NOTES } from "./scenes/ST";
 import { T1_NOTES } from "./scenes/T1";
 import { W1_NOTES } from "./scenes/W1";
@@ -23,15 +24,16 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   ME: ["Who I am, in 15 seconds. The slide comes later."],
   IX: [
-    "Four parts. Why Arkiv. The five steps before your first write. Then you build it with me, live, from your phone. And the tools and prizes for this weekend. The bar at the top shows where we are.",
+    "Four parts, one per →. Why Arkiv. The five steps before your first write, and what Arkiv is not. Then you build your entity with me, live, from your phone. And the resources and prizes for this weekend. The bar at the top shows where we are.",
   ],
   W1: W1_NOTES,
   W2: W2_NOTES,
   W3: W3_NOTES,
   W4: W4_NOTES,
   ST: ST_NOTES,
+  NT: NT_NOTES,
   S7: [
-    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out. Scan the code and fill the form: name, color, country and a lifetime from 5 to 15 minutes. Don't press Write yet.",
+    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out. Scan the code and fill the form: name, color, country and a lifetime from 5 to 15 minutes. Don't press Write yet: we write together.",
     "→ shows what your form becomes: one entity. Three attributes anyone can query by, and an Entity Expiration. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
   ],
   L1: [
@@ -68,23 +70,24 @@ export const NOTES: Record<SceneId, string[]> = {
 export const REVEALS: Record<SceneId, string[]> = {
   S0: [],
   ME: [],
-  IX: [],
-  W1: ["the three cards and \"One company decides. Alone.\""],
+  IX: ["part 2 · Five steps", "part 3 · Build your entity", "part 4 · Resources and prizes"],
+  W1: ["the three cards and \"One company decides for you.\""],
   W2: [],
   W3: ["column: from web3", "column: of its own, and the closing line"],
-  W4: ["where your data goes: Arkiv and Swarm"],
+  W4: ["your app: SDK or JSON-RPC, your logic, big files on Swarm"],
   ST: ["step 2 · a wallet", "step 3 · test funds", "step 4 · free reads", "step 5 · an RPC access key"],
-  S7: ["your form as an entity"],
+  NT: ["not built for big files", "not private by default"],
+  S7: ["your form as one entity"],
   L1: [],
-  B2: ["what each part is"],
-  B3: ["the same query in the SDK"],
+  B2: [],
+  B3: ["one more clause: AND name"],
   L3: ["filter: color is orange", "filter: country is India"],
   L6: ["the caption: Transfer it: paste a wallet, sign once."],
   L2: ["the caption: Expire it. Or extend it."],
-  B4: ["encrypt into the payload", "decrypt, or only bytes, and the closing line"],
+  B4: ["owner_phone, encrypted", "the arkiv-encryption skill and npm package"],
   B5: [],
   T1: ["Docs"],
-  T2: ["out of date", "With MCP: network_status, and how to add it"],
-  PZ: ["Build on Arkiv from scratch", "Continuity", "Node tooling", "Arkiv + Swarm bonus", "the total"],
+  T2: [],
+  PZ: ["Build on Arkiv from scratch", "Build on Arkiv, Continuity", "Node tooling", "Arkiv + Swarm bonus"],
   L9: [],
 };

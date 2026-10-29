@@ -74,7 +74,7 @@ try {
   const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
   await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
   // One screen, one thing at a time: the title slide covers the map (no HUD), with no QR and no
-  // outline bar yet. The room scans later, in "Build it, live".
+  // outline bar yet. The room scans later, in "Build your entity".
   await expect(page.getByRole("heading", { name: /From zero to hero/ })).toBeVisible();
   await expect(page.locator(".app-hud")).toHaveCount(0);
   await expect(page.locator(".globe-dots")).toHaveCount(1);
@@ -94,8 +94,11 @@ try {
   await expect(bar.locator('[aria-current="step"]')).toHaveCount(0);
   await expect(page.locator(".join-qr,.app-hud")).toHaveCount(0);
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-IX.png") }); }
-  // Each → moves the current part's bar; a finished part stays full.
+  // Each → moves the current part's bar; a finished part stays full. The index lights its four parts
+  // one → at a time first.
   const fill = (part) => part.locator(".outline-track i").evaluate((element) => Number(/scaleX\(([\d.]+)\)/.exec(element.style.transform)?.[1] ?? NaN));
+  for (let i = 1; i < SCENES[sceneIndex("IX")].steps; i++) await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("img", { name: `Step ${SCENES[sceneIndex("IX")].steps} of ${SCENES[sceneIndex("IX")].steps}` })).toBeVisible();
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="W1"]')).toBeVisible();
   const current = bar.locator('[aria-current="step"]');
@@ -108,18 +111,18 @@ try {
   await expect(current).toContainText("Five steps");
   await expect(bar.locator('[data-state="done"]')).toContainText("Why Arkiv");
   assert.equal(await fill(bar.locator('[data-state="done"]')), 1);
-  // S7, in "Build it, live": the big QR on the map itself; D swaps it for the 3 · 2 · 1 countdown and back.
+  // S7, in "Build your entity": the big QR, centered on the map itself; D swaps it for the 3 · 2 · 1 countdown and back.
   await commands(page, [go("S7")]);
-  await expect(page.locator(".join-qr-center")).toBeVisible();
+  await expect(page.locator(".join-qr-scan")).toBeVisible();
   await expect(page.locator(".join-qr-corner")).toHaveCount(0);
-  await expect(current).toContainText("Build it, live");
+  await expect(current).toContainText("Build your entity");
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7.png") }); }
   await page.keyboard.press("d");
-  await expect(page.locator(".join-qr-center")).toHaveCount(0);
+  await expect(page.locator(".join-qr-scan")).toHaveCount(0);
   await expect(page.getByText("Everyone: tap Write my entity.")).toBeVisible();
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7-countdown.png") }); }
   await page.keyboard.press("d");
-  await expect(page.locator(".join-qr-center")).toBeVisible();
+  await expect(page.locator(".join-qr-scan")).toBeVisible();
   // → reads the form as one entity; the next → lands on the map, where the room's entities arrive.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="S7"]')).toBeVisible();
@@ -280,14 +283,14 @@ try {
   // The follower changes scene once the leader, still drawing the 1920 px globe in software WebGL,
   // handles the command: as long as the other waits in this block.
   await expect(slides.locator('[data-scene="S7"]')).toBeVisible({ timeout: 20000 });
-  // The big QR sits in the slide's left column (x 660 of 1920).
-  await expect.poll(async () => { const box = await slides.locator(".join-qr-center").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(660 * 1280 / 1920));
-  await expect(slides.locator(".join-qr-center .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  // The big QR sits centered on the slide (x 960 of 1920).
+  await expect.poll(async () => { const box = await slides.locator(".join-qr-scan").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(960 * 1280 / 1920));
+  await expect(slides.locator(".join-qr-scan .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await slides.keyboard.press("d");
-  await expect(slides.locator(".join-qr-center")).toHaveCount(0);
+  await expect(slides.locator(".join-qr-scan")).toHaveCount(0);
   await expect(slides.getByText("Everyone: tap Write my entity.")).toBeVisible();
   await slides.keyboard.press("d");
-  await expect(slides.locator(".join-qr-center")).toBeVisible();
+  await expect(slides.locator(".join-qr-scan")).toBeVisible();
   await slides.keyboard.press("ArrowRight");
   await slides.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
@@ -298,7 +301,7 @@ try {
   await expect(slides.getByRole("img", { name: "Arkiv mascot typing on a laptop" })).toBeVisible();
   await expect(page.getByText("Write it. Every dot is an entity you just wrote.").first()).toBeVisible();
   // /slides shows the same outline bar, on the same part.
-  await expect(slides.getByRole("navigation", { name: "Talk outline" }).locator('[aria-current="step"]')).toContainText("Build it, live");
+  await expect(slides.getByRole("navigation", { name: "Talk outline" }).locator('[aria-current="step"]')).toContainText("Build your entity");
   // Half a screen: the slide keeps 16:9 inside its window, nothing scrolls.
   await slides.setViewportSize({ width: 960, height: 1080 });
   assert.equal(await slides.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -407,7 +410,7 @@ try {
     await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
     await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
     // Every → shows one more of the five rows, even pressed without a pause, from either window; the
-    // next → leaves for the QR. Hidden rows are aria-hidden, so the role count is what the room sees.
+    // next → leaves for "What Arkiv is not". Hidden rows are aria-hidden, so the role count is what the room sees.
     const rows = (target) => target.getByRole("listitem");
     for (const [driver, name] of [[slides, "slides"], [page, "map"]]) {
       await commands(page, [go("ST")]);
@@ -420,7 +423,7 @@ try {
       }
       if (capture && name === "slides") await slides.screenshot({ path: path.join(capture, "slides-1280-ST-5.png") });
       await driver.keyboard.press("ArrowRight");
-      for (const target of [page, slides]) await expect(target.locator('[data-scene="S7"]')).toBeVisible();
+      for (const target of [page, slides]) await expect(target.locator('[data-scene="NT"]')).toBeVisible();
       evidence.push({ surface: "five-steps", driver: name, rowsShown: 5, leavesOnSixth: true });
     }
     // A scene change: the new scene fades in over 0.22 s while the old one waits under it and goes in
@@ -461,7 +464,7 @@ try {
         requestAnimationFrame(check);
       }), [from, to]);
     };
-    for (const [target, from, to] of [[slides, "IX", "W1"], [page, "W2", "W3"]]) {
+    for (const [target, from, to] of [[slides, "W2", "W3"], [page, "W2", "W3"]]) {
       assert.equal(SCENES[sceneIndex(from)].steps, 1);
       const samples = [];
       for (let i = 0; i < 3; i++) samples.push(await sample(target, from, to));

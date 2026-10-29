@@ -11,6 +11,7 @@ export type SceneId =
   | "W3"
   | "W4"
   | "ST"
+  | "NT"
   | "S7"
   | "L1"
   | "B2"
@@ -41,9 +42,9 @@ export type QrLabel = "Scan now" | "Join the map";
  * them; every scene after the index belongs to one. */
 export const SECTIONS = [
   { id: "why", title: "Why Arkiv", line: "Your data, the web3 way, and what Arkiv is." },
-  { id: "start", title: "Five steps", line: "What you need before your first write." },
-  { id: "build", title: "Build it, live", line: "Scan the QR: we write, query, own and expire your entities together." },
-  { id: "tools", title: "Tools and prizes", line: "The Hub, the docs, your agent and this weekend's prizes." },
+  { id: "start", title: "Five steps", line: "What you need before your first write, and what Arkiv is not." },
+  { id: "build", title: "Build your entity", line: "Scan the QR: write your entity, then query, encrypt and explore." },
+  { id: "tools", title: "Resources and prizes", line: "The Hub, the docs, your agent and this weekend's prizes." },
 ] as const;
 
 export type SectionId = (typeof SECTIONS)[number]["id"];
@@ -69,34 +70,36 @@ export const TALK_LENGTH_SEC = 20 * 60;
 const NO_QR = { label: "Join the map", placement: "none" } as const;
 const CORNER_QR = { label: "Join the map", placement: "corner" } as const;
 
-// One idea per scene, never twice (Santiago, October 28). The room scans in "Build it, live" and
+// One idea per scene, never twice (Santiago, October 28). The room scans in "Build your entity" and
 // every idea after that is shown on the entities they just wrote: a slide for the idea, the map for
-// the result.
+// the result. October 29: "What Arkiv is not" (NT) follows the five steps.
 export const SCENES: readonly SceneDef[] = [
   { id: "S0", title: "Title", at: 0, kind: "slide", steps: 1, qr: NO_QR, camera: "globe-idle", map: "dots" },
   // Who I am, in 15 seconds (Santiago, October 29): an empty slide for now.
   { id: "ME", title: "Santiago", at: 5, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots" },
-  { id: "IX", title: "What we'll do", at: 20, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots" },
-  { id: "W1", title: "Your data, their terms", at: 40, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
-  { id: "W2", title: "Meme: eyes on Web3 data", at: 90, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
-  { id: "W3", title: "Your data, the web3 way", at: 110, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
-  { id: "W4", title: "What is Arkiv", at: 160, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
-  { id: "ST", title: "Five steps to get started", at: 220, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
-  { id: "S7", title: "Your entity: scan and fill the form", at: 310, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "center" }, camera: "globe", map: "dots", section: "build" },
-  { id: "L1", title: "Write it: your entities, live", at: 400, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
-  { id: "B2", title: "Write it: the SDK call", at: 440, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "B3", title: "Query it like a database", at: 500, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
+  // One → per part: part 1 lights first, then 2, 3 and 4 (Santiago, October 29).
+  { id: "IX", title: "What we'll do", at: 20, kind: "slide", steps: 4, qr: NO_QR, camera: "keep", map: "dots" },
+  { id: "W1", title: "Your data, their terms", at: 50, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
+  { id: "W2", title: "Meme: eyes on Web3 data", at: 95, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
+  { id: "W3", title: "Your data, the web3 way", at: 115, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
+  { id: "W4", title: "What is Arkiv", at: 165, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
+  { id: "ST", title: "Five steps to get started", at: 225, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
+  { id: "NT", title: "What Arkiv is not", at: 305, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
+  { id: "S7", title: "Your entity: scan and fill the form", at: 345, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "center" }, camera: "globe", map: "dots", section: "build" },
+  { id: "L1", title: "Write it: your entities, live", at: 425, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
+  { id: "B2", title: "Write it: the SDK call", at: 465, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
+  { id: "B3", title: "Query it like a database", at: 515, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
   // L3 opens on the whole globe; its last filter (AND country is India) flies the camera to India
   // (lib/stage/choreography.ts), so the AND visibly narrows the map (Santiago, October 29).
-  { id: "L3", title: "Query it, live", at: 560, kind: "live", steps: 3, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
-  { id: "L6", title: "Own it", at: 620, kind: "live", steps: 2, qr: CORNER_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "L2", title: "Expire it", at: 695, kind: "live", steps: 2, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
-  { id: "B4", title: "Encrypt what's private", at: 755, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "B5", title: "Explore it with no code", at: 800, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "T1", title: "Hub and docs", at: 845, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
-  { id: "T2", title: "Your agent knows Arkiv", at: 885, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
-  { id: "PZ", title: "Arkiv prizes at ETHGlobal Mumbai", at: 945, kind: "slide", steps: 6, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
-  { id: "L9", title: "Close", at: 1005, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "tools" },
+  { id: "L3", title: "Query it, live", at: 575, kind: "live", steps: 3, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
+  { id: "L6", title: "Own it", at: 625, kind: "live", steps: 2, qr: CORNER_QR, camera: "keep", map: "dots", section: "build" },
+  { id: "L2", title: "Expire it", at: 670, kind: "live", steps: 2, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
+  { id: "B4", title: "Encrypt what's private", at: 715, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
+  { id: "B5", title: "Explore it with no code", at: 760, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
+  { id: "T1", title: "Hub and docs", at: 800, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
+  { id: "T2", title: "Your agent knows Arkiv", at: 840, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
+  { id: "PZ", title: "Arkiv prizes at ETHGlobal Mumbai", at: 875, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
+  { id: "L9", title: "Close", at: 960, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "tools" },
 ];
 
 export function sceneIndex(id: SceneId): number {

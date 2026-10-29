@@ -1,47 +1,87 @@
 "use client";
 
-// B3 · Query it like a database. One filter, color is orange AND country is India, in the query
-// language (the text the SDK sends, as the map's Query tab shows it) and as the SDK call (the map's
-// Code tab). Then L3 runs the same filter on the room's entities. → steps: 0 the query language, 1
-// the SDK call and the honest limit.
+// B3 · Query it like a database. One filter, category is cafe AND country is India, in the query
+// language (the text the SDK sends: the SDK builder's toString(), as the map's Query tab shows it) and
+// as the SDK call (one where per clause, as the map's Code tab prints them). Values are lower case,
+// like everything the phones write. Then L3 runs queries like it on the room's entities.
+// → steps: 0 both panels, 1 one more clause in both, AND name is "chai corner" (it slides in between,
+// marked).
 
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { AppSide, PANEL, Reveal, Slide, T } from "../ui";
+import { EASE, PANEL, REVEAL_TIME, Slide, T } from "../ui";
+
+const FONT = 32;
+const LINE = Math.round(FONT * 1.6);
 
 const O = ({ children }: { children: ReactNode }) => <span className="text-[var(--arkiv-orange)]">{children}</span>;
 
-export function B3({ step }: SceneContentProps) {
+/** One code line. An `added` line takes no room until `shown`, then opens and stays marked. */
+function Row({ children, added = false, shown = true }: { children: ReactNode; added?: boolean; shown?: boolean }) {
+  const reduced = useReducedMotion();
+  if (!added) return <div className="whitespace-pre px-9">{children}</div>;
   return (
-    <Slide headline="Query it like a database" under="Orange entities from India, two ways." size={72}>
-      <div className="absolute left-[96px] top-[330px] flex w-[840px] flex-col gap-5">
-        <p className="text-[24px] font-bold tracking-[0.1em]" style={{ color: T.t64 }}>QUERY LANGUAGE</p>
-        <div className={`${PANEL} whitespace-pre px-9 py-8 font-mono text-[34px] leading-[1.6]`}>
-          color = str(&apos;#fe7446&apos;)
-          <br />
-          <O>AND</O> country = str(&apos;IN&apos;)
+    <motion.div
+      className="overflow-hidden whitespace-pre px-9"
+      initial={false}
+      animate={{
+        height: shown ? LINE : 0,
+        opacity: shown ? 1 : 0,
+        backgroundColor: shown ? "rgba(254,116,70,0.16)" : "rgba(254,116,70,0)",
+        boxShadow: shown ? "inset 5px 0 0 #FE7446" : "inset 0 0 0 rgba(254,116,70,0)",
+      }}
+      transition={{ duration: reduced ? 0 : REVEAL_TIME, ease: EASE }}
+      aria-hidden={!shown}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function Label({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[24px] font-bold tracking-[0.1em]" style={{ color: T.t64 }}>
+      {children}
+    </p>
+  );
+}
+
+export function B3({ step }: SceneContentProps) {
+  const named = step >= 1;
+  return (
+    <Slide headline="Query it like a database" under="Cafes in India, two ways." size={72}>
+      <div className="absolute left-[96px] top-[330px] grid w-[1728px] grid-cols-[680px_1000px] grid-rows-[auto_auto] gap-x-12 gap-y-5">
+        <Label>QUERY LANGUAGE</Label>
+        <Label>THE SAME QUERY IN THE SDK</Label>
+        <div className={`${PANEL} py-7 font-mono`} style={{ fontSize: FONT, lineHeight: `${LINE}px` }}>
+          <Row>category = str(&apos;cafe&apos;)</Row>
+          <Row>
+            <O>AND</O> country = str(&apos;in&apos;)
+          </Row>
+          <Row added shown={named}>
+            <O>AND</O> name = str(&apos;chai corner&apos;)
+          </Row>
+        </div>
+        <div className={`${PANEL} py-7 font-mono`} style={{ fontSize: FONT, lineHeight: `${LINE}px` }}>
+          <Row>await publicClient.select(&#123; attributes: true &#125;)</Row>
+          <Row>
+            {"  "}.where(<O>eq</O>(&quot;category&quot;, &quot;cafe&quot;))
+          </Row>
+          <Row>
+            {"  "}.where(<O>eq</O>(&quot;country&quot;, &quot;in&quot;))
+          </Row>
+          <Row added shown={named}>
+            {"  "}.where(<O>eq</O>(&quot;name&quot;, &quot;chai corner&quot;))
+          </Row>
+          <Row>{"  "}.fetch();</Row>
         </div>
       </div>
-      <Reveal step={step} at={1} className="absolute left-[984px] top-[330px] flex w-[840px] flex-col gap-5">
-        <p className="text-[24px] font-bold tracking-[0.1em]" style={{ color: T.t64 }}>THE SAME QUERY IN THE SDK</p>
-        <div className={`${PANEL} whitespace-pre px-9 py-8 font-mono text-[26px] leading-[1.75]`}>
-          await publicClient.select(&#123; attributes: true &#125;)
-          <br />
-          {"  "}.where(<O>eq</O>(&quot;color&quot;, &quot;#fe7446&quot;))
-          <br />
-          {"  "}.where(<O>eq</O>(&quot;country&quot;, &quot;IN&quot;))
-          <br />
-          {"  "}.fetch();
-        </div>
-        <p className="flex items-center gap-4 text-[28px]" style={{ color: T.t84 }}>
-          <AppSide /> No ORDER BY: your app sorts.
-        </p>
-      </Reveal>
     </Slide>
   );
 }
 
 export const B3_NOTES: string[] = [
-  "Arkiv has a query language, like a database. Show me the orange entities AND only the ones from India. It also has OR, NOT and comparisons.",
-  "In the SDK it's the same filter, one where per condition. One honest limit: there's no ORDER BY, so your app sorts. Now let's run it on your entities.",
+  "Arkiv has a query language, like a database. Show me every cafe AND only the ones in India: category equals cafe, and country equals in. In the SDK it's the same filter, one where per clause. It also has OR, NOT and comparisons.",
+  "One more AND narrows it to one place: name equals chai corner. One more clause in the query language, one more where in the SDK. Values match exactly, which is why everything you wrote is in lower case. Now let's run it on your entities.",
 ];

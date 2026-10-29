@@ -13,7 +13,8 @@
 //   outline  the outline bar across the top (OutlineBar)            z-35
 //   controls the "?" keyboard overlay                               z-40
 // /slides: every slide scene's Slide, a card for live scenes, the S7 QR, the outline bar and the
-// "?" overlay.
+// "?" overlay. Both keep the presenter chrome in window pixels: the ? button (and the Writing switch
+// on /map) bottom left, the scene counter and step dots bottom right, the pointer rectangles.
 //
 // Everything is drawn in stage pixels. /slides fits a 1920x1080 box to the window ("contain"). /map
 // keeps the box 1920 wide and stretches it to the window's height ("fill"), so in half a 16:9
@@ -80,8 +81,9 @@ export function StageBox({ children, interactive = false }: { children: ReactNod
   );
 }
 
-/** Seconds a slide takes to replace the one before it (October 28: 0.45 felt slow on the projector). */
-const SCENE_FADE = 0.22;
+/** Seconds a slide takes to replace the one before it (October 28: 0.45 felt slow on the projector).
+ * S7's scan column (JoinQR) fades with it. */
+export const SCENE_FADE = 0.22;
 
 /** Slide to slide, the new one fades in over the old one, which stays until it is covered and then
  * fades out quickly, so the globe never shows through mid-way and the old slide doesn't pop off.
@@ -113,7 +115,7 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: 
         {/* The map has no free corner for Reset, so it sits in the "?" presenter card. */}
         <ControlsOverlay extra={bar} />
         {writing}
-        <StepDots />
+        <StageProgress />
         <Annotations />
       </div>
     </FitContext.Provider>
@@ -141,18 +143,22 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
       <div className="pointer-events-none absolute inset-0 z-[35]"><StageBox><OutlineBar /></StageBox></div>
       {bar}
       <ControlsOverlay />
-      <StepDots />
+      <StageProgress />
       <Annotations />
     </div>
   );
 }
 
-/** Bottom right: one small dot per reveal step of this scene, filled up to the current one. */
-function StepDots() {
-  const { scene, step } = useScene();
-  if (scene.steps < 2) return null;
-  return <div className="step-dots" role="img" aria-label={`Step ${step + 1} of ${scene.steps}`}>
-    {Array.from({ length: scene.steps }, (_, i) => <i key={i} data-on={i <= step} data-current={i === step} />)}
+/** Bottom right, where the talk is: in a scene with reveals, one small dot per step filled up to the
+ * current one, then the scene's number out of all of them ("9 / 19", Santiago, October 29). Each has
+ * its own name, so "Scene 9 of 19" never reads as the dots' "Step 1 of 2". */
+function StageProgress() {
+  const { scene, index, step } = useScene();
+  return <div className="stage-progress">
+    {scene.steps > 1 ? <div className="step-dots" role="img" aria-label={`Step ${step + 1} of ${scene.steps}`}>
+      {Array.from({ length: scene.steps }, (_, i) => <i key={i} data-on={i <= step} data-current={i === step} />)}
+    </div> : null}
+    <span className="scene-counter" role="img" aria-label={`Scene ${index + 1} of ${SCENES.length}`}><b>{index + 1}</b> / {SCENES.length}</span>
   </div>;
 }
 

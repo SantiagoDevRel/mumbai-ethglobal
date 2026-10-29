@@ -1,207 +1,60 @@
 "use client";
 
-// A1 · MCP: your agent asks Arkiv. Your agent asks for its first entity. Without MCP it searches
-// the web and builds on old pages (the struck-through answer is the outdated one on purpose). With
-// MCP it asks Arkiv's network_status; the values come from the app's active network profile, so
-// they follow the network switch. Each step lands whole. → steps: 0 the ask, the web search and the
-// agent's answer, 1 it is out of date, 2 with MCP and how to add it: the two commands themselves
-// (facts.ts) and the connector line, so nobody has to guess the command.
+// A1 · MCP: your agent asks Arkiv (scene T2). One step: the two-panel "disappointed" meme with BLOK
+// (Santiago, October 29). Top, BLOK smiling: with MCP your agent asks Arkiv and gets today's answer.
+// Bottom, the same shot disappointed: without MCP it answers from old training data. Both pictures
+// (public/deck/memes, 1536x1024, same framing) are cropped to a wide strip around the eyes and mouth
+// so the panels stack like the original; the labels sit beside them, Sand for the good one and Stone
+// for the bad one, as in the deck's other memes. Setup isn't on the slide: one link to the Hub's
+// AI tools page, which has the steps.
 
-import { AnimatePresence, motion } from "motion/react";
-import { useMemo, type ReactNode } from "react";
+import { ArrowUpRight } from "lucide-react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
-import { getProfile } from "../../../../shared/arkiv/profiles";
-import { Mascot } from "../../Mascot";
-import { EASE, PANEL, PANEL_EASE, REVEAL_TIME, Reveal, Rise, Slide, T } from "../../ui";
-import { INSTALL, MCP_HOST } from "./facts";
+import { Rise, Slide } from "../../ui";
 
-function Check({ size = 26 }: { size?: number }) {
+const AI_TOOLS = "https://hub.arkiv.network/ai-tools";
+
+/** Each picture shows as a 1164x292 strip: source y 358 to 743 at this position, eyes and mouth inside. */
+const STRIP = "50% 56%";
+
+function Panel({ label, src, alt, good }: { label: string; src: string; alt: string; good: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#FE7446" strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
+    <>
+      <div className={`flex items-center px-12 ${good ? "bg-[var(--arkiv-sand)]" : "bg-[var(--arkiv-stone)]"}`}>
+        <span className="text-[72px] font-semibold leading-[1.05] tracking-[-0.015em] text-[var(--arkiv-ink)]">{label}</span>
+      </div>
+      <div className="relative overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element -- fixed illustration, cropped by its frame */}
+        <img src={src} alt={alt} className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: STRIP }} draggable={false} />
+      </div>
+    </>
   );
 }
 
-function Badge({ children, icon }: { children: ReactNode; icon: "x" | "check" }) {
-  return (
-    <span className="inline-flex items-center gap-3 rounded-full border-2 border-[var(--arkiv-orange)] px-5 py-1.5 text-[24px] font-semibold text-[var(--arkiv-orange)]">
-      {icon === "check" ? (
-        <Check />
-      ) : (
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FE7446" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-          <path d="M18 6 6 18" />
-          <path d="m6 6 12 12" />
-        </svg>
-      )}
-      {children}
-    </span>
-  );
-}
-
-function WithoutMcp({ step }: { step: number }) {
-  return (
-    <div className="absolute inset-0">
-      <div className="flex items-center gap-3.5" style={{ color: T.t56 }}>
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" aria-hidden>
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-        <span className="text-[24px] font-semibold">Your agent searched the web and read old pages.</span>
-      </div>
-      <div className="absolute left-0 top-[64px] flex flex-col items-start gap-2">
-        <span className="text-[18px] font-semibold" style={{ color: T.t56 }}>
-          Your agent
-        </span>
-        <div className="relative rounded-[20px_20px_20px_4px] border border-[rgba(246,244,239,0.14)] bg-[rgba(246,244,239,0.08)] px-6 py-3.5 text-[28px] font-medium">
-          Connect to Braga and install SDK 0.6.
-          <motion.div
-            aria-hidden
-            className="absolute left-[18px] right-[18px] top-1/2 -mt-[2px] h-[4px] origin-left rounded-[2px] bg-[var(--arkiv-orange)]"
-            initial={false}
-            animate={{ scaleX: step >= 1 ? 1 : 0 }}
-            transition={{ duration: REVEAL_TIME, ease: EASE }}
-          />
-        </div>
-      </div>
-      <Reveal step={step} at={1} y={12} className="absolute left-0 top-[196px]">
-        <Badge icon="x">Out of date: Braga closed in August.</Badge>
-      </Reveal>
-    </div>
-  );
-}
-
-function WithMcp() {
-  const profile = useMemo(() => {
-    try {
-      return getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
-    } catch {
-      return null;
-    }
-  }, []);
-  const rows: [string, string, boolean?][] = [
-    ["network", profile?.name ?? "—"],
-    ["install", profile ? `npm install ${profile.sdk.package}@${profile.sdk.version} viem` : "—", true],
-  ];
-  return (
-    <div className="absolute inset-0">
-      <motion.div
-        className="inline-flex items-center gap-3 rounded-full bg-[var(--arkiv-blue)] px-5 py-2"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: REVEAL_TIME, ease: EASE }}
-      >
-        <span className="font-mono text-[22px] font-semibold">arkiv › network_status</span>
-        <Check size={24} />
-      </motion.div>
-      <div className="absolute left-0 top-[66px] w-[820px] rounded-[14px] border border-[rgba(246,244,239,0.14)] bg-[rgba(246,244,239,0.06)] px-6 py-4">
-        <div className="grid grid-cols-[150px_minmax(0,1fr)] gap-y-1.5 font-mono text-[24px] leading-[1.45]">
-          {rows.flatMap(([key, value, accent]) => [
-            <span key={key} style={{ color: T.t56 }}>
-              {key}
-            </span>,
-            <span key={key + "-v"} className={accent ? "text-[var(--arkiv-orange)]" : undefined}>
-              {value}
-            </span>,
-          ])}
-        </div>
-      </div>
-      <div className="absolute left-0 top-[196px]">
-        <Badge icon="check">Today&apos;s answer, straight from Arkiv.</Badge>
-      </div>
-    </div>
-  );
-}
-
-export function A1({ step }: SceneContentProps) {
-  const withMcp = step >= 2;
-  const pose = withMcp ? "thumbsUp" : step >= 1 ? "thumbsDown" : "stand";
+export function A1(_props: SceneContentProps) {
   return (
     <Slide headline="MCP: your agent asks Arkiv" under="MCP connects your coding agent to Arkiv's docs and tools.">
-      <Rise className={`${PANEL} absolute left-[96px] top-[340px] h-[400px] w-[1728px]`}>
-        <div className="absolute left-[28px] top-[20px] flex h-[210px] w-[440px] justify-center">
-          <AnimatePresence mode="wait">
-            <motion.div key={pose} initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: PANEL_EASE }}>
-              <Mascot pose={pose} height={200} />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-        <div className="absolute left-[28px] top-[248px] w-[440px] rounded-[20px] bg-[var(--arkiv-sand)] px-6 py-[18px] text-center text-[28px] font-semibold leading-[1.3] text-[var(--arkiv-ink)]">
-          <span aria-hidden className="absolute left-1/2 top-[-9px] -ml-[9px] h-[18px] w-[18px] rotate-45 bg-[var(--arkiv-sand)]" />
-          Help me write my first Arkiv entity.
-        </div>
-        <svg className="absolute left-[496px] top-[200px]" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="rgba(246,244,239,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M5 12h14" />
-          <path d="m12 5 7 7-7 7" />
-        </svg>
-
-        <div className="absolute bottom-0 left-[572px] right-[28px] top-0">
-          <div className="absolute left-0 top-[28px] flex gap-1 rounded-[12px] bg-[rgba(246,244,239,0.08)] p-1">
-            {["Without MCP", "With MCP"].map((label, i) => {
-              const on = (i === 1) === withMcp;
-              return (
-                <span
-                  key={label}
-                  className="rounded-[8px] px-5 py-2 text-[22px] font-semibold transition-colors duration-300"
-                  style={on ? { background: "var(--arkiv-sand)", color: "var(--arkiv-ink)" } : { color: T.t64 }}
-                >
-                  {label}
-                </span>
-              );
-            })}
-          </div>
-          <div className="absolute left-0 top-[104px] h-[280px] w-[1128px]">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={withMcp ? "with" : "without"}
-                className="absolute inset-0"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0, transition: { duration: 0.16 } }}
-                transition={{ duration: 0.24, ease: PANEL_EASE }}
-              >
-                {withMcp ? <WithMcp /> : <WithoutMcp step={step} />}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
+      {/* Ink shows through the 4 px gaps as the rules between the four cells. */}
+      <Rise className="absolute left-[96px] top-[332px] grid h-[588px] w-[1728px] grid-cols-[560px_minmax(0,1fr)] grid-rows-2 gap-[4px] overflow-hidden rounded-[20px] bg-[var(--arkiv-ink)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
+        <Panel label="With MCP" src="/deck/memes/arkiv-meme-mcp-happy.webp" alt="BLOK, smiling" good />
+        <Panel label="Without MCP" src="/deck/memes/arkiv-meme-mcp-sad.webp" alt="BLOK, disappointed" good={false} />
       </Rise>
-
-      <Reveal
-        step={step}
-        at={2}
-        className={`${PANEL} absolute left-[96px] top-[764px] grid h-[184px] w-[1728px] grid-cols-[600px_minmax(0,1fr)] items-center gap-10 !border-[var(--arkiv-orange)] px-8 py-6`}
-      >
-        <div className="flex flex-col gap-2.5">
-          <span className="text-[22px] font-semibold" style={{ color: T.t64 }}>
-            Add it once
-          </span>
-          <span className="font-mono text-[38px] font-semibold leading-[1.2] text-[var(--arkiv-orange)]">{MCP_HOST}</span>
-          <div className="flex gap-3">
-            {["No key", "Never signs"].map((chip) => (
-              <span key={chip} className="inline-flex items-center rounded-full border-[1.5px] border-[rgba(246,244,239,0.28)] px-4 py-1.5 text-[20px] font-semibold">
-                {chip}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="flex min-w-0 flex-col gap-2.5 leading-[1.3]">
-          {[INSTALL.claude.mcp, INSTALL.codex.mcp].map((command) => (
-            <span key={command} className="whitespace-nowrap font-mono text-[24px] text-[var(--arkiv-orange)]">
-              {command}
-            </span>
-          ))}
-          <span className="text-[24px]" style={{ color: T.t84 }}>
-            Chat apps: add the URL as a custom connector.
-          </span>
-        </div>
-      </Reveal>
+      <Rise className="absolute left-[96px] top-[948px]">
+        <a
+          href={AI_TOOLS}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-4 rounded-[10px] text-[32px] font-semibold text-[rgba(246,244,239,0.84)] decoration-2 underline-offset-8 hover:underline focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-[var(--arkiv-orange)]"
+        >
+          Set it up in your agent:
+          <span className="font-mono text-[var(--arkiv-orange)]">hub.arkiv.network/ai-tools</span>
+          <ArrowUpRight size={34} strokeWidth={2.4} className="text-[var(--arkiv-orange)]" aria-hidden />
+        </a>
+      </Rise>
     </Slide>
   );
 }
 
 export const A1_NOTES: string[] = [
-  "Your agent, on the left, asks for help with its first Arkiv entity. Without MCP it searches the web, reads old pages and confidently answers.",
-  "But that answer is out of date: that network closed in August, and that SDK is old.",
-  "With MCP it asks Arkiv directly: network_status answers with today's network and install line. Same question, today's answer. Add it once: the command for Claude Code or Codex CLI is on screen, or add the URL as a custom connector in a chat app. No key needed. It reads and checks; it never signs.",
+  "Same question to your agent, twice. Without MCP, it answers from old training data: an old network, an old SDK, and it sounds sure. With MCP, it asks Arkiv directly, with the network_status tool, and gets today's answer. Setting it up: the steps are on the Hub, under AI tools.",
 ];

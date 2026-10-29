@@ -1,6 +1,7 @@
-// Facts the AI-tools slides (A1-A4) show, in one place. Every list here was read from its source on
-// October 28, 2026; the slides derive their counts from these lists, so a recount means editing a
-// list, never a number in the copy.
+// Facts the AI-tools slides A1b-A4 show, in one place; none of them is in the talk now, and T2 (A1)
+// shows none of these facts since October 29 (it links to the Hub's AI tools page for the setup).
+// Every list here was read from its source on October 28, 2026; the slides derive their counts from
+// these lists, so a recount means editing a list, never a number in the copy.
 //
 // - MCP: tools/list, prompts/list and resources/list on https://mcp.arkiv.network/ (General 2.0.1).
 //   /mumbai answered 404 that day, so the slides point at the General URL.

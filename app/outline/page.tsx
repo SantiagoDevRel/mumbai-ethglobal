@@ -254,7 +254,7 @@ function StagePicture({ scene, step }: { scene: SceneDef; step: number }) {
   return (
     <>
       {Content ? <Content scene={scene} step={step} /> : <LiveCard scene={scene} step={step} />}
-      {scene.qr.placement === "center" ? <QrCard center label={scene.qr.label} /> : null}
+      {scene.qr.placement === "center" ? <QrCard center label={scene.qr.label} step={step} /> : null}
     </>
   );
 }

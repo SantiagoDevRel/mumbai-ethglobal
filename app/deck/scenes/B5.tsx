@@ -2,8 +2,9 @@
 
 // B5 · Explore it with no code: the DB-Chain's explorer. Its /entity/<key> page (checked October 28)
 // shows the entity's status, when it expires and its operation history (create, extend, transfer).
-// When the map has an entity open (the one transferred in L6), the slide links straight to it, so the
-// presenter opens one of the room's entities live. One step.
+// When an entity card is open on the map (for example the entity the presenter just transferred or
+// extended from it), the slide links straight to that entity, so the presenter opens one of the
+// room's entities live. One step.
 
 import { ExternalLink } from "lucide-react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
@@ -49,5 +50,5 @@ export function B5(_props: SceneContentProps) {
 }
 
 export const B5_NOTES: string[] = [
-  "No code needed to look at your data: the explorer shows every entity, transaction and wallet. Click the orange button to open the entity from the card: its status, when it expires, and its history. If the transfer went through, the history shows it, with the new owner.",
+  "No code needed to look at your data: the explorer shows every entity, transaction and wallet. Click the orange button to open the entity from the card: its status, when it expires, and its history. If you transferred it on the map, the history shows the transfer and the new owner; an extension shows there too.",
 ];

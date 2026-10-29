@@ -5,9 +5,10 @@
 
 import { motion } from "motion/react";
 import type { CSSProperties, ReactNode } from "react";
-import { EASE } from "../../ui";
+import { EASE, REVEAL_TIME } from "../../ui";
 
-/** Fades and rises in while `on`, fades out otherwise. `delay` applies only on the way in. */
+/** Fades and rises in while `on`, fades out otherwise, in a reveal's time. `delay` applies only on
+ * the way in. While fully hidden it is inert: its links can't be clicked or focused. */
 export function Show({
   on,
   delay = 0,
@@ -32,8 +33,9 @@ export function Show({
       style={style}
       initial={false}
       animate={{ opacity: on ? 1 : dim, y: on ? 0 : y }}
-      transition={{ duration: 0.45, ease: EASE, delay: on ? delay : 0 }}
+      transition={{ duration: REVEAL_TIME, ease: EASE, delay: on ? delay : 0 }}
       aria-hidden={!on && dim === 0}
+      inert={!on && dim === 0}
     >
       {children}
     </motion.div>

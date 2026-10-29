@@ -43,11 +43,16 @@
 .writing-switch button[aria-pressed=true]:last-of-type{background:var(--t-28);color:var(--arkiv-sand)}
 .writing-switch button:focus-visible{outline:3px solid var(--arkiv-orange);outline-offset:2px}
 .writing-switch em{position:absolute;left:0;bottom:34px;width:max-content;max-width:360px;padding:6px 10px;border-radius:var(--r-ctl);background:var(--arkiv-ink);color:var(--arkiv-orange);font:500 13px var(--font-sans);font-style:normal;text-transform:none;letter-spacing:0}
-/* Reveal progress: one dot per step of the scene, bottom right. */
-.step-dots{position:fixed;right:72px;bottom:10px;z-index:45;display:flex;gap:6px;pointer-events:none;padding:5px 8px;border-radius:999px;background:rgba(17,17,17,.55)}
-.step-dots i{width:8px;height:8px;border-radius:50%;background:rgba(246,244,239,.28)}.step-dots i[data-on=true]{background:rgba(246,244,239,.8)}.step-dots i[data-current=true]{background:#fe7446}
+/* Where the talk is, bottom right (StageProgress in StageFrame.tsx): in a scene with reveals one dot
+   per step, then the scene counter ("9 / 19"). It is sized like the stage (--h is 22 stage px, never
+   under 12 px), so it reads the same on any projector and keeps to the strip under the HUD's bottom
+   edge on /map (32 stage px, under L3's query panel). right:72px clears the map's attribution button. */
+.stage-progress{--h:max(12px,min(1.1458vw,2.037vh));position:fixed;right:72px;bottom:calc(var(--h)*.18);z-index:45;display:flex;align-items:center;gap:calc(var(--h)*.45);height:var(--h);box-sizing:border-box;padding:0 calc(var(--h)*.5);border-radius:999px;background:rgba(17,17,17,.7);color:var(--arkiv-sand);font:500 calc(var(--h)*.68)/1 var(--font-mono);white-space:nowrap;pointer-events:none;opacity:.5}
+.step-dots{display:flex;align-items:center;gap:calc(var(--h)*.27)}
+.step-dots i{--d:max(5px,calc(var(--h)*.36));flex:none;width:var(--d);height:var(--d);border-radius:50%;background:rgba(246,244,239,.28)}.step-dots i[data-on=true]{background:rgba(246,244,239,.8)}.step-dots i[data-current=true]{background:#fe7446}
+.scene-counter b{display:inline-block;min-width:2ch;text-align:right;font-weight:600}
 /* Presenter's pointer rectangles (drag on a slide, Alt + drag on the map). */
 .annotations{position:fixed;inset:0;z-index:44;pointer-events:none}.annotations span{position:absolute;border:3px solid #fe7446;border-radius:10px;background:rgba(254,116,70,.08);box-shadow:0 0 0 2px rgba(17,17,17,.35)}
 .annotations[data-drawing=true]{cursor:crosshair}
 /* Presenter chrome stays dim on the projector until the presenter reaches for it. */
-.controls-button,.writing-switch,.step-dots{opacity:.4;transition:opacity .2s}.controls-button:hover,.controls-button:focus-visible,.controls-button[aria-expanded=true],.writing-switch:hover,.writing-switch:focus-within,.writing-switch:has(em){opacity:1}
+.controls-button,.writing-switch{opacity:.4;transition:opacity .2s}.controls-button:hover,.controls-button:focus-visible,.controls-button[aria-expanded=true],.writing-switch:hover,.writing-switch:focus-within,.writing-switch:has(em){opacity:1}
