@@ -1,7 +1,8 @@
 // Walks every scene and every reveal step on /map (1920x1080, mock data, writer fixtures):
 // no page errors, the step dots match the scene's step count, and nothing scrolls sideways.
 // With a directory argument it saves the last step of each scene as a PNG for a visual pass (the globe
-// canvas hidden, so software rendering stays fast); a second argument starts the captures at that scene.
+// canvas hidden, so software rendering stays fast), plus the first view of a scene whose → swaps the
+// whole view (W4); a second argument starts the captures at that scene.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -10,6 +11,8 @@ import { startApp } from "./local-app.mjs";
 import { SCENES } from "../shared/scenes.ts";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
+/** Scenes whose → swaps one whole view for another: the last step alone would hide the first. */
+const FIRST_VIEW = new Set(["W4"]);
 const capture = process.argv[2];
 const captureFrom = Number(process.argv[3] ?? 0);
 if (capture) await mkdir(capture, { recursive: true });
@@ -33,14 +36,18 @@ try {
   await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
   if (capture) await page.addStyleTag({ content: ".globe-shell{display:none}" });
   const send = (cmd) => page.evaluate((item) => { const channel = new BroadcastChannel("arkiv-mumbai-stage"); channel.postMessage({ kind: "command", cmd: item }); channel.close(); }, cmd);
+  const shoot = async (name) => { await page.waitForTimeout(900); await page.screenshot({ path: path.join(capture, name), timeout: 120000 }); };
   for (const [index, scene] of SCENES.entries()) {
+    const shot = capture && index >= captureFrom;
+    const prefix = `${String(index).padStart(2, "0")}-${scene.id}`;
     await send({ type: "goto", index });
     await expect(page.locator(`[data-screen="map"][data-scene="${scene.id}"]`)).toBeVisible();
+    if (shot && FIRST_VIEW.has(scene.id)) await shoot(`${prefix}-first.png`);
     for (let step = 1; step < scene.steps; step++) await send({ type: "next" });
     await expect(page.locator(`[data-screen="map"][data-scene="${scene.id}"]`)).toBeVisible();
     if (scene.steps > 1) await expect(page.getByRole("img", { name: `Step ${scene.steps} of ${scene.steps}` })).toBeVisible();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, scene.id);
-    if (capture && index >= captureFrom) { await page.waitForTimeout(900); await page.screenshot({ path: path.join(capture, `${String(index).padStart(2, "0")}-${scene.id}.png`), timeout: 120000 }); }
+    if (shot) await shoot(`${prefix}.png`);
   }
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({ scenes: SCENES.length, errors: errors.length }));
