@@ -19,11 +19,22 @@ const hex = z.string().regex(/^0x[0-9a-fA-F]+$/);
 /** Random token generated on the phone, kept in localStorage and a cookie. */
 export const DEVICE_HEADER = "x-device-token";
 
+/** Characters that draw nothing on their own: spaces of every kind, controls, zero-width and other
+ * format marks, combining marks without a letter, and the Hangul and Braille fillers that render as
+ * a blank. A name made only of these would put an empty label on the map. */
+const BLANK_CHARS = /[\p{White_Space}\p{Cc}\p{Cf}\p{M}ᅟᅠ⠀ㅤﾠ]/gu;
+
+/** True when the name has at least one character you can see. Every entity needs one (Santiago,
+ * October 29: never an empty name). */
+export function hasVisibleName(name: string): boolean {
+  return name.replace(BLANK_CHARS, "").length > 0;
+}
+
 /** POST /api/submit */
 export const SubmitRequest = z.object({
   /** Optional: without it the writer uses the session that is running. Phones send none. */
   session: z.string().min(4).max(16).optional(),
-  name: z.string().trim().min(1).max(NAME_MAX_CHARS),
+  name: z.string().trim().min(1).max(NAME_MAX_CHARS).refine(hasVisibleName, "the name needs a visible character"),
   /** One of the seven preset colors. */
   color: z.enum(DOT_PALETTE),
   country: z.string().regex(/^[A-Z]{2}$/),

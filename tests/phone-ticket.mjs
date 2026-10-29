@@ -61,7 +61,19 @@ try {
     await expect(write).toBeEnabled();
     await tick(30000);
     assert.deepEqual(api, [], "Opening the phone page makes no writer requests.");
-    await page.getByRole("textbox", { name: "Your name", exact: true }).fill("SE test");
+    // No entity without a name you can see: empty, spaces or a zero-width character stay on the
+    // phone, with the reason next to the field.
+    const nameField = page.getByRole("textbox", { name: "Your name", exact: true });
+    for (const blank of ["", "   ", "​"]) {
+      await nameField.fill(blank);
+      await write.click();
+      await expect(page.locator("#name-missing")).toHaveText("Add a name or nickname: it shows next to your dot.");
+      await expect(nameField).toHaveAttribute("aria-invalid", "true");
+      await expect(nameField).toBeFocused();
+    }
+    assert.deepEqual(api, [], "A blank name sends nothing.");
+    await nameField.fill("SE test");
+    await expect(page.locator("#name-missing")).toHaveCount(0);
     await page.locator('input[type="range"]').focus();
     await page.keyboard.press("Home");
     // Before the presenter opens writing, the one request says so and the button stays usable.
