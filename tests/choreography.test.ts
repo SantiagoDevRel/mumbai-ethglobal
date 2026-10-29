@@ -131,7 +131,7 @@ test("the room scans in Build your entity: no QR before S7, large on S7, in the 
 
 test("one idea per scene, in the outline's order", () => {
   const order = (id: Parameters<typeof sceneIndex>[0]) => sceneIndex(id);
-  // Own it (L6) and Expire it (L2) are gone (October 29); What Arkiv is not (NT) follows the five steps.
+  // Own it (L6) and Expire it (L2) are gone (October 29); What Arkiv DB-Chain is not (NT) follows the five steps.
   assert.deepEqual(
     SCENES.map((scene) => scene.id),
     ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "NT", "S7", "L1", "B2", "B3", "L3", "B4", "B5", "T1", "T2", "PZ", "L9"],

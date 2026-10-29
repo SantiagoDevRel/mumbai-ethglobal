@@ -2,25 +2,16 @@
 
 // ST · Five steps to get started, on testnet, where everything is free. One row per →:
 // install the SDK, a wallet that signs writes, test funds from the faucet, free reads, and an RPC
-// access key. Every URL was checked with a live request (October 28). The install line comes from
-// the network profile, the same one T2's network_status shows.
+// access key. Every URL was checked with a live request (October 28). Builders use Rabdi this
+// weekend (October 29), so the install line names no version: this app's profile still pins
+// Tiramisu's SDK until the app itself moves to Rabdi.
 
-import { getProfile } from "../../../shared/arkiv/profiles";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { PANEL, Reveal, Slide, T } from "../ui";
 
-function installLine(): string {
-  try {
-    const { sdk } = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);
-    return `npm install ${sdk.package}@${sdk.version} viem`;
-  } catch {
-    return "npm install @arkiv-network/sdk viem";
-  }
-}
-
 /** Only the rows that point somewhere carry a tag: a command or a Hub page. */
 const STEPS: { title: string; line: string; tag?: string }[] = [
-  { title: "Install the SDK", line: "Built on viem: it feels like the web3 libraries you already use.", tag: installLine() },
+  { title: "Install the SDK", line: "Built on viem: it feels like the web3 libraries you already use.", tag: "npm install @arkiv-network/sdk viem" },
   { title: "A wallet to sign writes", line: "Your user's browser wallet, or a key on your server." },
   { title: "Test funds from the faucet", line: "Every write is a transaction: the faucet pays its gas.", tag: "hub.arkiv.network/faucet" },
   { title: "Reads are free", line: "Query the public RPC: no wallet needed." },
@@ -29,7 +20,7 @@ const STEPS: { title: string; line: string; tag?: string }[] = [
 
 export function ST({ step }: SceneContentProps) {
   return (
-    <Slide headline="Five steps to get started" under="We're on testnet (Tiramisu): everything here is free." size={72}>
+    <Slide headline="Five steps to get started" under="We're on testnet (Rabdi): everything here is free." size={72}>
       <div role="list" className="absolute left-[96px] top-[330px] flex w-[1728px] flex-col gap-3.5">
         {STEPS.map((item, i) => (
           <Reveal key={item.title} step={step} at={i} y={16}>
@@ -51,7 +42,7 @@ export function ST({ step }: SceneContentProps) {
 }
 
 export const ST_NOTES: string[] = [
-  "Five steps, and on testnet everything is free. One: npm install the SDK. It's built on viem, so it feels like the web3 libraries you already use.",
+  "Five steps, and on testnet, Rabdi this weekend, everything is free. One: npm install the SDK. It's built on viem, so it feels like the web3 libraries you already use.",
   "Two: a wallet to sign writes. In your app that's your user's browser wallet, or a key you keep on your server, never in the browser.",
   "Three: test funds from the faucet on the Hub. Every write is a transaction, and the faucet pays its gas.",
   "Four: reads are free. Anyone can query the public RPC, no wallet needed.",

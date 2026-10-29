@@ -25,8 +25,10 @@ Change a contract only through the orchestrator. Every user-facing string is Eng
 
 The talk runs on one screen, `/map` (outline v3, October 28, with Santiago's October 29 feedback): the
 title (S0), who I am (ME, an empty slide for now) and the index (IX, one part lit per →), then four parts
-that the outline bar across the top tracks. Why Arkiv (W1-W4), the five steps (ST) and what Arkiv is not
-(NT) are slides with no QR. In "Build your entity" the room scans (S7, the QR centered) and each idea
+that the outline bar across the top tracks. Why Arkiv (W1-W4), the five steps (ST) and what Arkiv
+DB-Chain is not (NT) are slides with no QR. The slides name Rabdi as the network builders use (W4 with
+Sorbet also live and Tiramisu among the previous testnets, ST); the app itself still writes and reads
+on Tiramisu until it moves to Rabdi, so W4 shows no live block (October 29). In "Build your entity" the room scans (S7, the QR centered) and each idea
 gets a slide followed by the map running it on their entities: write (L1, B2), query (B3, L3: the
 presenter filters by hand), with transfer and extension in the entity card, then encryption (B4) and
 the explorer (B5). Resources and prizes: Hub and docs (T1), your agent's MCP (T2), the prizes (PZ) and

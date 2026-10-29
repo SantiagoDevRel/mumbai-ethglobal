@@ -4,7 +4,7 @@
 // web2 databases, what it takes from web3, and what is its own: rules the data carries itself. It
 // keeps web2's good parts on purpose. "A public block explorer" joins the web3 column (Santiago,
 // October 29); the columns keep one height. → steps: 0 the first column, 1 the second, 2 the third
-// with the closing line ("the guarantees travel with the data").
+// with the closing line ("Guarantees stay with the data, not the host", October 29).
 
 import { Check } from "lucide-react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
@@ -48,7 +48,7 @@ export function W3({ step }: SceneContentProps) {
       </div>
       <Reveal step={step} at={2} className="absolute left-[96px] top-[820px]">
         <p className="text-[56px] font-semibold leading-[1.1]">
-          The guarantees travel with the data, <span className="text-[var(--arkiv-orange)]">not with the host.</span>
+          Guarantees stay with the data, <span className="text-[var(--arkiv-orange)]">not the host.</span>
         </p>
       </Reveal>
     </Slide>
@@ -58,5 +58,5 @@ export function W3({ step }: SceneContentProps) {
 export const W3_NOTES: string[] = [
   "So what does web3 data look like? Arkiv takes three things. From web2 databases, the parts we love: structured data, indexing and a query language.",
   "From web3: ownership, tamper-evidence and permissionless access, plus a public block explorer where anyone can check every change. Anyone can read it, and nobody can quietly change it.",
-  "And something of its own: rules the data carries itself, like how long it lives and who may extend or change it. The guarantees travel with the data, not with the host.",
+  "And something of its own: rules the data carries itself, like how long it lives and who may extend or change it. Guarantees stay with the data, not the host.",
 ];

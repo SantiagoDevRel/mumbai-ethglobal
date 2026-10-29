@@ -24,7 +24,7 @@ export const NOTES: Record<SceneId, string[]> = {
   ],
   ME: ["Who I am, in 15 seconds. The slide comes later."],
   IX: [
-    "Four parts, one per →. Why Arkiv. The five steps before your first write, and what Arkiv is not. Then you build your entity with me, live, from your phone. And the resources and prizes for this weekend. The bar at the top shows where we are.",
+    "Four parts, one per →. Why Arkiv. The five steps before your first write, and what Arkiv DB-Chain is not. Then you build your entity with me, live, from your phone. And the resources and prizes for this weekend. The bar at the top shows where we are.",
   ],
   W1: W1_NOTES,
   W2: W2_NOTES,
@@ -75,6 +75,6 @@ export const REVEALS: Record<SceneId, string[]> = {
   B5: [],
   T1: ["Docs"],
   T2: [],
-  PZ: ["Build on Arkiv from scratch", "Build on Arkiv, Continuity", "Node tooling", "Arkiv + Swarm bonus"],
+  PZ: ["Build on Arkiv from scratch", "Build on Arkiv, Continuity", "Node tooling", "the Arkiv + Swarm bonus add-on"],
   L9: [],
 };

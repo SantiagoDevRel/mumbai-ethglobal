@@ -70,7 +70,7 @@ try {
     await expect(page.locator('.gate-card [role="alert"]')).toHaveText("Wrong password.");
     await page.getByLabel("Password").fill(PASSWORD);
     await page.getByRole("button", { name: "Enter", exact: true }).click();
-    await expect(page.getByRole("heading", { name: /From zero to hero/ })).toBeVisible();
+    await expect(page.getByText("From zero to hero", { exact: true })).toBeVisible();
     const slides = await context.newPage();
     slides.on("pageerror", (error) => errors.push(error.message));
     await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
@@ -88,8 +88,10 @@ try {
   const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
   await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
   // One screen, one thing at a time: the title slide covers the map (no HUD), with no QR and no
-  // outline bar yet. The room scans later, in "Build your entity".
-  await expect(page.getByRole("heading", { name: /From zero to hero/ })).toBeVisible();
+  // outline bar yet. The room scans later, in "Build your entity". The title is "Arkiv, the Web3
+  // database" and only the title slide carries the subtitle "From zero to hero" (October 29).
+  await expect(page.getByRole("heading", { name: /Arkiv,\s*the Web3 database/, level: 1 })).toBeVisible();
+  await expect(page.getByText("From zero to hero", { exact: true })).toBeVisible();
   await expect(page.locator(".app-hud")).toHaveCount(0);
   await expect(page.locator(".globe-dots")).toHaveCount(1);
   await expect(page.locator(".join-qr,.outline-bar")).toHaveCount(0);
@@ -548,7 +550,7 @@ try {
     await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
     await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
     // Every → shows one more of the five rows, even pressed without a pause, from either window; the
-    // next → leaves for "What Arkiv is not". Hidden rows are aria-hidden, so the role count is what the room sees.
+    // next → leaves for "What Arkiv DB-Chain is not". Hidden rows are aria-hidden, so the role count is what the room sees.
     const rows = (target) => target.getByRole("listitem");
     for (const [driver, name] of [[slides, "slides"], [page, "map"]]) {
       await commands(page, [go("ST")]);
@@ -653,7 +655,7 @@ try {
     outline.on("pageerror", (error) => errors.push(error.message));
     await outline.setViewportSize({ width: 1440, height: 900 });
     await outline.goto(`${origin}/outline`, { waitUntil: "domcontentloaded" });
-    await expect(outline.getByRole("heading", { name: "From zero to hero with Arkiv", level: 1 })).toBeVisible({ timeout: 20000 });
+    await expect(outline.getByRole("heading", { name: "Arkiv, the Web3 database", level: 1, exact: true })).toBeVisible({ timeout: 20000 });
     await expect(outline.getByRole("heading", { level: 2 })).toHaveCount(SECTIONS.length + 1);
     for (const section of SECTIONS) await expect(outline.getByRole("heading", { name: section.title, level: 2, exact: true })).toBeVisible();
     const partButtons = outline.locator("button[aria-controls^='part-']");

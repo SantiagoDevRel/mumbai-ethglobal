@@ -1,8 +1,9 @@
 "use client";
 
-// NT · What Arkiv is not, right after the five steps (Santiago, October 29): the three edges a
-// builder hits first, one per →, each with its own icon (a contract crossed out, a big file going to
-// Swarm, an open lock). Every line was checked against the sources on October 29:
+// NT · What Arkiv DB-Chain is not, right after the five steps (Santiago, October 29; the title names
+// the DB-Chain since the day's second round): the three edges a builder hits first, one per →, each
+// with its own icon (a contract crossed out, a big file going to Swarm, an open lock). Every line was
+// checked against the sources on October 29:
 //   - a DB-Chain runs no contracts: "No smart contracts, by construction"; a transaction is accepted
 //     only when it targets a known Arkiv operation address (docs.arkiv.network/start-here/fundamentals);
 //   - an entity holds small data you can query; big files go to Swarm and the entity keeps the
@@ -54,7 +55,7 @@ const ITEMS: { icon: ReactNode; title: string; line: string; instead: string }[]
 
 export function NT({ step }: SceneContentProps) {
   return (
-    <Slide headline="What Arkiv is not" under="Three edges to know before your first build." size={72}>
+    <Slide headline="What Arkiv DB-Chain is not" under="Three edges to know before your first build." size={72}>
       <div role="list" className="absolute left-[96px] top-[330px] flex w-[1728px] flex-col gap-5">
         {ITEMS.map((item, i) => (
           <Reveal key={item.title} step={step} at={i} y={16}>
@@ -74,7 +75,7 @@ export function NT({ step }: SceneContentProps) {
 }
 
 export const NT_NOTES: string[] = [
-  "Before we build, three things Arkiv is not. One: not a smart-contract chain. A DB-Chain runs no contracts at all. Your logic lives in your app, or in contracts on another chain, and your app talks to each side.",
+  "Before we build, three things an Arkiv DB-Chain is not. One: not a smart-contract chain. A DB-Chain runs no contracts at all. Your logic lives in your app, or in contracts on another chain, and your app talks to each side.",
   "Two: not built for big files. An entity holds small data you can query. Videos and big files go to Swarm, and the entity keeps the reference.",
   "Three: not private by default. Anyone can read every entity, so encrypt private values before you write them, and keep them out of attributes, which stay public. We'll see that in a few minutes.",
 ];

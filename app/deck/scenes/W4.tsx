@@ -4,15 +4,18 @@
 //   step 0 · the network, after the Arkiv leaflet's "How it works": DB-Chains on the left, wired to
 //            Arkiv's own chain (under construction), which bridges to Ethereum mainnet; the footer
 //            rows are the leaflet's (DB ENGINE / EVM / EVM, GLM / GLM · ETH · … / ETH). The live
-//            testnets are the DB-Chains: Rabdi, lit in orange because builders use it at ETHGlobal
-//            Mumbai, and Tiramisu. Braga, Kaolin and Mendoza were earlier testnets: switched off, not
-//            wired, and never called DB-Chains. Neither live network shows a block here, only a LIVE
-//            pill. Network names only: no RPC URL, chain ID or explorer for Rabdi in this public repo.
-//   step 1 · your app: it reaches Arkiv through the SDK or straight through JSON-RPC, and the DB-Chain
-//            keeps its entities (the real latest block of the network this app runs on, named). Arkiv
-//            runs no contracts, so your logic lives in contracts on any EVM chain or in a web2 backend,
-//            and big files go to Swarm. The app talks to each side: contracts on other chains can't
-//            read entities directly, so nothing joins the DB-Chain to them.
+//            DB-Chains are Rabdi, lit in orange because builders use it at ETHGlobal Mumbai, and
+//            Sorbet, which holds Sourcify's verified contracts. Tiramisu is listed with the previous
+//            testnets (builders don't use it this weekend); it still runs, so it carries no OFF tag.
+//            Braga, Kaolin and Mendoza are switched off. Only the live DB-Chains are wired, and
+//            neither shows a block here, only a LIVE pill (October 29). Network names only: no RPC
+//            URL, chain ID or explorer for Rabdi or Sorbet in this public repo.
+//   step 1 · your app: it reaches a DB-Chain through the SDK or straight through JSON-RPC, and Rabdi
+//            keeps its entities. No live block until this app itself moves to Rabdi: today it would
+//            be Tiramisu's (October 29). Arkiv runs no contracts, so your logic lives in contracts on
+//            any EVM chain or in a web2 backend, and big files go to Swarm. The app talks to each
+//            side: contracts on other chains can't read entities directly, so nothing joins the
+//            DB-Chain to them.
 // Logos: official files, colors unchanged, each on a Sand tile so every one reads on the dark stage.
 //   ethereum-diamond-purple.svg · ethereum.org/en/assets, "ETH diamond (purple)":
 //     https://ethereum.org/images/assets/svgs/eth-diamond-purple.svg
@@ -30,11 +33,9 @@
 
 import { AppWindow, ArrowDown, Server } from "lucide-react";
 import { motion } from "motion/react";
-import { useMemo, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { getProfile } from "../../../shared/arkiv/profiles";
 import { EASE, REVEAL_TIME, Slide, T } from "../ui";
-import { LiveBlock } from "./S5";
 
 /** Both views share one box on the stage, under the headline. */
 const BOX = { left: 96, top: 336, width: 1728, height: 700 };
@@ -72,8 +73,14 @@ const HUB = { x: 910, y: 300, r: 96, orbit: 124 };
 const ETH = { x: 1454, y: 300, r: 80, orbit: 104 };
 /** The live DB-Chains, each with its node on the wire to the hub. Rabdi is the lit one. */
 const RABDI = { name: "Rabdi", node: { x: 616, y: 158, r: 16 } };
-const TIRAMISU = { name: "Tiramisu", node: { x: 616, y: 268, r: 12 } };
-const EARLIER = ["Braga", "Kaolin", "Mendoza"];
+const SORBET = { name: "Sorbet", node: { x: 616, y: 276, r: 12 } };
+/** The previous testnets. Tiramisu still runs, so only the others say OFF. */
+const PREVIOUS = [
+  { name: "Tiramisu", off: false },
+  { name: "Braga", off: true },
+  { name: "Kaolin", off: true },
+  { name: "Mendoza", off: true },
+];
 
 /** A wire from a DB-Chain's node to the hub's orbit, on the line between their centers. */
 function wire(node: { x: number; y: number; r: number }) {
@@ -118,20 +125,20 @@ function Network() {
         <circle cx={HUB.x} cy={HUB.y} r={HUB.orbit} fill="none" stroke="#F6F4EF" strokeOpacity="0.55" strokeWidth="5" strokeLinecap="round" strokeDasharray="0 17" />
         <circle cx={ETH.x} cy={ETH.y} r={ETH.orbit} fill="none" stroke="#F6F4EF" strokeOpacity="0.55" strokeWidth="5" strokeLinecap="round" strokeDasharray="0 17" />
         {/* Only the live DB-Chains are wired to the hub; Rabdi's wire is the lit one. */}
-        <path d={wire(TIRAMISU.node)} fill="none" stroke="#F6F4EF" strokeOpacity="0.6" strokeWidth="3" />
+        <path d={wire(SORBET.node)} fill="none" stroke="#F6F4EF" strokeOpacity="0.6" strokeWidth="3" />
         <path d={wire(RABDI.node)} fill="none" stroke="#FE7446" strokeWidth="4.5" />
         <line x1="592" y1={RABDI.node.y} x2={RABDI.node.x} y2={RABDI.node.y} stroke="#FE7446" strokeWidth="4.5" />
-        <line x1="592" y1={TIRAMISU.node.y} x2={TIRAMISU.node.x} y2={TIRAMISU.node.y} stroke="#F6F4EF" strokeOpacity="0.6" strokeWidth="3" />
+        <line x1="592" y1={SORBET.node.y} x2={SORBET.node.x} y2={SORBET.node.y} stroke="#F6F4EF" strokeOpacity="0.6" strokeWidth="3" />
         <circle cx={RABDI.node.x} cy={RABDI.node.y} r={RABDI.node.r + 8} fill="#FE7446" fillOpacity="0.25" />
         <circle cx={RABDI.node.x} cy={RABDI.node.y} r={RABDI.node.r} fill="#FE7446" />
-        <circle cx={TIRAMISU.node.x} cy={TIRAMISU.node.y} r={TIRAMISU.node.r} fill="#0B0C2A" stroke="#F6F4EF" strokeOpacity="0.85" strokeWidth="3" />
+        <circle cx={SORBET.node.x} cy={SORBET.node.y} r={SORBET.node.r} fill="#0B0C2A" stroke="#F6F4EF" strokeOpacity="0.85" strokeWidth="3" />
         {/* The bridge, both ways. */}
         <line x1={HUB.x + HUB.orbit + 12} y1={HUB.y} x2={ETH.x - ETH.orbit - 12} y2={ETH.y} stroke="#F6F4EF" strokeOpacity="0.9" strokeWidth="3" />
         <path d={`M ${HUB.x + HUB.orbit + 26} ${HUB.y - 12} L ${HUB.x + HUB.orbit + 12} ${HUB.y} L ${HUB.x + HUB.orbit + 26} ${HUB.y + 12}`} fill="none" stroke="#F6F4EF" strokeOpacity="0.9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         <path d={`M ${ETH.x - ETH.orbit - 26} ${ETH.y - 12} L ${ETH.x - ETH.orbit - 12} ${ETH.y} L ${ETH.x - ETH.orbit - 26} ${ETH.y + 12}`} fill="none" stroke="#F6F4EF" strokeOpacity="0.9" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
 
-      {/* Column 1: the live DB-Chains, then the earlier testnets, off. */}
+      {/* Column 1: the live DB-Chains, then the previous testnets. */}
       <p className={`absolute left-[32px] top-[60px] text-[26px] leading-none text-[var(--arkiv-sand)] ${CAPS}`}>DB-Chains</p>
       <div className="absolute left-[32px] top-[104px] flex h-[108px] w-[560px] items-center justify-between rounded-[16px] border-[3px] border-[var(--arkiv-orange)] bg-[rgba(254,116,70,0.16)] px-7 shadow-[0_0_48px_rgba(254,116,70,0.32)]">
         <span className="flex flex-col gap-1.5">
@@ -140,19 +147,24 @@ function Network() {
         </span>
         <LivePill lit />
       </div>
-      <div className="absolute left-[32px] top-[228px] flex h-[80px] w-[560px] items-center justify-between rounded-[16px] border-[1.5px] border-[rgba(246,244,239,0.28)] bg-[rgba(17,17,17,0.55)] px-7">
-        <span className="text-[34px] font-semibold leading-none">{TIRAMISU.name}</span>
+      <div className="absolute left-[32px] top-[228px] flex h-[96px] w-[560px] items-center justify-between rounded-[16px] border-[1.5px] border-[rgba(246,244,239,0.28)] bg-[rgba(17,17,17,0.55)] px-7">
+        <span className="flex flex-col gap-1.5">
+          <span className="text-[34px] font-semibold leading-none">{SORBET.name}</span>
+          <span className="text-[20px] leading-none" style={{ color: T.t64 }}>Sourcify&apos;s verified contracts</span>
+        </span>
         <LivePill lit={false} />
       </div>
-      <p className={`absolute left-[32px] top-[344px] text-[22px] leading-none ${CAPS}`} style={{ color: T.t50 }}>Earlier testnets</p>
-      <ul className="absolute left-[32px] top-[384px] flex w-[560px] flex-col gap-3">
-        {EARLIER.map((name) => (
-          <li key={name} className="flex h-[40px] items-center gap-4">
+      <p className={`absolute left-[32px] top-[352px] text-[22px] leading-none ${CAPS}`} style={{ color: T.t50 }}>Previous testnets</p>
+      <ul className="absolute left-[32px] top-[390px] flex w-[560px] flex-col gap-2">
+        {PREVIOUS.map(({ name, off }) => (
+          <li key={name} className="flex h-[34px] items-center gap-4">
             <span className="block h-[14px] w-[14px] rounded-full border-2" style={{ borderColor: T.t28 }} aria-hidden />
             <span className="text-[28px] leading-none" style={{ color: T.t42 }}>{name}</span>
-            <span className="rounded-full border-[1.5px] px-3 py-1 font-mono text-[17px] font-semibold leading-none tracking-[0.08em]" style={{ borderColor: T.t14, color: T.t42 }}>
-              OFF
-            </span>
+            {off ? (
+              <span className="rounded-full border-[1.5px] px-3 py-1 font-mono text-[17px] font-semibold leading-none tracking-[0.08em]" style={{ borderColor: T.t14, color: T.t42 }}>
+                OFF
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -229,7 +241,7 @@ function WayIn({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-function YourApp({ network }: { network: string | null }) {
+function YourApp() {
   const appX = APP.x + APP.w / 2;
   const drops = [COLS.a.x + COLS.a.w / 2, COLS.b.x + COLS.b.w / 2, COLS.c.x + COLS.c.w / 2];
   return (
@@ -252,7 +264,7 @@ function YourApp({ network }: { network: string | null }) {
         ))}
       </svg>
 
-      {/* Arkiv: the SDK or JSON-RPC, then the DB-Chain with its live block. */}
+      {/* The DB-Chain: the SDK or JSON-RPC, then Rabdi, which keeps the entities. */}
       <div
         className="absolute flex flex-col rounded-[20px] border-[3px] border-[var(--arkiv-orange)] bg-[rgba(254,116,70,0.1)] px-8 pb-7 pt-6"
         style={{ left: COLS.a.x, top: COLS.top, width: COLS.a.w, height: BOX.height - COLS.top }}
@@ -260,7 +272,7 @@ function YourApp({ network }: { network: string | null }) {
         <span className="flex items-center gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element -- the official [A] mark at its own aspect */}
           <img src="/brand/a-orange.svg" alt="" width={62} height={35} draggable={false} className="block h-[35px] w-[62px]" />
-          <span className="text-[44px] font-bold leading-none">Arkiv</span>
+          <span className="text-[44px] font-bold leading-none">DB-Chain</span>
         </span>
         <span className="mt-2.5 text-[26px] leading-[1.25]" style={{ color: T.t84 }}>Small data you search and filter</span>
         <span className="mt-6 flex items-center gap-4">
@@ -268,7 +280,7 @@ function YourApp({ network }: { network: string | null }) {
           <span className="w-[28px] text-center text-[24px]" style={{ color: T.t64 }}>or</span>
           <WayIn title="JSON-RPC" sub="Any language" />
         </span>
-        {/* Both ways lead into the DB-Chain: one arrow under each, on the same columns as the row above. */}
+        {/* Both ways lead into Rabdi: one arrow under each, on the same columns as the row above. */}
         <span className="flex h-[52px] items-center gap-4 text-[var(--arkiv-orange)]">
           <span className="flex flex-1 justify-center"><ArrowDown size={36} strokeWidth={2.4} aria-hidden /></span>
           <span className="w-[28px]" />
@@ -276,17 +288,10 @@ function YourApp({ network }: { network: string | null }) {
         </span>
         <span className="flex flex-1 flex-col justify-center rounded-[16px] border-2 border-[rgba(254,116,70,0.6)] bg-[rgba(17,17,17,0.72)] px-7">
           <span className="flex items-center justify-between gap-4">
-            <span className="text-[34px] font-semibold leading-none">DB-Chain</span>
-            {network ? (
-              <span className="rounded-full border-[1.5px] border-[rgba(246,244,239,0.4)] px-4 py-1.5 font-mono text-[22px] font-medium leading-none" style={{ color: T.t84 }}>
-                {network}
-              </span>
-            ) : null}
+            <span className="text-[44px] font-bold leading-none">{RABDI.name}</span>
+            <LivePill lit />
           </span>
-          <span className="mt-4 font-mono text-[36px] font-medium leading-none">
-            <LiveBlock />
-          </span>
-          <span className="mt-4 text-[24px] leading-none" style={{ color: T.t64 }}>Keeps your Arkiv entities</span>
+          <span className="mt-5 text-[26px] leading-none" style={{ color: T.t64 }}>Keeps your Arkiv entities</span>
         </span>
       </div>
 
@@ -336,26 +341,19 @@ function YourApp({ network }: { network: string | null }) {
 }
 
 export function W4({ step }: SceneContentProps) {
-  const network = useMemo(() => {
-    try {
-      return getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE).name || null;
-    } catch {
-      return null;
-    }
-  }, []);
   return (
     <Slide headline="Arkiv, the Web3 database" under="Ethereum-aligned DB-Chains, built to store and query app data.">
       <View shown={step < 1}>
         <Network />
       </View>
       <View shown={step >= 1}>
-        <YourApp network={network} />
+        <YourApp />
       </View>
     </Slide>
   );
 }
 
 export const W4_NOTES: string[] = [
-  "Arkiv is the Web3 database. Here's the network: DB-Chains, chains built to store and query app data, joined by Arkiv's own chain, still under construction, which bridges to Ethereum mainnet. A DB-Chain runs a database engine instead of the EVM. Two DB-Chains are live today: Tiramisu, and Rabdi, the one you build on this weekend. Braga, Kaolin and Mendoza were earlier testnets, now switched off.",
-  "And here's your app. It talks to Arkiv through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: small data you search and filter. That block number is live, from the network this app runs on. Arkiv runs no smart contracts, so your logic lives in contracts on any EVM chain, like Ethereum, Base, Optimism or Arbitrum, or in a web2 backend. Those contracts can't read your entities directly: your app talks to each side. Big files, like photos and video, go on Swarm.",
+  "Arkiv is the Web3 database. Here's the network: DB-Chains, chains built to store and query app data, joined by Arkiv's own chain, still under construction, which bridges to Ethereum mainnet. A DB-Chain runs a database engine instead of the EVM. Two DB-Chains are live: Rabdi, the one you build on this weekend, and Sorbet, which holds Sourcify's verified contracts. Tiramisu was our previous testnet; Braga, Kaolin and Mendoza came before it and are switched off.",
+  "And here's your app. It talks to a DB-Chain through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: small data you search and filter. This weekend, that's Rabdi. Arkiv runs no smart contracts, so your logic lives in contracts on any EVM chain, like Ethereum, Base, Optimism or Arbitrum, or in a web2 backend. Those contracts can't read your entities directly: your app talks to each side. Big files, like photos and video, go on Swarm.",
 ];

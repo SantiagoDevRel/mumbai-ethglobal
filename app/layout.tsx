@@ -7,7 +7,7 @@ const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono" });
 
 export const metadata: Metadata = {
-  title: "From zero to hero with Arkiv",
+  title: "Arkiv, the Web3 database: from zero to hero",
   description: "Write it. Query it. Own it. Expire it. A live workshop on Arkiv, the Web3 database.",
 };
 

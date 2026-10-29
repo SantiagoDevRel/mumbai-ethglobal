@@ -5,14 +5,14 @@
 import type { SceneId } from "../../shared/scenes";
 
 export const POINTS: Record<SceneId, string[]> = {
-  S0: ["From zero to hero with Arkiv, the Web3 database"],
+  S0: ["Arkiv, the Web3 database", "Subtitle: From zero to hero", "Write it. Query it. Own it. Expire it."],
   ME: ["Who I am in 15 seconds", "Slide to come"],
   IX: ["The four parts, lit one → at a time", "Build your entity: phones out"],
   W1: ["Web2 is great: fast and familiar. But…", "Account frozen · Data changed · Rules changed", "One company decides for you"],
   W2: ["Meme: you can't stop looking at web3 data", "Your web2 database is not happy about it"],
   W3: ["From web2 databases: structure, indexing, a query language", "From web3: ownership, tamper-evidence, a block explorer", "Its own: rules the data carries itself"],
-  W4: ["The network: DB-Chains joined by Arkiv, bridged to Ethereum", "Live: Rabdi (this weekend) and Tiramisu; earlier testnets off", "Your app: SDK or JSON-RPC; logic on EVM chains; files on Swarm"],
-  ST: ["Testnet: everything is free", "SDK · wallet · faucet · free reads · RPC access key"],
+  W4: ["The network: DB-Chains joined by Arkiv, bridged to Ethereum", "Live: Rabdi and Sorbet (Sourcify); Tiramisu now previous", "Your app: SDK or JSON-RPC; logic on EVM chains; files on Swarm"],
+  ST: ["Testnet (Rabdi): everything is free", "SDK · wallet · faucet · free reads · RPC access key"],
   NT: ["No smart contracts: keep logic in your app or another chain", "Not for big files: those go to Swarm", "Not private by default: encrypt what's private"],
   S7: ["Big QR, centered: everyone scans and fills the form", "Your form as one entity: expiring, or no expiration", "\"write!\": everyone taps Write together"],
   L1: ["Every dot is an entity the room just wrote", "One request per phone; our wallet signs"],
@@ -23,6 +23,6 @@ export const POINTS: Record<SceneId, string[]> = {
   B5: ["The explorer: every entity, transaction and wallet", "Opens an entity from the map"],
   T1: ["Hub: faucet, access keys, AI tools", "Docs: installation, fundamentals, querying"],
   T2: ["Meme: your agent without MCP vs with MCP", "Setup steps live on the Hub: AI tools"],
-  PZ: ["Mirror · Build on Arkiv · Node tooling · Swarm bonus", "From scratch or Continuity: a tag on every prize", "Rubric and rules on ETHGlobal's prize page"],
+  PZ: ["Mirror · Build on Arkiv · Node tooling, each with an entry tag", "Swarm bonus add-on: $500 from scratch, $500 Continuity", "Rubric and rules on ETHGlobal's prize page"],
   L9: ["The mascot says the four verbs, then builds THANK YOU", "Docs · Hub · MCP · Prizes: click to open"],
 };

@@ -2,16 +2,19 @@
 
 // Prizes · Arkiv's prizes at ETHGlobal Mumbai, as published on
 // https://ethglobal.com/events/mumbai/prizes/arkiv (read October 29, 2026): names, places and
-// amounts only, no network, chain ID or SDK version, which are not settled. → steps: 0-4 one prize
-// per step, Mirror first. Each row is a pill saying who can enter (From scratch, or Continuity: the
-// second Build on Arkiv prize, only for projects in ETHGlobal's Continuity batch), the name and the
-// money; what each track asks for is in the notes, said out loud. The page's parentheses are gone
-// from the names, the pill carries them (Santiago, October 29). Two titles open what they point at:
-// Mirror the Sourcify mirror on Arkiv (the page's example), Node tooling the community nodes'
-// dashboard (the page's reference). The link at the bottom, there from the first step, opens the
-// page itself, where every prize has its rules and rubric; it replaces the totals.
+// amounts only, no network, chain ID or SDK version, which are not settled. → steps: 0-3 one track
+// per step, Mirror first; step 4 the Arkiv + Swarm bonus. Each track row is a pill saying who can
+// enter (From scratch, or Continuity: the second Build on Arkiv prize, only for projects in
+// ETHGlobal's Continuity batch), the name and the money; what each track asks for is in the notes,
+// said out loud. The page's parentheses are gone from the names, the pill carries them (Santiago,
+// October 29). Two titles open what they point at: Mirror the Sourcify mirror on Arkiv (the page's
+// example), Node tooling the community nodes' dashboard (the page's reference). The Swarm bonus is
+// an add-on to a track, not a track, so it sits smaller under the rows, split into $500 from
+// scratch and $500 Continuity (October 29, ahead of the ETHGlobal page, which Santiago updates).
+// The link at the bottom, there from the first step, opens the page itself, where every prize has
+// its rules and rubric; it replaces the totals.
 
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Plus } from "lucide-react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
 import { PANEL, Reveal, Slide, T } from "../../ui";
 
@@ -25,7 +28,12 @@ const PRIZES: Prize[] = [
   { name: "Build on Arkiv", entry: "scratch", places: [3000, 1000] },
   { name: "Build on Arkiv", entry: "continuity", places: [3000, 1000] },
   { name: "Node tooling", entry: "scratch", places: [2000], href: "https://nodes.arkiv.network" },
-  { name: "Arkiv + Swarm bonus", entry: "scratch", places: [1000] },
+];
+
+/** The Arkiv + Swarm bonus, on top of a track: one prize for each kind of entry. */
+const SWARM_BONUS: { entry: Entry; amount: number }[] = [
+  { entry: "scratch", amount: 500 },
+  { entry: "continuity", amount: 500 },
 ];
 
 const usd = (n: number) => `$${n.toLocaleString("en-US")}`;
@@ -33,16 +41,45 @@ const ORDINAL = ["1st", "2nd", "3rd"];
 
 const FOCUS = "focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-[var(--arkiv-orange)]";
 
-/** Who can enter, in the two brand colors: Blue for from scratch, Orange for Continuity. */
-function EntryPill({ entry }: { entry: Entry }) {
+/** Who can enter, in the two brand colors: Blue for from scratch, Orange for Continuity. `small` for the add-on. */
+function EntryPill({ entry, small = false }: { entry: Entry; small?: boolean }) {
+  const size = small ? "h-[36px] w-[150px] text-[19px]" : "h-[48px] w-[200px] text-[24px]";
   return entry === "continuity" ? (
-    <span className="inline-flex h-[48px] w-[200px] items-center justify-center rounded-full bg-[var(--arkiv-orange)] text-[24px] font-semibold text-[var(--arkiv-ink)]">
+    <span className={`inline-flex ${size} items-center justify-center rounded-full bg-[var(--arkiv-orange)] font-semibold text-[var(--arkiv-ink)]`}>
       Continuity
     </span>
   ) : (
-    <span className="inline-flex h-[48px] w-[200px] items-center justify-center rounded-full border-[1.5px] border-[rgba(246,244,239,0.28)] bg-[var(--arkiv-blue)] text-[24px] font-semibold text-[var(--arkiv-sand)]">
+    <span className={`inline-flex ${size} items-center justify-center rounded-full border-[1.5px] border-[rgba(246,244,239,0.28)] bg-[var(--arkiv-blue)] font-semibold text-[var(--arkiv-sand)]`}>
       From scratch
     </span>
+  );
+}
+
+/** The add-on row: smaller and dashed, indented under the tracks, with the Swarm mark. */
+function SwarmBonus({ shown }: { shown: boolean }) {
+  return (
+    <div
+      className="ml-[48px] mt-2 flex h-[76px] items-center gap-5 rounded-[16px] border-[1.5px] border-dashed border-[rgba(246,244,239,0.36)] bg-[rgba(17,17,17,0.55)] pl-5 pr-8"
+      inert={!shown}
+    >
+      <Plus size={30} strokeWidth={2.6} className="flex-none text-[var(--arkiv-orange)]" aria-hidden />
+      <span className="flex h-[48px] w-[48px] flex-none items-center justify-center rounded-[12px] bg-[var(--arkiv-sand)]">
+        {/* eslint-disable-next-line @next/next/no-img-element -- the official Swarm mark at its own aspect */}
+        <img src="/deck/logos/swarm-logo.svg" alt="" width={36} height={36} draggable={false} className="block h-[36px] w-[36px]" />
+      </span>
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="text-[28px] font-semibold leading-none">Arkiv + Swarm bonus</span>
+        <span className="text-[20px] leading-none" style={{ color: T.t64 }}>Add-on: select it next to your track</span>
+      </span>
+      <span className="ml-auto flex items-center gap-8">
+        {SWARM_BONUS.map((bonus) => (
+          <span key={bonus.entry} className="flex items-center gap-3">
+            <EntryPill entry={bonus.entry} small />
+            <span className="text-[32px] font-semibold leading-none tabular-nums text-[var(--arkiv-orange)]">{usd(bonus.amount)}</span>
+          </span>
+        ))}
+      </span>
+    </div>
   );
 }
 
@@ -87,6 +124,9 @@ export function Prizes({ step }: SceneContentProps) {
             </Reveal>
           );
         })}
+        <Reveal step={step} at={PRIZES.length} y={16}>
+          <SwarmBonus shown={step >= PRIZES.length} />
+        </Reveal>
       </div>
 
       <a
@@ -109,5 +149,5 @@ export const PRIZES_NOTES: string[] = [
   "Build on Arkiv, from scratch: a new app whose data lives in Arkiv. For example, agents sharing ephemeral coordination state, or listings that expire at their deadline.",
   "Build on Arkiv again, for Continuity: if you came with a product you already have, move part of its data into Arkiv. Only projects in ETHGlobal's Continuity track can enter it, and we judge only what you add here.",
   "Node tooling is for the people who run Arkiv nodes: an operator dashboard, or a tool that finds slow queries on your own node. The arrow opens nodes.arkiv.network, our community nodes seen from the outside: a guide, not something to rebuild.",
-  "And the Arkiv + Swarm bonus: use Swarm with Arkiv in a meaningful way, and select the bonus when you submit a from-scratch project; the most useful integration wins. Each team can win one Arkiv track prize, plus this bonus on top, and every track scores your Arkiv feedback.",
+  "And on top of a track, the Arkiv + Swarm bonus, an add-on: use Swarm with Arkiv in a meaningful way, and select the bonus next to your track when you submit. Five hundred dollars go to a from-scratch project and five hundred to a Continuity project, the most useful integration in each. Each team can win one Arkiv track prize, plus this bonus on top, and every track scores your Arkiv feedback.",
 ];

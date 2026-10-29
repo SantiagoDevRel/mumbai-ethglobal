@@ -85,8 +85,8 @@ function Outline() {
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div className="flex flex-col gap-4">
               <p className="font-mono text-[14px] font-semibold tracking-[0.14em] text-[var(--arkiv-orange)]">[ OUTLINE ]</p>
-              <h1 className="max-w-[600px] text-[40px] font-semibold leading-[1.04] tracking-[-0.02em] sm:text-[56px]">From zero to hero with Arkiv</h1>
-              <p className="text-[18px] leading-[1.45] text-[var(--t-64)]">The Web3 database · ETHGlobal Mumbai workshop</p>
+              <h1 className="max-w-[600px] text-[40px] font-semibold leading-[1.04] tracking-[-0.02em] sm:text-[56px]">Arkiv, the Web3 database</h1>
+              <p className="text-[18px] leading-[1.45] text-[var(--t-64)]">From zero to hero · ETHGlobal Mumbai workshop</p>
             </div>
             <button
               type="button"

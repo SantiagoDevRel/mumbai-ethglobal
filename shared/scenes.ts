@@ -41,7 +41,7 @@ export type QrLabel = "Scan now" | "Join the map";
  * them; every scene after the index belongs to one. */
 export const SECTIONS = [
   { id: "why", title: "Why Arkiv", line: "Your data, the web3 way, and what Arkiv is." },
-  { id: "start", title: "Five steps", line: "What you need before your first write, and what Arkiv is not." },
+  { id: "start", title: "Five steps", line: "What you need before your first write, and what Arkiv DB-Chain is not." },
   { id: "build", title: "Build your entity", line: "Scan the QR: write your entity, then query, encrypt and explore." },
   { id: "tools", title: "Resources and prizes", line: "The Hub, the docs, your agent and this weekend's prizes." },
 ] as const;
@@ -72,8 +72,8 @@ const CORNER_QR = { label: "Join the map", placement: "corner" } as const;
 // One idea per scene, never twice (Santiago, October 28). The room scans in "Build your entity" and
 // every idea after that is shown on the entities they just wrote: a slide for the idea, the map for
 // the result. October 29: the Own it (L6) and Expire it (L2) scenes are gone (transfer and extension
-// stay in the entity card on any live scene), "What Arkiv is not" (NT) follows the five steps, and
-// L3 has no scripted filters: the presenter filters by hand.
+// stay in the entity card on any live scene), "What Arkiv DB-Chain is not" (NT) follows the five
+// steps, and L3 has no scripted filters: the presenter filters by hand.
 export const SCENES: readonly SceneDef[] = [
   { id: "S0", title: "Title", at: 0, kind: "slide", steps: 1, qr: NO_QR, camera: "globe-idle", map: "dots" },
   // Who I am, in 15 seconds (Santiago, October 29): an empty slide for now.
@@ -85,7 +85,7 @@ export const SCENES: readonly SceneDef[] = [
   { id: "W3", title: "Your data, the web3 way", at: 115, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
   { id: "W4", title: "What is Arkiv", at: 165, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
   { id: "ST", title: "Five steps to get started", at: 225, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
-  { id: "NT", title: "What Arkiv is not", at: 305, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
+  { id: "NT", title: "What Arkiv DB-Chain is not", at: 305, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
   { id: "S7", title: "Your entity: scan and fill the form", at: 345, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "center" }, camera: "globe", map: "dots", section: "build" },
   { id: "L1", title: "Write it: your entities, live", at: 425, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
   { id: "B2", title: "Write it: the SDK call", at: 465, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
