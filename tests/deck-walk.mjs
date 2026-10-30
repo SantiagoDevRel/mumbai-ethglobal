@@ -4,7 +4,7 @@
 // 30: the logo must never get in the way of a slide's text).
 // With a directory argument it saves the last step of each scene as a PNG for a visual pass (the globe
 // canvas hidden, so software rendering stays fast), plus the first view of a scene whose → swaps the
-// whole view (W4); a second argument starts the captures at that scene.
+// whole view (W2, W4); a second argument starts the captures at that scene.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -14,7 +14,7 @@ import { SCENES } from "../shared/scenes.ts";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
 /** Scenes whose → swaps one whole view for another: the last step alone would hide the first. */
-const FIRST_VIEW = new Set(["W4"]);
+const FIRST_VIEW = new Set(["W2", "W4"]);
 const capture = process.argv[2];
 const captureFrom = Number(process.argv[3] ?? 0);
 if (capture) await mkdir(capture, { recursive: true });

@@ -4,7 +4,8 @@
 // web2 databases, what it takes from web3, and what is its own: rules the data carries itself. It
 // keeps web2's good parts on purpose. "A public block explorer" joins the web3 column (Santiago,
 // October 29); the columns keep one height. → steps: 0 the first column, 1 the second, 2 the third
-// with the closing line ("Guarantees stay with the data, not the host", October 29).
+// with the closing line ("Guarantees stay with the data, not the host", October 29). Who may extend
+// and who may edit are two bullets (Santiago, October 30).
 
 import { Check } from "lucide-react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
@@ -15,7 +16,7 @@ type Column = { eyebrow: string; items: string[]; tone: "web2" | "web3" | "own" 
 const COLUMNS: Column[] = [
   { eyebrow: "FROM WEB2 DATABASES", items: ["Structured data", "Indexing", "A query language"], tone: "web2" },
   { eyebrow: "FROM WEB3", items: ["Ownership", "Tamper-evidence", "Permissionless access", "A public block explorer"], tone: "web3" },
-  { eyebrow: "OF ITS OWN", items: ["Rules the data carries itself:", "a lifetime", "who may extend or change it"], tone: "own" },
+  { eyebrow: "OF ITS OWN", items: ["Rules the data carries itself:", "a lifetime", "who may extend it", "who may edit it"], tone: "own" },
 ];
 
 const TONE: Record<Column["tone"], string> = {
@@ -58,5 +59,5 @@ export function W3({ step }: SceneContentProps) {
 export const W3_NOTES: string[] = [
   "So what does web3 data look like? Arkiv takes three things. From web2 databases, the parts we love: structured data, indexing and a query language.",
   "From web3: ownership, tamper-evidence and permissionless access, plus a public block explorer where anyone can check every change. Anyone can read it, and nobody can quietly change it.",
-  "And something of its own: rules the data carries itself, like how long it lives and who may extend or change it. Guarantees stay with the data, not the host.",
+  "And something of its own: rules the data carries itself, like how long it lives, who may extend it and who may edit it. Guarantees stay with the data, not the host.",
 ];

@@ -2,15 +2,21 @@
 
 // NT · What Arkiv DB-Chain is not, right after the five steps (Santiago, October 29; the title names
 // the DB-Chain since the day's second round): the three edges a builder hits first, one per →, each
-// with its own icon (a contract crossed out, a big file going to Swarm, an open lock). Every line was
-// checked against the sources on October 29:
+// with its own icon (a contract crossed out, a big file going to Swarm, an open lock). Minimal since
+// October 30 (Santiago): each row is its icon and its title; only the big-files row gets a size to
+// picture, and the privacy row a way out. Every line was checked against the sources:
 //   - a DB-Chain runs no contracts: "No smart contracts, by construction"; a transaction is accepted
 //     only when it targets a known Arkiv operation address (docs.arkiv.network/start-here/fundamentals);
-//   - an entity holds small data you can query; big files go to Swarm and the entity keeps the
-//     reference (W4, and the arkiv-large-files skill's external-blob pointers);
+//   - 128 KB per entity: SDK 0.8.1 on Tiramisu caps the payload at 131,072 bytes (128 KiB), and the
+//     next SDK line, used on Rabdi (@arkiv-network/sdk 0.9.0-next.5), caps the bytes of one create or
+//     patch at MAX_ENTITY_BYTES = 128 * 1024 (src/schema/attributes.ts). A page of plain text is about
+//     3,000 bytes, so about 43 pages fit; real travel photos re-encoded as JPEG quality 85 at 640×427
+//     measured 52-92 KB (October 30). Big files go to Swarm and the entity keeps the reference (W4,
+//     and the arkiv-large-files skill's external-blob pointers);
 //   - there is no read access control, so anyone can read every entity (Arkiv cookbook, "Multi-tenant
-//     data when there is no read access control"), and encryption covers only the payload: attributes
-//     stay public (arkiv-encrypted-entities README, "Privacy and key custody").
+//     data when there is no read access control"), and you encrypt private values yourself before
+//     writing them; encryption covers only the payload, attributes stay public
+//     (arkiv-encrypted-entities README, "Privacy and key custody").
 // The Swarm mark is the official file from the ethersphere/bee-docs repository, unchanged:
 // https://raw.githubusercontent.com/ethersphere/bee-docs/master/static/img/swarm-logo-2.svg
 // (public/deck/logos/swarm-logo.svg).
@@ -23,9 +29,9 @@ import { PANEL, Reveal, Slide, T } from "../ui";
 /** The contract icon with a slash through it, cut out of the panel like lucide's "-off" icons. */
 function NoContract() {
   return (
-    <span className="relative block h-[80px] w-[80px]">
-      <FileCode size={80} strokeWidth={1.6} className="text-[var(--arkiv-orange)]" aria-hidden />
-      <svg className="absolute inset-0" width="80" height="80" viewBox="0 0 24 24" aria-hidden>
+    <span className="relative block h-[104px] w-[104px]">
+      <FileCode size={104} strokeWidth={1.6} className="text-[var(--arkiv-orange)]" aria-hidden />
+      <svg className="absolute inset-0" width="104" height="104" viewBox="0 0 24 24" aria-hidden>
         <path d="M3 3 21 21" stroke="#111111" strokeWidth="4.2" strokeLinecap="round" />
         <path d="M3 3 21 21" stroke="#F6F4EF" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
@@ -36,36 +42,39 @@ function NoContract() {
 /** A big file on its way to Swarm. */
 function FileToSwarm() {
   return (
-    <span className="flex items-center gap-3">
-      <FilePlay size={72} strokeWidth={1.6} className="text-[var(--arkiv-orange)]" aria-hidden />
-      <ArrowRight size={36} strokeWidth={2.4} style={{ color: T.t84 }} aria-hidden />
-      <span className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-[var(--arkiv-sand)]">
+    <span className="flex items-center gap-4">
+      <FilePlay size={92} strokeWidth={1.6} className="text-[var(--arkiv-orange)]" aria-hidden />
+      <ArrowRight size={44} strokeWidth={2.4} style={{ color: T.t84 }} aria-hidden />
+      <span className="flex h-[96px] w-[96px] items-center justify-center rounded-full bg-[var(--arkiv-sand)]">
         {/* eslint-disable-next-line @next/next/no-img-element -- official logo file at its own aspect */}
-        <img src="/deck/logos/swarm-logo.svg" alt="Swarm" width={64} height={64} draggable={false} className="block h-[64px] w-[64px]" />
+        <img src="/deck/logos/swarm-logo.svg" alt="Swarm" width={80} height={80} draggable={false} className="block h-[80px] w-[80px]" />
       </span>
     </span>
   );
 }
 
-const ITEMS: { icon: ReactNode; title: string; line: string; instead: string }[] = [
-  { icon: <NoContract />, title: "Not a smart-contract chain", line: "No contracts run on a DB-Chain.", instead: "Your logic: your app, or contracts on another chain" },
-  { icon: <FileToSwarm />, title: "Not built for big files", line: "An entity holds small data you can query.", instead: "Videos and big files: Swarm" },
-  { icon: <LockKeyholeOpen size={80} strokeWidth={1.6} className="text-[var(--arkiv-orange)]" aria-hidden />, title: "Not private by default", line: "Anyone can read every entity.", instead: "Private values: encrypt them first" },
+const ITEMS: { icon: ReactNode; title: string; line?: string }[] = [
+  { icon: <NoContract />, title: "Not a smart-contract chain" },
+  { icon: <FileToSwarm />, title: "Not built for big files", line: "128 KB per entity: about 40 pages of text or a 640×480 photo" },
+  { icon: <LockKeyholeOpen size={104} strokeWidth={1.6} className="text-[var(--arkiv-orange)]" aria-hidden />, title: "Not private by default", line: "You can encrypt values yourself" },
 ];
 
 export function NT({ step }: SceneContentProps) {
   return (
-    <Slide headline="What Arkiv DB-Chain is not" under="Three edges to know before your first build." size={72}>
-      <div role="list" className="absolute left-[96px] top-[330px] flex w-[1728px] flex-col gap-5">
+    <Slide headline="What Arkiv DB-Chain is not" size={72}>
+      <div role="list" className="absolute left-[96px] top-[300px] flex w-[1728px] flex-col gap-7">
         {ITEMS.map((item, i) => (
           <Reveal key={item.title} step={step} at={i} y={16}>
-            <div role="listitem" className={`${PANEL} grid h-[150px] grid-cols-[232px_minmax(0,1fr)_auto] items-center gap-8 pl-4 pr-10`}>
+            <div role="listitem" className={`${PANEL} grid h-[192px] grid-cols-[300px_minmax(0,1fr)] items-center gap-10 pl-4 pr-12`}>
               <span className="flex items-center justify-center">{item.icon}</span>
-              <span className="flex min-w-0 flex-col gap-2">
-                <span className="text-[44px] font-semibold leading-[1.1]">{item.title}</span>
-                <span className="text-[27px] leading-[1.3]" style={{ color: T.t64 }}>{item.line}</span>
+              <span className="flex min-w-0 flex-col gap-3">
+                <span className="text-[60px] font-semibold leading-[1.1]">{item.title}</span>
+                {item.line ? (
+                  <span className="text-[34px] leading-[1.3]" style={{ color: T.t64 }}>
+                    {item.line}
+                  </span>
+                ) : null}
               </span>
-              <span className="whitespace-nowrap rounded-[10px] border-[1.5px] border-[var(--arkiv-orange)] px-5 py-2.5 text-[27px] text-[var(--arkiv-orange)]">{item.instead}</span>
             </div>
           </Reveal>
         ))}

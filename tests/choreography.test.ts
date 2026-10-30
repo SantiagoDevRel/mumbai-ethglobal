@@ -147,13 +147,30 @@ test("one idea per scene, in the outline's order", () => {
   assert.deepEqual([...new Set(parts)], SECTIONS.map((_, i) => i));
 });
 
+test("W2 turns to the hug on its →, and W4 adds one column of the app view per →", () => {
+  const where = (state: StageState) => [SCENES[state.sceneIndex]!.id, state.step];
+  let state = next(at("W2"));
+  assert.deepEqual(where(state), ["W2", 1], "the meme gives way to the hug");
+  assert.deepEqual(where(prev(state)), ["W2", 0], "← brings the meme back");
+  assert.deepEqual(where(next(state)), ["W3", 0]);
+  // W4: the network, then the DB-Chain, your logic and storage, one → each.
+  state = at("W4");
+  for (let step = 1; step < 4; step++) {
+    state = next(state);
+    assert.deepEqual(where(state), ["W4", step]);
+  }
+  assert.deepEqual(where(next(state)), ["ST", 0]);
+});
+
 test("the outline bar fills each part on every → and finishes it before the next one starts", () => {
   const progress = (id: Parameters<typeof sceneIndex>[0], step = 0) => Object.fromEntries(sectionProgress(sceneIndex(id), step).map((part) => [part.id, part.progress]));
   assert.deepEqual(progress("IX"), { why: 0, start: 0, build: 0, tools: 0 });
   const w1 = progress("W1");
   assert.ok(w1.why! > 0 && w1.why! < 1);
   assert.ok(progress("W1", 1).why! > w1.why!, "a reveal step moves the bar");
-  assert.equal(progress("W4", 1).why, 1);
+  // W4 builds up one column per → (four steps); its last step finishes "Why Arkiv".
+  assert.ok(progress("W4", 2).why! < 1);
+  assert.equal(progress("W4", SCENES[sceneIndex("W4")]!.steps - 1).why, 1);
   // "Five steps" holds ST (five reveals) and NT (three): eight units.
   assert.deepEqual(progress("ST"), { why: 1, start: 1 / 8, build: 0, tools: 0 });
   assert.equal(progress("NT", 2).start, 1);

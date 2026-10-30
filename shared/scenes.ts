@@ -82,9 +82,9 @@ export const SCENES: readonly SceneDef[] = [
   // One → per part: part 1 lights first, then 2, 3 and 4 (Santiago, October 29).
   { id: "IX", title: "What we'll do", at: 20, kind: "slide", steps: 4, qr: NO_QR, camera: "keep", map: "dots" },
   { id: "W1", title: "Your data, their terms", at: 50, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
-  { id: "W2", title: "Meme: eyes on Web3 data", at: 95, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
+  { id: "W2", title: "Meme: eyes on Web3 data", at: 95, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
   { id: "W3", title: "Your data, the web3 way", at: 115, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
-  { id: "W4", title: "What is Arkiv", at: 165, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
+  { id: "W4", title: "What is Arkiv", at: 165, kind: "slide", steps: 4, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
   { id: "ST", title: "Five steps to get started", at: 225, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
   { id: "NT", title: "What Arkiv DB-Chain is not", at: 305, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
   { id: "S7", title: "Your entity: scan and fill the form", at: 345, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "center" }, camera: "globe", map: "dots", section: "build" },
