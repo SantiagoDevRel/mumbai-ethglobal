@@ -73,7 +73,7 @@ export function QueryCode() {
       <div>
         <Label>THE SAME QUERY IN THE SDK</Label>
         <div className={`${WELL} cursor-text select-text py-2.5 font-mono`} style={WELL_STYLE}>
-          <Row>await publicClient.select(&#123; attributes: true &#125;)</Row>
+          <Row>await publicClient.select(&#123; $attributes: true &#125;)</Row>
           <Row>
             {"  "}.where(<O>eq</O>(&quot;category&quot;, &quot;cafe&quot;))
           </Row>

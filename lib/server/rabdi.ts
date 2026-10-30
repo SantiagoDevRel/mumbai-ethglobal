@@ -1,6 +1,6 @@
 // Rabdi's network details for the Add network button on the Five steps slide (app/deck/scenes/ST.tsx).
-// Rabdi was announced only inside the team: its chain ID, RPC URL and explorer URL never go into this
-// public repo, a test or a NEXT_PUBLIC_ variable. They live in four server-only env vars, and only a
+// The wallet's RPC URL carries the presenter's access key, so it never goes into this public repo, a
+// test or a NEXT_PUBLIC_ variable. They live in four server-only env vars, and only a
 // presenter login reads them, through GET /api/presenter/rabdi (lib/server/writer.ts).
 
 import { RabdiNetwork } from "../../shared/writer-api";

@@ -48,7 +48,8 @@ import {
 const LINKS = [
   { name: "Docs", where: "docs.arkiv.network", href: "https://docs.arkiv.network" },
   { name: "Hub", where: "hub.arkiv.network", href: "https://hub.arkiv.network" },
-  { name: "MCP", where: "mcp.arkiv.network", href: "https://mcp.arkiv.network" },
+  // The MCP profile for ETHGlobal Mumbai, recommended to builders until November 10.
+  { name: "MCP", where: "mcp.arkiv.network/mumbai", href: "https://mcp.arkiv.network/mumbai" },
   { name: "Prizes", where: "ethglobal.com/events/mumbai/prizes/arkiv", href: "https://ethglobal.com/events/mumbai/prizes/arkiv" },
 ] as const;
 

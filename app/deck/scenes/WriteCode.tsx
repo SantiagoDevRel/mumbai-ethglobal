@@ -2,7 +2,7 @@
 
 // Write it: the SDK call behind each phone's tap. It was the B2 slide; since October 30 (Santiago) the
 // Write it button on L1's map opens it in a popup (./live.tsx), so the room's dots stay on screen. The
-// call is the one the writer makes for every phone (shared/arkiv/sdk-0.8.ts `dotToCreate`), trimmed to
+// call is the one the writer makes for every phone (shared/arkiv/sdk-1.0.ts `dotToCreate`), trimmed to
 // the form's fields plus the category the writer picks (Query it filters by it); the values are an
 // example, in lower case like everything the phones write; the country is stored by its full name
 // (Santiago, October 30). The presenter selects each part with the
@@ -15,20 +15,21 @@ export const WRITE_IT = { title: "Write it", under: "The call behind your tap. O
 
 type Line = { text: string; quiet?: boolean };
 
-// SDK 0.8.1: every entity declares its contents; an attributes-only entity sends empty bytes. Those two
-// lines are required but not the lesson, so they stay dim.
+// SDK 1.0: an entity's columns come from a schema, and only indexed columns can be filtered (Query it
+// filters by country and category). The call names the schema, the values and the lifetime.
 const CODE: Line[] = [
-  { text: "const { entityKey } = await walletClient.createEntity({" },
-  { text: "  attributes: {" },
-  { text: '    name: "chai corner",' },
-  { text: '    color: "#fe7446",' },
-  { text: '    country: "india",' },
-  { text: '    category: "cafe",' },
-  { text: "  }," },
-  { text: "  payload: new Uint8Array(),", quiet: true },
-  { text: '  contentType: "application/octet-stream",', quiet: true },
-  { text: "  expires: ExpirationTime.fromSeconds(15 * 60)," },
+  { text: "const Place = defineSchema({" },
+  { text: "  name: str().indexed()," },
+  { text: "  color: str().indexed()," },
+  { text: "  country: str().indexed()," },
+  { text: "  category: str().indexed()," },
   { text: "});" },
+  { text: "const { entityKey } = await walletClient.createEntity(" },
+  { text: "  Place," },
+  { text: '  { name: "chai corner", color: "#fe7446",' },
+  { text: '    country: "india", category: "cafe" },' },
+  { text: "  { expiration: ExpirationTime.fromMinutes(15) }," },
+  { text: ");" },
 ];
 
 /** String literals in Orange, the rest as is. */
@@ -44,7 +45,7 @@ function Tinted({ text }: { text: string }) {
   );
 }
 
-/** The createEntity call. 18 px mono: its longest line (55 characters) fits the popup's 600 px well. */
+/** The createEntity call. 18 px mono: its longest line (54 characters) fits the popup's 600 px well. */
 export function WriteCode() {
   return (
     <pre

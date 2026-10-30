@@ -1,9 +1,8 @@
 // How UI values map to on-chain attribute values. Contract owned by the orchestrator.
 //
-// Coordinates: SDK 0.8.x has a signed `i32` attribute type with equality and range indexing,
-// so latitude and longitude are stored as i32 micro-degrees (degrees x 1e6). That keeps the L3
-// viewport filter a plain range query. To be re-verified against the installed typings and the
-// live chain in phase 0 (negative values in a range predicate).
+// Coordinates: SDK 1.0 has a signed `i32` column type with equality and range indexing, so
+// latitude and longitude are stored as i32 micro-degrees (degrees x 1e6). That keeps the L3
+// viewport filter a plain range query.
 
 export const COORD_SCALE = 1_000_000;
 

@@ -5,10 +5,10 @@
 // field keeps its name, owner_phone, with ciphertext as its value (base64 text in a string
 // attribute: anyone can read the field, only the key holder can read the value); → with the key you
 // get the number back, without it only ciphertext, and two links: the arkiv-encryption npm package
-// and its Arkiv skill. Both encrypt an entity's payload, so the slide presents them as tools to
-// encrypt private values and claims nothing about attributes. Each step lands whole.
+// and its Arkiv skill. The slide presents them as tools to encrypt private values and claims nothing
+// about the other columns. Each step lands whole.
 // Steps: 0 every field is public · 1 encrypt before you write · 2 decrypt or not, and the two tools.
-// Santiago, October 29: owner_phone keeps its name (no "payload" on the slide) and the step-0 line
+// Santiago, October 29: owner_phone keeps its name and the step-0 line
 // says all fields are public.
 
 import { ArrowUpRight } from "lucide-react";
@@ -253,5 +253,5 @@ export const D6_STEPS = 3;
 export const D6_NOTES: string[] = [
   "Everything in an entity is public: every field, readable by anyone. That's what makes it queryable. So think about what you write in plain text: here, the owner's phone number, in owner_phone.",
   "So your app encrypts the value with your key, before it writes it. The field keeps its name, owner_phone; its value is now ciphertext. Anyone can read the field. Only the key holder can read the value.",
-  "With the key you get the number back; without it, only ciphertext. To do it for real: the arkiv-encryption npm package, and the arkiv-encryption skill for your agent. They encrypt an entity's payload, its data body, with your key.",
+  "With the key you get the number back; without it, only ciphertext. To do it for real: the arkiv-encryption npm package, and the arkiv-encryption skill for your agent. They encrypt a private value with your key before it is written.",
 ];

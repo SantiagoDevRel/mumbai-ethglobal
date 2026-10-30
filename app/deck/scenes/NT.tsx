@@ -7,16 +7,14 @@
 // picture, and the privacy row a way out. Every line was checked against the sources:
 //   - a DB-Chain runs no contracts: "No smart contracts, by construction"; a transaction is accepted
 //     only when it targets a known Arkiv operation address (docs.arkiv.network/start-here/fundamentals);
-//   - 128 KB per entity: SDK 0.8.1 on Tiramisu caps the payload at 131,072 bytes (128 KiB), and the
-//     next SDK line, used on Rabdi (@arkiv-network/sdk 0.9.0-next.5), caps the bytes of one create or
-//     patch at MAX_ENTITY_BYTES = 128 * 1024 (src/schema/attributes.ts). A page of plain text is about
+//   - 128 KB per entity: @arkiv-network/sdk 1.0.0 on Rabdi caps the bytes of one create or patch at
+//     MAX_ENTITY_BYTES = 128 * 1024 (src/schema/attributes.ts). A page of plain text is about
 //     3,000 bytes, so about 43 pages fit; real travel photos re-encoded as JPEG quality 85 at 640×427
 //     measured 52-92 KB (October 30). Big files go to Swarm and the entity keeps the reference (W4,
 //     and the arkiv-large-files skill's external-blob pointers);
 //   - there is no read access control, so anyone can read every entity (Arkiv cookbook, "Multi-tenant
 //     data when there is no read access control"), and you encrypt private values yourself before
-//     writing them; encryption covers only the payload, attributes stay public
-//     (arkiv-encrypted-entities README, "Privacy and key custody").
+//     writing them; an encrypted value is stored as bytes, and the other columns stay public.
 // The Swarm mark is the official file from the ethersphere/bee-docs repository, unchanged:
 // https://raw.githubusercontent.com/ethersphere/bee-docs/master/static/img/swarm-logo-2.svg
 // (public/deck/logos/swarm-logo.svg).

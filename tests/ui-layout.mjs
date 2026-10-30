@@ -31,7 +31,7 @@ async function setup(options, { loggedIn = true } = {}) {
   }, [loggedIn]);
   await app.serve(context, origin);
   await context.route(`${writer}/api/**`, (route) => route.abort());
-  await context.route(`${writer}/api/session*`, (route) => route.fulfill({ json: { valid: true, code: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, network: "Tiramisu" } }));
+  await context.route(`${writer}/api/session*`, (route) => route.fulfill({ json: { valid: true, code: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, network: "Rabdi" } }));
   await context.route(`${writer}/api/rpc`, (route) => route.fulfill({ json: { jsonrpc: "2.0", id: 1, error: { code: -32000, message: "UI fixture: no chain reads" } } }));
   await context.route(`${writer}/api/login`, (route) => {
     writerCalls.login++;
@@ -39,7 +39,7 @@ async function setup(options, { loggedIn = true } = {}) {
       ? route.fulfill({ json: { token: "p.fixture", expiresAt: Date.now() + 3_600_000 } })
       : route.fulfill({ status: 401, json: { error: "unauthorized", message: "Wrong password." } });
   });
-  await context.route(`${writer}/api/presenter/status`, (route) => route.fulfill({ json: { session: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, held: false, queued: 0, inFlight: false, written: 0, failed: 0, lastBatch: null, balanceWei: "0", network: "Tiramisu", requestsToday: 0 } }));
+  await context.route(`${writer}/api/presenter/status`, (route) => route.fulfill({ json: { session: "UI-LAYOUT", doors: "open", phase: "talk", replay: false, held: false, queued: 0, inFlight: false, written: 0, failed: 0, lastBatch: null, balanceWei: "0", network: "Rabdi", requestsToday: 0 } }));
   await context.route(`${writer}/api/presenter/session/start`, (route) => { writerCalls.start++; return route.fulfill({ json: { code: "RESET-01" } }); });
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
@@ -436,7 +436,7 @@ try {
   await expect(writeIt).toHaveAttribute("aria-expanded", "true");
   const writePopup = page.getByRole("dialog", { name: "Write it", exact: true });
   await expect(writePopup).toBeVisible();
-  await expect(writePopup.getByLabel("createEntity call")).toContainText("const { entityKey } = await walletClient.createEntity({");
+  await expect(writePopup.getByLabel("createEntity call")).toContainText("const { entityKey } = await walletClient.createEntity(");
   await expect(writePopup).toContainText("expires: ExpirationTime.fromSeconds(15 * 60),");
   await checkPopup("Write it");
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1-write-it.png") }); }
@@ -681,7 +681,7 @@ try {
   // real links that open in a new tab.
   await expect(page.getByText("Write it.")).toBeVisible();
   await expect(page.getByRole("img", { name: "Thank you" })).toBeVisible();
-  for (const href of ["https://docs.arkiv.network", "https://hub.arkiv.network", "https://mcp.arkiv.network", "https://ethglobal.com/events/mumbai/prizes/arkiv"])
+  for (const href of ["https://docs.arkiv.network", "https://hub.arkiv.network", "https://mcp.arkiv.network/mumbai", "https://ethglobal.com/events/mumbai/prizes/arkiv"])
     await expect(page.locator(`a[href="${href}"][target="_blank"][rel="noreferrer"]`)).toBeVisible();
   {
     // A click on a link reaches the link, not the globe under it.

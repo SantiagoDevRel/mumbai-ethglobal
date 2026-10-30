@@ -26,7 +26,7 @@ async function open(url, viewport) {
     localStorage.setItem("arkiv-presenter-login", JSON.stringify({ token: "p.fixture", expiresAt: Date.now() + 3_600_000 }));
   });
   await app.serve(context, origin);
-  await context.route(`${writer}/api/**`, (route) => route.fulfill({ json: { valid: true, code: "MOCK", doors: "open", phase: "talk", replay: false, network: "tiramisu" } }));
+  await context.route(`${writer}/api/**`, (route) => route.fulfill({ json: { valid: true, code: "MOCK", doors: "open", phase: "talk", replay: false, network: "rabdi" } }));
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(`${url}: ${error.message}`));
   await page.goto(`${origin}${url}`, { waitUntil: "domcontentloaded" });

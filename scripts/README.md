@@ -8,11 +8,12 @@ private keys. Keep the RPC access key and writer key outside frontend environmen
 | --- | --- |
 | `npm run check:network` | Verify chain ID, latest block and installed SDK against the profile. Uses keyed RPC when configured. |
 | `node --experimental-strip-types scripts/check-writer.ts` | One live phone submission, public query readback, and an Entity Expiration check within one block. |
-| `npm run seed -- --state-dir /secure/workshop-state` | Seed businesses and linked reviews once per UTC day, with twelve-hour lifetimes. |
+| `node --experimental-strip-types scripts/seed-rabdi.mjs` | Load the sample businesses and linked reviews (twelve-hour lifetimes). Safe to rerun: it reads which seeds the signer has live on the chain and creates only the missing ones; it refuses while a transaction is pending. `--dry-run` only prints the plan; `--signer test` signs with `TEST_MUMBAI_PRIVATE_KEY`; `--hours N` sets the lifetime. |
+| `npm run seed -- --state-dir /secure/workshop-state` | The older journaled seed: once per UTC day, with a durable state file. |
 | `npm run loadtest -- --approved --report /secure/loadtest-report.json` | Run the explicitly authorized on-chain load test against a dedicated session and retain its evidence. |
 | `node scripts/loadtest-ticket-reads.mjs --tickets /secure/existing-campaign.json --report /secure/ticket-reads.json` | Read-only stress: 200 existing written tickets poll every five seconds and the session every three seconds, for three minutes, far more than the phone page now asks. No session changes or gas. |
 | `node --experimental-strip-types scripts/rehearse.mjs --preflight` | Check the deployed app, keyed reads and browser runtime without starting a session or sending transactions. |
-| `node --experimental-strip-types scripts/rehearse.mjs --report writer/rehearsal.json --journal /secure/rehearsal.jsonl` | Run the full twenty-minute Tiramisu rehearsal with an explicitly authorized test-gas budget. Both files must be new. |
+| `node --experimental-strip-types scripts/rehearse.mjs --report writer/rehearsal.json --journal /secure/rehearsal.jsonl` | Run the full twenty-minute Rabdi rehearsal with an explicitly authorized test-gas budget. Both files must be new. |
 
 `APP_ORIGIN` selects the deployment; the default is production,
 `https://mumbai-ethglobal.vercel.app`, whose `/api` is the writer. A protected preview

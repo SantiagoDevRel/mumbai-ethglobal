@@ -31,9 +31,9 @@ try {
   });
   await app.serve(context, origin);
   await context.route(`${origin}/api/**`, (route) => route.abort());
-  await context.route(`${origin}/api/session*`, (route) => route.fulfill({ json: { valid: true, code: "DECK-WALK", doors: "open", phase: "talk", replay: false, network: "Tiramisu" } }));
+  await context.route(`${origin}/api/session*`, (route) => route.fulfill({ json: { valid: true, code: "DECK-WALK", doors: "open", phase: "talk", replay: false, network: "Rabdi" } }));
   await context.route(`${origin}/api/rpc`, (route) => route.fulfill({ json: { jsonrpc: "2.0", id: 1, error: { code: -32000, message: "UI fixture: no chain reads" } } }));
-  await context.route(`${origin}/api/presenter/status`, (route) => route.fulfill({ json: { session: "DECK-WALK", doors: "open", phase: "talk", replay: false, held: false, queued: 0, inFlight: false, written: 0, failed: 0, lastBatch: null, balanceWei: "0", network: "Tiramisu", requestsToday: 0 } }));
+  await context.route(`${origin}/api/presenter/status`, (route) => route.fulfill({ json: { session: "DECK-WALK", doors: "open", phase: "talk", replay: false, held: false, queued: 0, inFlight: false, written: 0, failed: 0, lastBatch: null, balanceWei: "0", network: "Rabdi", requestsToday: 0 } }));
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });

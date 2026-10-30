@@ -28,7 +28,7 @@ export interface LiveData {
   paused: boolean;
 }
 
-// Every query spends the access key's monthly quota (100 units each), and a /map left open for a
+// Every query spends the access key's quota (10 units of 100,000,000 each), and a /map left open for a
 // day used all of it. Reads pause while this window is hidden or after 20 minutes without a scene
 // change, key, click or touch, and resume on the next one.
 const IDLE_MS = 20 * 60_000;

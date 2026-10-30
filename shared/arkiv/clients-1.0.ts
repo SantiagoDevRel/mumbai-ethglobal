@@ -63,11 +63,11 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal,
       if (read.kind === "proxy") headers.authorization = `Bearer ${read.presenterToken}`;
       observe?.({ method, phase: "request" });
       try {
-      const payload = JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params: params ?? [] });
+      const body = JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params: params ?? [] });
       const signal = AbortSignal.timeout(20_000);
       const { response } = read.kind === "keyed"
-        ? await postKeyed(url, read.accessKey, payload, signal)
-        : { response: await fetch(url, { method: "POST", headers, body: payload, signal }) };
+        ? await postKeyed(url, read.accessKey, body, signal)
+        : { response: await fetch(url, { method: "POST", headers, body, signal }) };
       if (!response.ok) {
         observe?.({ method, phase: "response", httpStatus: response.status });
         throw new Error(`RPC request rejected (${response.status}).`);

@@ -50,7 +50,7 @@ try {
   const card = map.getByRole("dialog", { name: "Presenter controls" });
   await expect(card.getByText("Live · Arkiv DB-Chain", { exact: true })).toBeVisible({ timeout: 30000 });
   await expect.poll(() => reads.proxy, { timeout: 20000 }).toBeGreaterThan(0);
-  // The blinker names each new block as its query lands (Tiramisu: one block about every 2 s).
+  // The blinker names each new block as its query lands (Rabdi: one block about every 2 s).
   const detail = card.locator(".source-label .refresh-detail");
   await expect(detail).toHaveText(/^Updated · block #\d+$/, { timeout: 20000 });
   const firstUpdate = await detail.textContent();

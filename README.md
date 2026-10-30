@@ -58,7 +58,7 @@ while it is OFF see "Not open yet" or "Writing is paused".
 ## How it works
 
 ```
-phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + Postgres) ──► Arkiv DB-Chain (Tiramisu)
+phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + Postgres) ──► Arkiv DB-Chain (Rabdi)
                                                                                       ▲
 /map and /slides ── query every block, via the writer's keyed read proxy ─────────────┘
 ```
@@ -66,8 +66,8 @@ phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + 
 - Every entity is written by one writer wallet, with permissionless extension on, so anyone can extend it.
 - Every query is scoped by `$creator` (the writer) and the `app` attribute.
 - One sender at a time: a lease in Postgres lets only one function instance sign for the writer wallet, at most one batch per block.
-- Entities are made only of queryable attributes (empty payload): your columns, plus Arkiv's `$key`, `$owner`, `$creator` and `$expiresAt`.
-- "Permanent" (the phone's toggle; "no expiration" on the map) writes with `ExpirationTime.permanent()`: `$expiresAt` is 2**64 − 1, with the same gas estimate as a 15-minute lifetime (Tiramisu, October 29, 2026).
+- Entities follow SDK 1.0 schemas (`PLACE` and `REVIEW` in `shared/arkiv/sdk-1.0.ts`): typed columns, indexed where the map filters, plus Arkiv's `$key`, `$owner`, `$creator` and `$expiresAt`.
+- "Permanent" (the phone's toggle; "no expiration" on the map) writes with `ExpirationTime.atBlock(MAX_EXPIRES_AT)`: `$expiresAt` is 2**64 − 1.
 
 ## Run it
 
@@ -118,7 +118,10 @@ included each month; the database runs on Neon's free plan. The load tests ran 2
 
 ## Network
 
-Tiramisu testnet with `@arkiv-network/sdk` 0.8.x. To change the network or the SDK, see
+Rabdi testnet (chain ID 7794095) with `@arkiv-network/sdk` 1.0.0. Every RPC request carries an access key
+(`https://rpc.rabdi.db-chain.testnet.arkiv.network/<accessKey>`; keys at https://hub.arkiv.network/access-keys).
+The key stays server-side. After a Rabdi reset, reload the sample data with `scripts/seed-rabdi.mjs`
+([scripts/README.md](./scripts/README.md)). To change the network or the SDK, see
 [AGENTS.md](./AGENTS.md#changing-the-network-or-the-sdk).
 
 Arkiv testnet: everything written here is public.

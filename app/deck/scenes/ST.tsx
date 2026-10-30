@@ -1,23 +1,22 @@
 "use client";
 
 // ST · Five steps to get started (slide 8), one row per →: install the SDK, a wallet that signs
-// writes, test funds from the faucet, free reads, and an RPC access key. The subtitle is Santiago's
-// (October 30). Builders use Rabdi this weekend (October 29), so the install line names no version:
-// this app's profile still pins Tiramisu's SDK until the app itself moves to Rabdi. Every tag is a
-// link that opens in a new tab: the SDK's npm page, the faucet and the access keys on the Hub
-// (October 30: both Hub pages answer, and the npm registry lists the package; npm's site refuses
-// scripted requests).
+// writes, test funds from the faucet, an RPC access key, and free reads. The subtitle is Santiago's
+// (October 30). Builders use Rabdi, so the install line names no version. Every request to Rabdi's
+// RPC carries an access key (the RPC answers 429 without one), so the key comes before reads; reads
+// still cost no gas and need no signature. Every tag is a link that opens in a new tab: the SDK's npm
+// page, the faucet and the access keys on the Hub (October 30: both Hub pages answer, and the npm
+// registry lists the package; npm's site refuses scripted requests).
 // Two rows have a live button that uses the presenter's browser wallet (October 30); the logic is in
 // lib/data/rabdi-wallet.ts:
 //   A wallet to sign writes · Add network: the wallet shares an account, adds Rabdi and switches to
 //     it (eth_requestAccounts, then wallet_addEthereumChain, then wallet_switchEthereumChain).
 //   Reads are free · Get balance: that account's balance on Rabdi, read through the same wallet
 //     (eth_chainId, then eth_getBalance), with no signature and no transaction.
-// Rabdi's chain ID, RPC URL and explorer URL were announced only inside the team, so this public repo
-// doesn't hold them: the writer serves them to a presenter login from server-only env vars
-// (GET /api/presenter/rabdi, lib/server/rabdi.ts). The buttons act only on /map and /slides, and each
-// window shows its own result. /outline draws this slide inert, as a picture: a click there never
-// reaches a wallet or the writer.
+// The wallet's RPC URL carries the presenter's access key, so the writer serves the network to a
+// presenter login from server-only env vars (GET /api/presenter/rabdi, lib/server/rabdi.ts). The
+// buttons act only on /map and /slides, and each window shows its own result. /outline draws this
+// slide inert, as a picture: a click there never reaches a wallet or the writer.
 // Logos: official files, colors unchanged, straight on the dark panel (no box), only to say which
 // wallets the button works with.
 //   metamask-fox.svg · metamask.com/assets, "The official MetaMask logos and symbol" (the fox):
@@ -48,12 +47,12 @@ const STEPS: { title: string; line: string; link?: { text: string; href: string 
     line: "Every write is a transaction: the faucet pays its gas.",
     link: { text: "hub.arkiv.network/faucet", href: "https://hub.arkiv.network/faucet" },
   },
-  { title: "Reads are free", line: "Query the public RPC: no wallet needed.", live: "balance" },
   {
     title: "An RPC access key",
-    line: "Higher read limits for your app: get one for the hackathon.",
+    line: "Every request carries it: get one free on the Hub.",
     link: { text: "hub.arkiv.network/access-keys", href: "https://hub.arkiv.network/access-keys" },
   },
+  { title: "Reads are free", line: "No gas and no signature: only your key's quota.", live: "balance" },
 ];
 
 const FOCUS = "focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-[var(--arkiv-orange)]";

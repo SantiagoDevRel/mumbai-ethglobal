@@ -12,7 +12,7 @@ expire (or stay, with no expiration).
 |---|---|---|
 | `shared/types.ts`, `shared/scenes.ts`, `shared/writer-api.ts`, `shared/encoding.ts` | Contracts: domain types, run of show, writer HTTP API, value encodings | orchestrator |
 | `shared/arkiv/adapter.ts`, `profiles.ts`, `mock.ts` | The one Arkiv interface, network profiles, in-memory mock | orchestrator (contract) |
-| `shared/arkiv/sdk-0.8.ts` | The adapter on `@arkiv-network/sdk` 0.8.x | chain |
+| `shared/arkiv/sdk-1.0.ts` | The adapter on `@arkiv-network/sdk` 1.0.0 (schemas `PLACE`, `REVIEW`) | chain |
 | `lib/stage/` | Scene engine: store, BroadcastChannel sync, presenter keys, deck contract | orchestrator |
 | `components/stage/StageFrame.tsx` | Stage layers: map, scene box (1920x1080 scaled), HUD, QR, controls | orchestrator |
 | `app/deck/`, `public/deck/` | Every scene's slide or overlay, and the script each scene follows | deck |
@@ -27,9 +27,8 @@ The talk runs on one screen, `/map` (outline v3, October 28, with Santiago's Oct
 title (S0), who I am (ME: santiagodevrel @ Arkiv and one photo per → from the countries the speaker has
 been to, each with its round flag; `app/deck/scenes/me-tour.ts`) and the index (IX, one part lit per →), then four parts
 that the outline bar across the top tracks. Why Arkiv (W1-W4), the five steps (ST) and what Arkiv
-DB-Chain is not (NT) are slides with no QR. The slides name Rabdi as the network builders use (W4 with
-Sorbet also live and Tiramisu among the previous testnets, ST); the app itself still writes and reads
-on Tiramisu until it moves to Rabdi, so W4 shows no live block (October 29). In "Build your entity" the room scans (S7, the QR centered) and each idea
+DB-Chain is not (NT) are slides with no QR. The slides and the app both run on Rabdi (W4 with Sorbet also live, ST
+with the access-key step; October 31). In "Build your entity" the room scans (S7, the QR centered) and each idea
 is shown on their entities: write (L1, whose Write it and Query it buttons open the createEntity call
 and the query in a popup over the map, October 30) and query (L3: the presenter filters by hand), with
 transfer and extension in the entity card, then encryption (B4) and
@@ -70,8 +69,8 @@ deck itself, so a changed slide shows there as it is; change its points with it.
 
 Everything network-specific lives in two places:
 
-1. `shared/arkiv/profiles.ts`: one profile per network (chain ID, RPC and WebSocket URLs, explorer, faucet, SDK package and version). `tiramisu` is the default; `udc` is a placeholder that fails closed until filled.
-2. `shared/arkiv/sdk-0.8.ts`: the adapter for the 0.8.x SDK. A new SDK gets its own adapter file implementing `ArkivAdapter` from `shared/arkiv/adapter.ts`.
+1. `shared/arkiv/profiles.ts`: one profile per network (chain ID, RPC and WebSocket URLs, explorer, faucet, SDK package and version). `rabdi` is the only profile and the default; any other name fails closed.
+2. `shared/arkiv/sdk-1.0.ts`: the adapter for the 1.0 SDK. A new SDK gets its own adapter file implementing `ArkivAdapter` from `shared/arkiv/adapter.ts`.
 
 Select the profile with `ARKIV_PROFILE` (a Vercel environment variable for the writer, and `NEXT_PUBLIC_ARKIV_PROFILE` for the app). Pin the SDK version in `package.json` (and in `writer/package.json` while the retired Worker is kept).
 

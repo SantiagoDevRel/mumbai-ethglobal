@@ -6,14 +6,12 @@
 //            Arkiv's own chain (under construction), which bridges to Ethereum mainnet; the footer
 //            rows are the leaflet's (DB ENGINE / EVM / EVM, GLM / GLM · ETH · … / ETH). The live
 //            DB-Chains are Rabdi, lit in orange because builders use it at ETHGlobal Mumbai, and
-//            Sorbet, which holds Sourcify's verified contracts. Tiramisu is listed with the previous
-//            testnets (builders don't use it this weekend); it still runs, so it carries no OFF tag.
-//            Braga, Kaolin and Mendoza are switched off. Only the live DB-Chains are wired, and
+//            Sorbet, which holds Sourcify's verified contracts. The previous testnets (Braga, Kaolin,
+//            Mendoza) are switched off. Only the live DB-Chains are wired, and
 //            neither shows a block here, only a LIVE pill (October 29). Network names only: no RPC
 //            URL, chain ID or explorer for Rabdi or Sorbet in this public repo.
 //   step 1 · your app and the DB-Chain: the app reaches a DB-Chain through the SDK or straight
-//            through JSON-RPC, and Rabdi keeps its entities. No live block until this app itself
-//            moves to Rabdi: today it would be Tiramisu's (October 29).
+//            through JSON-RPC, and Rabdi keeps its entities.
 //   step 2 · your logic, wherever you want: only the logos of chains it can live on (Ethereum, Base,
 //            OP, Arbitrum, Solana), or a web2 backend. "Arkiv runs no smart contracts" is NT's line
 //            now (Santiago, October 30). The app talks to each side: contracts on other chains can't
@@ -92,9 +90,8 @@ const ETH = { x: 1454, y: 300, r: 80, orbit: 104 };
 /** The live DB-Chains, each with its node on the wire to the hub. Rabdi is the lit one. */
 const RABDI = { name: "Rabdi", node: { x: 616, y: 158, r: 16 } };
 const SORBET = { name: "Sorbet", node: { x: 616, y: 276, r: 12 } };
-/** The previous testnets. Tiramisu still runs, so only the others say OFF. */
+/** The previous testnets, all switched off. */
 const PREVIOUS = [
-  { name: "Tiramisu", off: false },
   { name: "Braga", off: true },
   { name: "Kaolin", off: true },
   { name: "Mendoza", off: true },
@@ -397,7 +394,7 @@ export function W4({ step }: SceneContentProps) {
 }
 
 export const W4_NOTES: string[] = [
-  "Arkiv is the Web3 database. Here's the network: DB-Chains, chains built to store and query app data, joined by Arkiv's own chain, still under construction, which bridges to Ethereum mainnet. A DB-Chain runs a database engine instead of the EVM. Two DB-Chains are live: Rabdi, the one you build on this weekend, and Sorbet, which holds Sourcify's verified contracts. Tiramisu was our previous testnet; Braga, Kaolin and Mendoza came before it and are switched off.",
+  "Arkiv is the Web3 database. Here's the network: DB-Chains, chains built to store and query app data, joined by Arkiv's own chain, still under construction, which bridges to Ethereum mainnet. A DB-Chain runs a database engine instead of the EVM. Two DB-Chains are live: Rabdi, the one you build on this weekend, and Sorbet, which holds Sourcify's verified contracts. Braga, Kaolin and Mendoza were our previous testnets and are switched off.",
   "And here's your app. It talks to a DB-Chain through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: small data you search and filter. This weekend, that's Rabdi.",
   "Your logic lives wherever you want: on Ethereum, Base, Optimism, Arbitrum or Solana, or in a web2 backend. Those chains can't read your entities directly: your app talks to each side.",
   "Heavy files, like photos and video, go to storage built for them: Swarm or IPFS. Your entity keeps the reference.",

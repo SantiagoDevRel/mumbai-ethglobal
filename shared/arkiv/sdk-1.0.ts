@@ -1,5 +1,5 @@
 import { defineSchema, ExpirationTime, i32, key as entityKey, MAX_EXPIRES_AT, str, u64, type Attributes, type CreateEntityValues, type PatchEntityValues } from "@arkiv-network/sdk";
-import { asc, eq, gt, gte, lte, or, startsWith } from "@arkiv-network/sdk/query";
+import { asc, eq, gt, gte, lte, or, startsWith, type Expression } from "@arkiv-network/sdk/query";
 import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
 import { createSdkClients } from "./clients-1.0.ts";
@@ -147,7 +147,7 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
 
   // The filters, as expressions and as the text the Code panel shows.
   function build(filters: ChainFilters) {
-    const expressions: Parameters<ReturnType<typeof reader.select>["where"]>[0][] = [eq("app", APP_ID)];
+    const expressions: Expression[] = [eq("app", APP_ID)];
     const code = ["reader.select({ $key: true, $owner: true, $creator: true, $createdAt: true, $updatedAt: true, $expiresAt: true, $attributes: true })",
       `  .createdBy(${JSON.stringify(options.creator)})`, `  .where(eq("app", ${JSON.stringify(APP_ID)}))`];
     function where(expression: (typeof expressions)[number], text: string) {
