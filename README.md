@@ -6,7 +6,7 @@ The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026), in four 
 five steps before your first write (and what Arkiv is not), building your entity, and the resources and
 prizes for the weekend. An index after the title lists the parts, and a bar across the top shows where
 the talk is. In "Build your entity" everyone scans a QR code, picks a name, a color, a country and a
-lifetime (5 to 15 minutes, 15 by default, or no expiration), and their Arkiv entity drops onto a live 3D
+lifetime (5 to 15 minutes, 15 by default, or Permanent, which sets `$expiresAt` to 2**64 − 1), and their Arkiv entity drops onto a live 3D
 globe, where it counts down and expires, or stays. Everything is stored in lower case. Each idea gets
 one slide, then runs on the room's own entities: write it and query it (the panel under the map shows
 the query that ran: Code, the SDK call the app runs; Query, the query text the SDK sends to the
@@ -17,7 +17,7 @@ DB-Chain). The entity card transfers and extends any entity. Expired dots leave 
 | `/map` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
 | `/slides` | Optional second window | The slides alone, in step with `/map`. Presenter password. |
 | `/outline` | Presenter | The talk at a glance: each part folds open or shut, and each scene shows its slide and a few short points (no script, no times). Click a slide to zoom in and step through its reveals. Marks the scene on screen when `/map` or `/slides` is open in the same browser. Presenter password. |
-| `/scan` | Phones | Join the map: write an entity (up to ten per phone per session), then watch it on the projector |
+| `/scan` | Phones | Your first entity: write an entity (up to ten per phone per session), then watch it on the projector |
 
 `/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
 
@@ -60,7 +60,7 @@ phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + 
 - Every query is scoped by `$creator` (the writer) and the `app` attribute.
 - One sender at a time: a lease in Postgres lets only one function instance sign for the writer wallet, at most one batch per block.
 - Entities are made only of queryable attributes (empty payload): your columns, plus Arkiv's `$key`, `$owner`, `$creator` and `$expiresAt`.
-- "No expiration" writes with `ExpirationTime.permanent()`: `$expiresAt` is 2**64 − 1, with the same gas estimate as a 15-minute lifetime (Tiramisu, October 29, 2026).
+- "Permanent" (the phone's toggle; "no expiration" on the map) writes with `ExpirationTime.permanent()`: `$expiresAt` is 2**64 − 1, with the same gas estimate as a 15-minute lifetime (Tiramisu, October 29, 2026).
 
 ## Run it
 
@@ -84,7 +84,7 @@ Each entity a phone writes is one request:
    the running session, sends it, and answers when the block is in (a few seconds; after 25 s it
    answers "on its way" and the dot still lands on the map).
 3. The phone shows the block, the explorer link and a countdown of the lifetime the person chose
-   (with no expiration: `$expiresAt = 2**64 − 1` and no countdown). The countdown runs on the phone's
+   (with Permanent: the word, `$expiresAt = 2**64 − 1` and no countdown). The countdown runs on the phone's
    own clock and fetches nothing, so it can't see a Lifetime Extension: at zero it says the entity has
    expired unless someone extended it.
 4. "Create new entity" brings the form back; a refresh does too. A phone can write up to

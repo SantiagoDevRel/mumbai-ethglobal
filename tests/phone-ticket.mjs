@@ -1,7 +1,8 @@
 // Full phone lifecycle against writer fixtures: nothing on load, one submit that answers once the
 // block is in, then a countdown on the phone's own clock with no more requests. The name is lower
-// case as you type, and "No expiration" shows the deadline 2**64 - 1 with no countdown. Any RPC or
-// other external request is a failure.
+// case as you type, and "Permanent" (October 30; "No expiration" until then) always shows its
+// deadline 2**64 - 1, with no countdown. From a 320 px phone up. Any RPC or other external request is
+// a failure.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
@@ -22,8 +23,8 @@ const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] }
 const results = [];
 const errors = [];
 try {
-  for (const width of [375, 360, 390]) for (const colorScheme of ["light", "dark"]) {
-    const context = await browser.newContext({ viewport: { width, height: width === 375 ? 667 : 844 }, colorScheme });
+  for (const width of [320, 375, 360, 390]) for (const colorScheme of ["light", "dark"]) {
+    const context = await browser.newContext({ viewport: { width, height: width === 320 ? 568 : width === 375 ? 667 : 844 }, colorScheme });
     const page = await context.newPage();
     page.on("pageerror", (error) => errors.push(error.message));
     await page.clock.install();
@@ -135,9 +136,10 @@ try {
     await expect(page.locator(".phone-mine li")).toHaveCount(2);
     await tick(60000);
     assert.equal(api.length, before + 2, "A queued answer is not followed by polling.");
-    // No expiration (October 29): one tap under the slider switches it off; the written entity
-    // shows its deadline, 2**64 - 1, and never counts down.
-    const forever = page.getByRole("button", { name: "No expiration", exact: true });
+    // Permanent (October 29, named "No expiration" until October 30): one tap under the slider
+    // switches it off; the toggle, the readout, the written entity and the list show its deadline,
+    // 2**64 - 1, and it never counts down.
+    const forever = page.getByRole("button", { name: "Permanent 2**64 − 1", exact: true });
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Ada FOREVER");
     await expect(page.getByRole("textbox", { name: "Your name", exact: true })).toHaveValue("ada forever");
     await expect(forever).toHaveAttribute("aria-pressed", "false");
@@ -150,35 +152,35 @@ try {
     await forever.click();
     await expect(forever).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("slider", { name: "How long should this data (entity) live?" })).toBeDisabled();
-    await expect(page.locator(".lifetime-value")).toHaveText("No expiration");
-    assert.equal(await type(".lifetime-value"), readout, "The readout keeps its type when it says No expiration.");
+    await expect(page.locator(".lifetime-value")).toHaveText("Permanent 2**64 − 1");
+    assert.equal(await type(".lifetime-value"), readout, "The readout keeps its type when it says Permanent.");
     await fits(forever);
-    await snapshot("no-expiration-form");
+    await snapshot("permanent-form");
     phase = "forever";
     await write.click();
     await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
     await expect(page.locator(".phone-entity h2")).toHaveText("ada forever");
     const status = page.locator(".phone-entity .phone-lifetime-status");
-    await expect(status).toHaveText("No expiration");
+    await expect(status).toHaveText("Permanent");
     // Written as on the map's entity card: 2**64 − 1, then the block number itself.
     await expect(page.locator(".phone-expires-at span")).toHaveText("$expiresAt = 2**64 − 1");
     await expect(page.locator(".phone-expires-at")).toContainText(NO_EXPIRY_BLOCK);
     assert.equal(await type(".phone-expires-at"), readout, "The deadline reads like the lifetime it replaces.");
     await expect(page.getByLabel("Time left")).toHaveCount(0);
     await fits(page.locator(".phone-expires-at"));
-    await snapshot("no-expiration-written");
+    await snapshot("permanent-written");
     await tick(20 * 60_000);
-    await expect(status).toHaveText("No expiration");
+    await expect(status).toHaveText("Permanent");
     await expect(page.getByText(/Time’s up/)).toHaveCount(0);
     await expect(page.locator(".phone-mine li")).toHaveCount(3);
-    await expect(page.locator(".phone-mine-time").first()).toHaveText("no expiration");
+    await expect(page.locator(".phone-mine-time").first()).toHaveText("permanent 2**64 − 1");
     assert.equal(submissions.at(-1).body.noExpiry, true);
     assert.equal(submissions.at(-1).body.name, "ada forever");
-    assert.equal(api.length, before + 3, "No expiration is still one request.");
+    assert.equal(api.length, before + 3, "Permanent is still one request.");
     assert.deepEqual(rpc, [], "The phone must never attempt an RPC.");
     assert.ok(submissions.every((item) => !("session" in item.body)), "Phones send no session code.");
     assert.ok(submissions.every((item) => /^[a-f0-9-]{36}$/i.test(item.device)));
-    results.push({ width, colorScheme, requests: api.length, rpcRequests: rpc.length, quietOnLoad: true, oneRequestPerWrite: true, localCountdown: true, lowerCaseName: true, noExpiration: true });
+    results.push({ width, colorScheme, requests: api.length, rpcRequests: rpc.length, quietOnLoad: true, oneRequestPerWrite: true, localCountdown: true, lowerCaseName: true, permanent: true });
     await context.close();
   }
   assert.deepEqual(errors, []);

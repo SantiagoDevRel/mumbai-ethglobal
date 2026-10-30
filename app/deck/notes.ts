@@ -37,8 +37,8 @@ export const NOTES: Record<SceneId, string[]> = {
   ST: ST_NOTES,
   NT: NT_NOTES,
   S7: [
-    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out. Scan the code and fill the form: name, color, country and a lifetime from 5 to 15 minutes, or no expiration at all. Everything is saved in lowercase. Don't press Write yet: we write together.",
-    "→ shows what your form becomes: one entity. Three attributes anyone can query by, and an Entity Expiration, or none. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
+    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out: this is your first entity. Scan the code and fill the form: a name, a color, a country, and how long it lives, 5 to 15 minutes, or Permanent, which the phone shows with its deadline, 2**64 − 1. Everything is saved in lowercase. Don't press Write yet: we write together.",
+    "→ shows your entity: name, color and country are attributes anyone can query by, and expiration is its Entity Expiration, 15 minutes unless you moved the slider. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
   ],
   L1: [
     "Every dot is an entity you just wrote. Your phone sent one request; our wallet signed for the room. Find yourself on the map: the list on the right shows every write as it lands. Click a dot to open its entity card: an entity with no expiration shows $expiresAt = 2**64 − 1.",
@@ -70,7 +70,7 @@ export const REVEALS: Record<SceneId, string[]> = {
   W4: ["your app: SDK or JSON-RPC, your logic, big files on Swarm"],
   ST: ["step 2 · a wallet", "step 3 · test funds", "step 4 · free reads", "step 5 · an RPC access key"],
   NT: ["not built for big files", "not private by default"],
-  S7: ["your form as one entity"],
+  S7: ["your entity: name, color, country and its expiration"],
   L1: [],
   B2: [],
   B3: ["one more clause: AND name"],

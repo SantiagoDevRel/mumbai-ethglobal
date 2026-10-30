@@ -6,28 +6,34 @@ import Image from "next/image";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import { useScene, useStage } from "../../lib/stage/store";
 import type { QrLabel } from "../../shared/scenes";
-import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC } from "../../shared/types";
 import { SCENE_FADE, usePrefersReducedMotion } from "./StageFrame";
 import "./join-qr.css";
 
 /** The QR to /scan. Each scene places it (shared/scenes.ts): in the corner, large on S7 until the
  * 3 · 2 · 1 countdown, or not at all on slides that need the whole screen. /slides shows only the
  * large one. On S7 it is the scan column (Santiago, October 29): no card, the QR on its own sand
- * square, centered, with the URL and the form's two lines under it. S7's → moves the column left so
- * the entity card fits beside it and the pair stays centered; S7.tsx places the card from SCAN. */
+ * square, centered, with the URL under it; since October 30 "Your first entity" sits over it and
+ * nothing else under it. S7's → moves the column left so the entity card fits beside it and the pair
+ * stays centered; S7.tsx places the card from SCAN.
+ * The QR and the link always carry the production URL, never this page's own host: a preview
+ * deployment or a laptop still sends phones to production, whose /scan is public (no password) and
+ * built for phones. tests/ui-layout.mjs reads the URL back from the QR's own pixels. */
 const SCAN_URL = new URL("/scan", "https://mumbai-ethglobal.vercel.app");
 
 /** S7's scan column, in stage pixels. It is placed from the stage box's center, so it lands on the
  * same spot in /map's stretched box as on the slide's 1920x1080 one. */
 export const SCAN = {
-  /** Column width: the widest line under the QR (the lifetime line, 629 px). */
+  /** Column width: the URL under the QR (614 px) and the QR's square fit in it. */
   width: 640,
-  /** Column top, from the box's vertical center: 160 in a 1920x1080 box. */
-  top: -380,
-  /** The label block above the QR's square, so the square's top is `top + label` (250). */
+  /** Column top, from the box's vertical center: 202 in a 1920x1080 box, so the column (label,
+   * square and URL: 680 px) sits midway between the outline bar (y 56) and the logo (y 1028). */
+  top: -338,
+  /** The label block above the QR's square, so the square's top is `top + label` (292). */
   label: 90,
-  /** The QR image, drawn at its own pixels; its sand square adds 24 px around it (528). */
+  /** The QR image, drawn at its own pixels; its sand square adds 24 px around it (`square`). */
   qr: 480,
+  /** The sand square around the QR, as join-qr.css draws it: S7 centers its card on it. */
+  square: 528,
   /** The entity card S7 adds at step 1, as wide as the column, and the gap between them: the pair
    * is two equal halves around the middle. */
   card: 640,
@@ -96,8 +102,8 @@ export function QrCard(props: QrCardProps) {
   return <aside className="join-qr panel join-qr-corner">{image && <a className="qr-image" href={SCAN_URL.href} target="_blank" rel="noreferrer"><Image unoptimized src={image} width={140} height={140} alt="Scan to join the map" /></a>}<div className="qr-copy"><p>{label}</p></div>{image && <div className="qr-target"><a className="qr-url" href={SCAN_URL.href} title={SCAN_URL.href} target="_blank" rel="noreferrer">{SCAN_URL.host + SCAN_URL.pathname}</a></div>}</aside>;
 }
 
-/** S7's column: the label, the QR on its sand square, the URL, then what the form asks. The square
- * holds its place while the image draws, so nothing under it moves when it appears. */
+/** S7's column: the label, the QR on its sand square and the URL. The square holds its place while
+ * the image draws, so nothing under it moves when it appears. */
 function ScanColumn({ image, label, step }: { image: string | null; label: QrLabel; step: number }) {
   return (
     <MotionConfig reducedMotion="user">
@@ -111,19 +117,12 @@ function ScanColumn({ image, label, step }: { image: string | null; label: QrLab
         <p className="qr-scan-label" style={{ height: SCAN.label }}>{label}</p>
         {image ? (
           <a className="qr-image" href={SCAN_URL.href} target="_blank" rel="noreferrer">
-            <Image unoptimized src={image} width={SCAN.qr} height={SCAN.qr} alt="Scan to join the map" />
+            <Image unoptimized src={image} width={SCAN.qr} height={SCAN.qr} alt="Scan to write your first entity" />
           </a>
         ) : (
           <span className="qr-image" aria-hidden="true" />
         )}
         <a className="qr-url" href={SCAN_URL.href} title={SCAN_URL.href} target="_blank" rel="noreferrer">{SCAN_URL.host + SCAN_URL.pathname}</a>
-        <div className="qr-scan-form">
-          <p>Name. Color. Country.</p>
-          <p>
-            <span>Lifetime: {LIFETIME_MIN_SEC / 60} to {LIFETIME_MAX_SEC / 60} minutes,</span>{" "}
-            <span>or no expiration.</span>
-          </p>
-        </div>
       </motion.aside>
     </MotionConfig>
   );

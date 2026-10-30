@@ -9,6 +9,7 @@ import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
 import { NO_EXPIRY_BLOCK } from "../shared/types.ts";
 import { NOTHING_TO_EXTEND } from "../shared/arkiv/adapter.ts";
 import { startApp } from "./local-app.mjs";
+import { encodes, qrModules, SCAN_URL } from "./scan-qr.mjs";
 
 const origin = "https://mumbai-ethglobal.vercel.app";
 const writer = origin;
@@ -128,11 +129,24 @@ try {
   await expect(bar.locator('[data-state="done"]')).toContainText("Why Arkiv");
   assert.equal(await fill(bar.locator('[data-state="done"]')), 1);
   // S7, in "Build your entity": the scan column (the QR on its own sand square) on the map itself; D
-  // swaps it for the 3 · 2 · 1 countdown and back.
+  // swaps it for the 3 · 2 · 1 countdown and back. Slide 10 (Santiago, October 30): "Your first
+  // entity" over the QR, nothing under the URL, and the column midway between the outline bar (y 56)
+  // and the logo (y 1028).
   await commands(page, [go("S7")]);
-  await expect(page.locator(".join-qr-scan")).toBeVisible();
+  const scan = page.locator(".join-qr-scan");
+  await expect(scan).toBeVisible();
   await expect(page.locator(".join-qr-corner")).toHaveCount(0);
   await expect(current).toContainText(BUILD);
+  await expect(scan.locator(".qr-scan-label")).toHaveText("Your first entity");
+  await expect(scan).not.toContainText(/Name\. Color|Lifetime|expiration/);
+  // The QR and both links carry the production /scan URL, read back from the QR's own modules.
+  for (const link of [scan.locator("a.qr-image"), scan.locator(".qr-url")]) await expect(link).toHaveAttribute("href", SCAN_URL);
+  await expect(scan.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  assert.ok(encodes(await qrModules(scan.locator(".qr-image img")), SCAN_URL), `S7's QR encodes ${SCAN_URL}.`);
+  {
+    const column = await scan.boundingBox();
+    assert.ok(Math.abs(column.y - 56 - (1028 - column.y - column.height)) <= 2, `S7's column sits midway between the outline bar and the logo: ${JSON.stringify(column)}`);
+  }
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7.png") }); }
   await page.keyboard.press("d");
   await expect(page.locator(".join-qr-scan")).toHaveCount(0);
@@ -140,10 +154,24 @@ try {
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7-countdown.png") }); }
   await page.keyboard.press("d");
   await expect(page.locator(".join-qr-scan")).toBeVisible();
-  // → reads the form as one entity; the next → lands on the map, where the room's entities arrive.
+  // → brings "Your entity" beside the QR: the same table with one more row, its expiration, and no
+  // eyebrow or Entity Expiration box (October 30). The card is centered on the QR's square and the
+  // pair on the slide. The next → lands on the map, where the room's entities arrive.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="S7"]')).toBeVisible();
-  await expect(page.getByText("YOUR FORM = ONE ENTITY")).toBeVisible();
+  const s7Card = page.locator("[data-entity-card]");
+  await expect(s7Card.getByText("Your entity", { exact: true })).toBeVisible();
+  await expect(s7Card.locator("[data-row] span:first-child")).toHaveText(["name", "color", "country", "expiration"]);
+  await expect(s7Card.locator("[data-row] span:last-child")).toHaveText(['"priya"', '"#fe7446"', '"in"', "15 min"]);
+  await expect(page.getByText("YOUR FORM = ONE ENTITY")).toHaveCount(0);
+  await expect(s7Card).not.toContainText("Entity Expiration");
+  await expect.poll(() => page.evaluate(() => {
+    const box = (selector) => document.querySelector(selector).getBoundingClientRect();
+    const column = box(".join-qr-scan"), square = box(".join-qr-scan .qr-image"), card = box("[data-entity-card]");
+    // Rounded to whole pixels (+ 0 turns a -0 into 0): the pair's middle, and the card's middle less the square's.
+    return [Math.round((column.left + card.right) / 2) + 0, Math.round(card.top + card.height / 2 - (square.top + square.height / 2)) + 0];
+  }), { timeout: 5000 }).toEqual([960, 0]);
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S7-entity.png") }); }
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="L1"]')).toBeVisible();
   await expect(page.locator(".app-hud")).toHaveCount(1);
@@ -156,6 +184,7 @@ try {
   await expect(page.locator(".event-log")).toBeVisible();
   await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
   await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
+  assert.ok(encodes(await qrModules(page.locator(".join-qr-corner .qr-image img")), SCAN_URL), `The corner QR encodes ${SCAN_URL}.`);
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1.png") }); }
   await page.evaluate(() => document.fonts.ready);
   const measure = () => page.evaluate(() => {
@@ -400,6 +429,7 @@ try {
   // The scan column sits in the middle of the slide (x 960 of 1920) until S7's → moves it aside.
   await expect.poll(async () => { const box = await slides.locator(".join-qr-scan").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(960 * 1280 / 1920));
   await expect(slides.locator(".join-qr-scan .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(slides.locator(".join-qr-scan .qr-scan-label")).toHaveText("Your first entity");
   await slides.keyboard.press("d");
   await expect(slides.locator(".join-qr-scan")).toHaveCount(0);
   await expect(slides.getByText("Everyone: tap Write my entity.")).toBeVisible();
@@ -722,8 +752,29 @@ try {
     await context.close();
   }
 
-  for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
-    const { context, page } = await setup({ viewport: { width, height: 844 }, colorScheme }, { loggedIn: false });
+  // A preview deployment, or a laptop, still sends phones to production (Santiago, October 30: never
+  // a Vercel preview). The deck served under a preview host draws the same QR: production's /scan,
+  // read back from the QR's modules, and not its own host's.
+  {
+    const preview = "https://mumbai-ethglobal-git-preview.vercel.app";
+    const { context, page } = await setup({ viewport: { width: 1440, height: 900 } });
+    await app.serve(context, preview);
+    await context.route(`${preview}/api/**`, (route) => route.abort());
+    await page.goto(`${preview}/outline#scene-S7`, { waitUntil: "domcontentloaded" });
+    const column = page.locator("#scene-S7 .join-qr-scan");
+    await expect(column.locator(".qr-scan-label")).toHaveText("Your first entity", { timeout: 20000 });
+    for (const link of [column.locator("a.qr-image"), column.locator(".qr-url")]) await expect(link).toHaveAttribute("href", SCAN_URL);
+    const grid = await qrModules(column.locator(".qr-image img"));
+    assert.ok(encodes(grid, SCAN_URL), `Served from ${preview}, S7's QR still encodes ${SCAN_URL}.`);
+    assert.equal(encodes(grid, `${preview}/scan`), false, "The QR never carries the preview's own host.");
+    evidence.push({ surface: "qr", servedFrom: preview, encodes: SCAN_URL });
+    await context.close();
+  }
+
+  // The phone from a small phone (320 px) to a tablet (768 px): nothing overflows or is cut.
+  for (const width of [320, 360, 390, 768]) for (const colorScheme of ["light", "dark"]) {
+    const height = width === 320 ? 568 : width === 768 ? 1024 : 844;
+    const { context, page } = await setup({ viewport: { width, height }, colorScheme }, { loggedIn: false });
     await page.goto(`${origin}/scan`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: "Write my entity", exact: true })).toBeEnabled();
     await page.evaluate(() => document.fonts.ready);
@@ -735,10 +786,11 @@ try {
     assert.equal(layout.cta, "56px");
     // Dark only: a light system theme still gets the dark phone.
     assert.equal(layout.background, "rgb(17, 17, 17)");
-    await expect(page.locator(".phone-header")).toHaveText("Join the map");
+    // The phone's header matches slide 10's label (Santiago, October 30); /map's corner card keeps "Join the map".
+    await expect(page.locator(".phone-header")).toHaveText("Your first entity");
     await expect(page.getByText("Choose a country", { exact: true })).toBeVisible();
     await expect(page.getByText("How long should this data (entity) live?")).toBeVisible();
-    for (const gone of [/hang tight/i, /doors/i, /testnet/i, /everything you write/i, /custom/i, /Where are you from/i]) assert.doesNotMatch(layout.text, gone);
+    for (const gone of [/hang tight/i, /doors/i, /testnet/i, /everything you write/i, /custom/i, /Where are you from/i, /no expiration/i, /Join the map/]) assert.doesNotMatch(layout.text, gone);
     await page.getByRole("combobox", { name: "Your country" }).click();
     await expect(page.getByRole("option").first()).toHaveText("India");
     await page.getByRole("combobox", { name: "Search countries" }).fill("Colombia");
@@ -749,7 +801,60 @@ try {
     await expect(page.getByRole("combobox", { name: "Your country" })).toBeFocused();
     await page.getByRole("button", { name: "Green", exact: true }).click();
     await expect(page.getByRole("button", { name: "Green", exact: true })).toHaveAttribute("aria-pressed", "true");
-    evidence.push({ surface: "phone", viewport: `${width}x844`, colorScheme, layout: { ...layout, text: undefined }, countryKeyboard: true });
+    // Permanent (October 30; "No expiration" until then) is ExpirationTime.permanent(). The brand never
+    // says an unqualified "permanent": wherever the phone says it, its deadline 2**64 − 1 is in the same
+    // element or right beside it, on the toggle, the readout, the written entity and the list.
+    const permanentMentions = () => page.locator(".phone-main").evaluate((main) => {
+      const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+      const mentions = { found: 0, alone: [] };
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (!/permanent/i.test(node.data)) continue;
+        mentions.found++;
+        const parent = node.parentElement;
+        if (![parent, parent.parentElement].some((element) => element.textContent.includes("2**64 − 1"))) mentions.alone.push(parent.outerHTML);
+      }
+      return mentions;
+    });
+    const fitsMain = (selector) => page.locator(selector).first().evaluate((element) => {
+      const box = element.getBoundingClientRect(), main = document.querySelector(".phone-main").getBoundingClientRect();
+      return box.left >= main.left && box.right <= main.right && element.scrollWidth <= element.clientWidth;
+    });
+    const permanent = page.getByRole("button", { name: "Permanent 2**64 − 1", exact: true });
+    await expect(permanent).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".lifetime-value")).toHaveText("15 min");
+    await permanent.click();
+    await expect(permanent).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".lifetime-value")).toHaveText("Permanent 2**64 − 1");
+    for (const selector of [".lifetime-forever", ".lifetime-value"]) assert.ok(await fitsMain(selector), `${selector} fits at ${width}px`);
+    // The toggle's label, the word and its deadline, stays on one line.
+    assert.ok(await permanent.locator("span").first().evaluate((element) => element.getBoundingClientRect().height < 2 * parseFloat(getComputedStyle(element).fontSize)), `The toggle's label is one line at ${width}px`);
+    {
+      const mentions = await permanentMentions();
+      assert.equal(mentions.found, 2, "The toggle and the readout say Permanent.");
+      assert.deepEqual(mentions.alone, []);
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-permanent.png`), fullPage: true });
+    // Written with Permanent: the word, $expiresAt = 2**64 − 1 and the block number on one line; the
+    // list under it says the same. The fixture answers as the writer does once the block is in.
+    await context.route(`${writer}/api/submit*`, (route) => route.fulfill({ json: { ticket: "11111111-1111-4111-8111-111111111111", position: 0, lat: 19, lng: 72, session: "UI-LAYOUT", status: "written", entityKey: `0x${"34".repeat(32)}`, block: "100", expiresAtBlock: NO_EXPIRY_BLOCK.toString() } }));
+    await page.getByRole("textbox", { name: "Your name", exact: true }).fill("ada");
+    await page.getByRole("button", { name: "Write my entity", exact: true }).click();
+    await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
+    await expect(page.locator(".phone-entity .phone-lifetime-status")).toHaveText("Permanent");
+    await expect(page.locator(".phone-expires-at span")).toHaveText("$expiresAt = 2**64 − 1");
+    await expect(page.locator(".phone-expires-at")).toContainText(NO_EXPIRY_BLOCK.toString());
+    await expect(page.locator(".phone-mine-time")).toHaveText("permanent 2**64 − 1");
+    for (const selector of [".phone-expires-at", ".phone-mine-time"]) assert.ok(await fitsMain(selector), `${selector} fits at ${width}px`);
+    assert.equal(await page.locator(".phone-expires-at").evaluate((element) => { const range = document.createRange(); range.selectNodeContents(element.lastChild); return range.getClientRects().length; }), 1, `The block number is one line at ${width}px`);
+    {
+      const mentions = await permanentMentions();
+      assert.equal(mentions.found, 2, "The written entity and the list say Permanent.");
+      assert.deepEqual(mentions.alone, []);
+    }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-permanent-written.png`), fullPage: true });
+    evidence.push({ surface: "phone", viewport: `${width}x${height}`, colorScheme, layout: { ...layout, text: undefined }, countryKeyboard: true, permanentWithDeadline: true });
     await context.close();
   }
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {
