@@ -9,7 +9,7 @@
 
 import { motion, MotionConfig } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { BLEED, Chip, EASE, Rise, T, Wash } from "../ui";
+import { BLEED, Chip, EASE, FootLogo, Rise, T, Wash } from "../ui";
 import { flagSrc, photoSrc, TOUR, type TourStop } from "./me-tour";
 
 const WORKED_FOR = ["L1s", "ChainSafe", "L2s like Lisk", "web3.js"];
@@ -41,6 +41,7 @@ export function Speaker({ step }: SceneContentProps) {
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
         <Wash background={BACKDROP} />
+        <FootLogo />
         <div
           className="absolute rounded-full"
           style={{

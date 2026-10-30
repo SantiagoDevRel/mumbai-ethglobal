@@ -43,7 +43,7 @@ export const SECTIONS = [
   { id: "why", title: "Why Arkiv", line: "Your data, the web3 way, and what Arkiv is." },
   { id: "start", title: "Five steps", line: "What you need before your first write, and what Arkiv DB-Chain is not." },
   { id: "build", title: "Build your entity", line: "Scan the QR: write your entity, then query, encrypt and explore." },
-  { id: "tools", title: "Resources and prizes", line: "The Hub, the docs, your agent and this weekend's prizes." },
+  { id: "tools", title: "Resources and prizes", line: "The Hub, the docs, your agent and prizes." },
 ] as const;
 
 export type SectionId = (typeof SECTIONS)[number]["id"];

@@ -2,14 +2,14 @@
 
 // S0 · Title over the globe at full strength (handoff board "S0 · Title"): a wash on the left
 // only, which reaches the window's left edge in a window wider than 16:9, the title at (96, 300),
-// the mascot waving beside the logo row. The title is "Arkiv, the Web3 database" and "From zero to
+// the mascot waving beside it and the logo at the bottom center, like every slide. The title is "Arkiv, the Web3 database" and "From zero to
 // hero" is its subtitle, with the four verbs under it (October 29). One step: everything enters
 // together once, with no staggered reveals; nothing moves after that.
 
 import { MotionConfig } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { Mascot } from "../Mascot";
-import { BLEED, Logo, Rise, T, Wash } from "../ui";
+import { BLEED, FootLogo, Rise, T, Wash } from "../ui";
 
 /** The left wash's stops across the 1920 px box (0 %, 34 %, 58 %), measured from the backdrop's left
  * edge, which starts `BLEED` px left of the box: the box looks as before and the band left of it stays dark. */
@@ -30,7 +30,7 @@ export function S0(_props: SceneContentProps) {
           }}
         />
         <Wash background={LEFT_WASH} />
-        <Logo height={32} className="absolute left-[96px] top-[72px]" />
+        <FootLogo />
         <div className="absolute left-[96px] top-[300px] flex w-[1040px] flex-col gap-10">
           <Rise>
             <h1 className="text-[96px] font-semibold leading-[1.02] tracking-[-0.02em]">

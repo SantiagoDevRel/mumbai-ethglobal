@@ -8,11 +8,12 @@
 
 import { MotionConfig } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { Logo, Rise } from "../ui";
+import { FootLogo, Rise } from "../ui";
 
-/** The art's own pixels, and its box on the stage (1440 x 960, centered, 32 px under the outline bar). */
+/** The art's own pixels, and its box on the stage (1350 x 900, centered, 32 px under the outline bar
+ * and clear of the logo at the bottom center). */
 const ART = { width: 1536, height: 1024 };
-const BOX = { left: 240, top: 88, width: 1440, height: 960 };
+const BOX = { left: 285, top: 88, width: 1350, height: 900 };
 
 /** Each label in the art's pixels: centered over the character, the last line's baseline just above its head. */
 const LABELS: { lines: string[]; x: number; y: number }[] = [
@@ -29,7 +30,7 @@ export function W2(_props: SceneContentProps) {
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
         {/* Past the stage's edges, so the bands outside 16:9 stay dark too. */}
         <div className="absolute -inset-[2400px] bg-[rgba(8,9,31,0.92)]" />
-        <Logo height={28} className="absolute left-[96px] top-[72px]" />
+        <FootLogo />
         <Rise className="absolute" style={{ left: BOX.left, top: BOX.top, width: BOX.width, height: BOX.height }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- fixed art at its own aspect */}
           <img

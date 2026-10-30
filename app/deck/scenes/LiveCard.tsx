@@ -9,7 +9,7 @@
 import { MotionConfig, AnimatePresence, motion } from "motion/react";
 import type { SceneDef, SceneId } from "../../../shared/scenes";
 import { Mascot, type MascotPose } from "../Mascot";
-import { EASE, Logo, PANEL_EASE, REVEAL_TIME, Rise, T } from "../ui";
+import { EASE, FootLogo, PANEL_EASE, REVEAL_TIME, Rise, T } from "../ui";
 
 /** The first line is the bold one. */
 type Explainer = { pose: MascotPose; lines: string[] };
@@ -33,7 +33,7 @@ export function LiveCard({ scene, step }: { scene: SceneDef; step: number }) {
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
         <div className="absolute inset-0 bg-[rgba(8,9,31,0.9)]" />
-        <Logo height={28} className="absolute left-[96px] top-[72px]" />
+        <FootLogo />
         <div className="absolute left-[96px] top-[250px] flex w-[1100px] flex-col gap-8">
           <Rise>
             <p className="text-[30px] font-semibold tracking-[0.08em] text-[var(--arkiv-orange)]">ON THE MAP →</p>

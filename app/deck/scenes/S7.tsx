@@ -13,7 +13,7 @@ import { SCAN, scanShift, useScanFade } from "../../../components/stage/JoinQR";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { useStage } from "../../../lib/stage/store";
 import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC } from "../../../shared/types";
-import { Logo, Reveal, T, Wash } from "../ui";
+import { FootLogo, Reveal, T, Wash } from "../ui";
 
 /** What a phone sends, read as an entity: the values are an example, saved in lower case. */
 const ATTRIBUTES: [name: string, value: string][] = [
@@ -86,7 +86,7 @@ export function S7({ step }: SceneContentProps) {
           )}
         </AnimatePresence>
         {/* Over both frames, so the logo holds still when D swaps them. */}
-        <Logo height={28} className="absolute left-[96px] top-[72px]" />
+        <FootLogo />
       </div>
     </MotionConfig>
   );

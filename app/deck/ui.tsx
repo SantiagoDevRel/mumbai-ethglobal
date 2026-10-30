@@ -1,9 +1,10 @@
 "use client";
 
 // Building blocks shared by every scene. Everything is drawn in stage pixels (1920x1080), on the
-// numbers of the design handoff (design/HANDOFF.md): logo at (96, 72), headline at top 160, the
-// corner QR card top-right (x 1464-1888, y 56-272), captions as one-line pills at top 60. The
-// outline bar (components/stage/OutlineBar.tsx) takes the top 56 px of every scene but the title.
+// numbers of the design handoff (design/HANDOFF.md): headline at top 160, the corner QR card
+// top-right (x 1464-1888, y 56-272), captions as one-line pills at top 60. The logo sits at the
+// bottom center of every slide (`FootLogo`). The outline bar (components/stage/OutlineBar.tsx) takes
+// the top 56 px of every scene but the title.
 
 import Image from "next/image";
 import { motion, MotionConfig, type Transition } from "motion/react";
@@ -124,12 +125,29 @@ export function Logo({ height, className, style }: { height: number; className?:
   );
 }
 
+/** Where every slide draws the logo: bottom center (Santiago, October 30: at the top left it got in
+ * the way of the text). A slide keeps its text and pictures out of this box grown by 16 px on each
+ * side; tests/deck-walk.mjs checks that on every scene and step. */
+export const FOOT_LOGO = { height: 28, width: Math.round((28 * 1389) / 320), top: 1028 } as const;
+
+export function FootLogo() {
+  return (
+    <div
+      data-foot-logo=""
+      className="absolute"
+      style={{ left: (1920 - FOOT_LOGO.width) / 2, top: FOOT_LOGO.top, width: FOOT_LOGO.width, height: FOOT_LOGO.height }}
+    >
+      <Logo height={FOOT_LOGO.height} className="block" />
+    </div>
+  );
+}
+
 /**
  * The slide shell: the space color over the globe, across the whole window (`Wash`; the globe shows
- * through at 1 - `wash`), the logo, a headline (8 words or fewer, 2 lines max) and at most one line
- * under it. The headline stops at x 1432 so the corner QR card stays clear. The headline doesn't rise
- * on its own: it comes in with the slide's fade, so two slides' headlines never show offset during a
- * change.
+ * through at 1 - `wash`), a headline (8 words or fewer, 2 lines max), at most one line under it and
+ * the logo at the bottom center. The headline stops at x 1432 so the corner QR card stays clear. The
+ * headline doesn't rise on its own: it comes in with the slide's fade, so two slides' headlines never
+ * show offset during a change.
  */
 export function Slide({
   headline,
@@ -150,7 +168,7 @@ export function Slide({
     <MotionConfig reducedMotion="user">
       <div className="relative h-full w-full text-[var(--arkiv-sand)]">
         <Wash background={`rgba(8,9,31,${wash})`} />
-        <Logo height={28} className="absolute left-[96px] top-[72px]" />
+        <FootLogo />
         <div className="absolute left-[96px] top-[160px] w-[1336px]">
           <h1 className="font-semibold leading-[1.05] tracking-[-0.015em]" style={{ fontSize: size }}>
             {headline}

@@ -1,5 +1,7 @@
 // Walks every scene and every reveal step on /map (1920x1080, mock data, writer fixtures):
-// no page errors, the step dots match the scene's step count, and nothing scrolls sideways.
+// no page errors, the step dots match the scene's step count, nothing scrolls sideways, and every
+// slide draws the logo at the bottom center with no text or picture crossing it (Santiago, October
+// 30: the logo must never get in the way of a slide's text).
 // With a directory argument it saves the last step of each scene as a PNG for a visual pass (the globe
 // canvas hidden, so software rendering stays fast), plus the first view of a scene whose → swaps the
 // whole view (W4); a second argument starts the captures at that scene.
@@ -37,15 +39,57 @@ try {
   if (capture) await page.addStyleTag({ content: ".globe-shell{display:none}" });
   const send = (cmd) => page.evaluate((item) => { const channel = new BroadcastChannel("arkiv-mumbai-stage"); channel.postMessage({ kind: "command", cmd: item }); channel.close(); }, cmd);
   const shoot = async (name) => { await page.waitForTimeout(900); await page.screenshot({ path: path.join(capture, name), timeout: 120000 }); };
+  // The logo's box grown by 16 stage px (FOOT_LOGO in app/deck/ui.tsx), and every visible text or
+  // picture of the scene that crosses it. Faded-out reveals (opacity under 0.05) don't count.
+  const logoCheck = () => page.evaluate(() => {
+    const logos = [...document.querySelectorAll("[data-foot-logo]")].filter((element) => element.getBoundingClientRect().width > 0);
+    if (logos.length !== 1) return { logos: logos.length, hits: [] };
+    const logo = logos[0];
+    const box = logo.getBoundingClientRect();
+    const pad = (16 * box.height) / 28;
+    const zone = { left: box.left - pad, right: box.right + pad, top: box.top - pad, bottom: box.bottom + pad };
+    const crosses = (r) => r.width > 0 && r.height > 0 && r.left < zone.right && r.right > zone.left && r.top < zone.bottom && r.bottom > zone.top;
+    const seen = (element) => {
+      for (let e = element; e; e = e.parentElement) {
+        const css = getComputedStyle(e);
+        if (css.display === "none" || css.visibility === "hidden" || Number(css.opacity) < 0.05) return false;
+      }
+      return true;
+    };
+    const hits = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const text = node.textContent.trim();
+      const parent = node.parentElement;
+      if (!text || !parent || parent.closest("[data-foot-logo]") || !seen(parent)) continue;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const rects = [...range.getClientRects()];
+      if ((rects.length ? rects : [parent.getBoundingClientRect()]).some(crosses)) hits.push(`"${text.slice(0, 48)}"`);
+    }
+    for (const img of document.querySelectorAll("img")) {
+      if (img.closest("[data-foot-logo]") || !seen(img)) continue;
+      if (crosses(img.getBoundingClientRect())) hits.push(`img ${img.getAttribute("src")?.slice(0, 64)}`);
+    }
+    return { logos: 1, hits };
+  });
   for (const [index, scene] of SCENES.entries()) {
     const shot = capture && index >= captureFrom;
     const prefix = `${String(index).padStart(2, "0")}-${scene.id}`;
     await send({ type: "goto", index });
     await expect(page.locator(`[data-screen="map"][data-scene="${scene.id}"]`)).toBeVisible();
     if (shot && FIRST_VIEW.has(scene.id)) await shoot(`${prefix}-first.png`);
-    for (let step = 1; step < scene.steps; step++) await send({ type: "next" });
+    for (let step = 0; step < scene.steps; step++) {
+      if (step > 0) await send({ type: "next" });
+      if (scene.steps > 1) await expect(page.getByRole("img", { name: `Step ${step + 1} of ${scene.steps}` })).toBeVisible();
+      if (scene.kind !== "slide") continue;
+      // Let the reveal and the slide change settle (REVEAL_TIME 0.3 s, the print toss on ME 0.45 s).
+      await page.waitForTimeout(700);
+      const { logos, hits } = await logoCheck();
+      assert.equal(logos, 1, `${scene.id} step ${step + 1}: one logo at the bottom center`);
+      assert.deepEqual(hits, [], `${scene.id} step ${step + 1}: crosses the logo at the bottom center`);
+    }
     await expect(page.locator(`[data-screen="map"][data-scene="${scene.id}"]`)).toBeVisible();
-    if (scene.steps > 1) await expect(page.getByRole("img", { name: `Step ${scene.steps} of ${scene.steps}` })).toBeVisible();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, scene.id);
     if (shot) await shoot(`${prefix}.png`);
   }
