@@ -414,7 +414,9 @@ try {
     const mascot = await page.getByRole("img", { name: "Arkiv mascot waving" }).boundingBox();
     assert.ok(links.y + links.height <= mascot.y + 1, "The links end above the mascot.");
   }
-  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L9.png") }); }
+  // The leader still draws the 1920 px globe in software WebGL here, so this capture gets the 60 s the
+  // entity-card captures have: the default 30 s timed out on main (run 40888175044) and points-31 (41066509531).
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L9.png"), timeout: 60000 }); }
 
   // /slides follows the map, and its keys drive both windows.
   const slides = await context.newPage();
