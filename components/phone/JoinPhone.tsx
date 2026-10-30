@@ -14,7 +14,7 @@ import { ArrowUpRight, Check, InfinityIcon } from "lucide-react";
 import "./phone.css";
 
 /** `endsAt` is when the countdown reaches zero on this phone's clock, or null for an entity written
- * with Permanent: it shows "Permanent" with its deadline and never counts down. */
+ * with the longest lifetime: it shows "6 months" and never counts down. */
 type PhoneState = { status: "form" } | { status: "submitting" } | { status: "queued"; draft: DotDraft } |
   { status: "written"; key: Hex; includedAt: bigint; draft: DotDraft; endsAt: number | null };
 /** One entity this phone wrote: the rows under "Your entities". `key` is null while it is on its way. */
@@ -36,9 +36,9 @@ function loadMine(): Mine[] {
 /** Each write is one request: the phone sends the form and the writer answers once the entity is in a
  * block. A phone can write up to MAX_ENTITIES_PER_DEVICE entities per session ("Create new entity"),
  * and every countdown runs on the phone's own clock from the chosen lifetime; nothing is fetched.
- * "Permanent" writes the entity with the deadline 2**64 − 1: no countdown, nothing to count.
+ * The longest choice writes the entity with Rabdi's maximum lifetime: no countdown on the phone.
  * Everything the phone writes is lower case (Santiago, October 29): the name is lowercased as you
- * type, and the country is stored as its lower-case code ("in"). */
+ * type, and the entity stores the country's full name ("india", October 30). */
 export function JoinPhone() {
   const [device, setDevice] = useState("");
   const [state, setState] = useState<PhoneState>({ status: "form" });

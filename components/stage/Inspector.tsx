@@ -44,7 +44,7 @@ function degrees(attribute: RawAttribute): number | null {
  * adds, so nobody is confused (October 30). After a transfer the read-back `$owner` is a wallet
  * other than ours: the card marks it. The actions: Extend | Transfer | Delete | ↗ (the data
  * explorer). Extend stays for any entity with an expiration (these dots allow permissionless
- * extension); an entity with no expiration has nothing to extend, so Extend is off and sends
+ * extension); an entity with the longest lifetime has nothing to extend, so Extend is off and sends
  * nothing. Transfer and Delete need the owner's signature: off once another wallet owns it. */
 export function Inspector({ entity, block, businessMode, reviews, showReviews = false }: { entity: LiveEntity | null; block: BlockInfo | null; businessMode: boolean; reviews: LiveEntity[]; showReviews?: boolean }) {
   const [now, setNow] = useState(0);

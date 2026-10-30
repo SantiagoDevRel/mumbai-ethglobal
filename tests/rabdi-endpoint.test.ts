@@ -82,6 +82,9 @@ test("a missing or invalid variable answers 503 network_not_configured, naming i
     ["RABDI_CHAIN_ID", "99999999999999999999"],
     ["RABDI_RPC_URL", "http://rpc.rabdi.example/"],
     ["RABDI_RPC_URL", "rpc.rabdi.example"],
+    // A keyed URL (the access key is the path) never reaches the wallet.
+    ["RABDI_RPC_URL", "https://rpc.rabdi.example/not-a-real-key"],
+    ["RABDI_RPC_URL", "https://rpc.rabdi.example/?key=not-a-real-key"],
     ["RABDI_EXPLORER_URL", "ftp://explorer.rabdi.example/"],
     ["RABDI_CURRENCY_SYMBOL", "G"],
     ["RABDI_CURRENCY_SYMBOL", "tGLMtGLM"],

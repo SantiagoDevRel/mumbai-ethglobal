@@ -181,7 +181,7 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
           const color = a.color ?? "#fe7446";
           const seconds = remainingSeconds(entity, block, Date.now());
           const total = block ? Math.max(1, Number(entity.expiresAtBlock - entity.createdAtBlock) * block.blockTimeMs / 1000) : 1;
-          // No expiration ($expiresAt = 2**64 - 1): a full ring that never drains and no countdown.
+          // The longest lifetime (6 months): a full ring that never drains and no countdown.
           const endless = hasNoExpiry(entity.expiresAtBlock);
           if (state.map === "owner" && !state.transferred) {
             ctx.strokeStyle = "rgba(246,244,239,0.42)"; ctx.lineWidth = 1.5 * scale; ctx.beginPath(); ctx.moveTo(point.x, y); ctx.lineTo(box.x + 180 * scale, box.y + 528 * scale); ctx.stroke();

@@ -82,7 +82,9 @@ The app runs on mock data until `NEXT_PUBLIC_WRITER_URL` is set: `same-origin` f
 `MIN_WRITER_BALANCE_WEI`, all server-side only. The Five steps slide's Add network button gets
 Rabdi's details from `GET /api/presenter/rabdi`, which reads `RABDI_CHAIN_ID` (decimal),
 `RABDI_RPC_URL`, `RABDI_EXPLORER_URL` and `RABDI_CURRENCY_SYMBOL`, also server-side only; until they
-are set, the button says "Network details not configured". `writer/` is the earlier Cloudflare
+are set, the button says "Network details not configured". `RABDI_RPC_URL` is the keyless RPC base:
+the endpoint refuses a URL with a path, a query or credentials, so an access key never reaches a
+wallet. `writer/` is the earlier Cloudflare
 Worker, kept for rollback.
 
 ## Requests and limits

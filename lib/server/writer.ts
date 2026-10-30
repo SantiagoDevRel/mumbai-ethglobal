@@ -354,7 +354,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       const event = decodeEventLog({ abi: ENTITY_EVENTS_ABI, data: log.data, topics: log.topics });
       if (event.eventName === "EntityCreated") {
         if (event.args.owner.toLowerCase() !== address || !(event.args.creationFlags & 2)) throw new Error("Create event differs from the workshop policy.");
-        // Any deadline is accepted, NO_EXPIRY_BLOCK (2**64 - 1) included; it is stored as exact text.
+        // Any deadline is accepted, the longest lifetime included; it is stored as exact text.
         created.push({ key: event.args.entityKey, expiresAt: event.args.expiresAt });
       }
     }
@@ -383,7 +383,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     let pages = 0;
     // The query supplies its block: no per-phone block-number RPC. Pages hold 100 rows, ordered by
     // $key; each next page continues after the last key read.
-    // One session only: entities with no expiration from earlier sessions never enter this read.
+    // One session only: entities with the longest lifetime from earlier sessions never enter this read.
     let block = 0n;
     let after: Hex | undefined;
     const entities: { key: string; expiresAt: bigint }[] = [];
@@ -496,7 +496,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     const deviceId = `device:${session}:${hash}`;
     // A phone may keep several entities live (up to MAX_ENTITIES_PER_DEVICE per session).
     const [device] = await db.query<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1`, [deviceId]);
-    // "No expiration" travels with the ticket to dotToCreate, which writes the u64 maximum deadline (2**64 - 1).
+    // The longest choice travels with the ticket to dotToCreate, which writes Rabdi's maximum lifetime.
     const dot: DotCreate = { session, name: data.name, color: data.color, country: data.country, category, lifetimeSec: data.lifetimeSec, ...(data.noExpiry ? { noExpiry: true } : {}), ...point };
     const position = await db.transaction(async q => {
       const meta = await lockMeta(q);

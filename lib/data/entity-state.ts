@@ -4,7 +4,7 @@ export interface VisualStageEvent extends StageEvent {
   color?: string;
   country?: string;
   lifetimeBlocks: bigint;
-  /** Written with no expiration (`$expiresAt` = 2**64 - 1): the event log says so instead of a lifetime. */
+  /** Written with the longest lifetime (6 months, hasNoExpiry): the event log says so instead of a countdown. */
   noExpiry: boolean;
 }
 
@@ -13,7 +13,7 @@ export type DeletedKeys = ReadonlyMap<string, bigint>;
 const NONE: DeletedKeys = new Map();
 
 /** Interpolation is visual only. The query remains the authority for disappearance. An entity with
- * no expiration never runs out: Infinity, so nothing draws a countdown for it. */
+ * the longest lifetime draws no countdown: Infinity. */
 export function remainingSeconds(entity: LiveEntity, block: BlockInfo | null, now: number): number {
   if (hasNoExpiry(entity.expiresAtBlock)) return Infinity;
   if (!block || block.blockTimeMs <= 0) return 0;
@@ -95,7 +95,7 @@ export function snapshotEntities(entities: LiveEntity[]): LiveEntity[] {
  * Dots this screen has seen that are past their expiration and gone from the query. App-side
  * memory: the DB-Chain no longer has them, so the map draws them grey and never selects them.
  * `seen` keeps the latest copy of every dot, so an extension seen in time keeps it alive. A dot with
- * no expiration is never past its deadline (no block reaches 2**64 - 1), so it is never remembered,
+ * the longest lifetime outlives the workshop, so it is never remembered,
  * and neither is a dot this window deleted (`deleted`): it did not expire.
  */
 export function rememberExpired(seen: Map<string, LiveEntity>, run: QueryRun, deleted: DeletedKeys = NONE): LiveEntity[] {

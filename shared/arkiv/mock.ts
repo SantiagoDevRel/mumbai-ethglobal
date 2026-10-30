@@ -191,7 +191,7 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
       return write(items.map(({ lifetimeSec, ...r }) => ({ attrs: { kind: "review", ...r }, lifetimeSec })));
     },
     async extend(keys: Hex[], addSeconds: number) {
-      // Same rule as the SDK adapter: an entity with no expiration has nothing to extend.
+      // Same rule as the SDK adapter: an entity with the longest lifetime has nothing to extend.
       const known = keys.flatMap((k) => store.get(k) ?? []);
       const expiring = known.filter((e) => !hasNoExpiry(e.expiresAtBlock));
       if (known.length && !expiring.length) throw new WriteNotSentError(NOTHING_TO_EXTEND);

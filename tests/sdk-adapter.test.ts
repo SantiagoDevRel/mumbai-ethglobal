@@ -167,6 +167,9 @@ test("extending only entities with the longest lifetime signs nothing and leaves
     eth_chainId: () => "0x76edaf",
     eth_getBlockByNumber: () => ({ number: "0x64", timestamp: "0x6720f000", hash: `0x${"5".repeat(64)}` }),
     arkiv_getBlockTiming: () => ({ current_block: 100, current_block_time: 1_730_000_000, duration: 2 }),
+    // writeParams reads the nonce and gas price before every write.
+    eth_getTransactionCount: () => "0x0",
+    eth_gasPrice: () => "0x3b9aca00",
     // getEntity is one arkiv_getEntity call: answer with the entity whose key it names.
     arkiv_getEntity: (params) => row(String((params as [string])[0]).toLowerCase() as Hex),
   };
@@ -202,6 +205,8 @@ test("Delete sends one deleteEntity from the workshop wallet and returns its rec
       read: { kind: "relay", send: async (method) => {
         if (method === "eth_chainId") return "0x76edaf";
         if (method === "eth_getTransactionReceipt") return receipt();
+        if (method === "eth_getTransactionCount") return "0x0";
+        if (method === "eth_gasPrice") return "0x3b9aca00";
         throw new Error(`Unexpected RPC method ${method}`);
       } },
       wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async ({ method, params }: { method: string; params?: unknown[] }) => {
@@ -226,7 +231,12 @@ test("a delete rejected in the wallet leaves the next delete free", async () => 
   let prompts = 0;
   try {
     const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS,
-      read: { kind: "relay", send: async (method) => { if (method === "eth_chainId") return "0x76edaf"; throw new Error(`Unexpected RPC method ${method}`); } },
+      read: { kind: "relay", send: async (method) => {
+        if (method === "eth_chainId") return "0x76edaf";
+        if (method === "eth_getTransactionCount") return "0x0";
+        if (method === "eth_gasPrice") return "0x3b9aca00";
+        throw new Error(`Unexpected RPC method ${method}`);
+      } },
       wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { prompts++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } } } });
     const key = `0x${"7".repeat(64)}` as Hex;
     // A rejection sent nothing, so there is nothing to reconcile: the second delete asks the wallet again.

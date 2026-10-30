@@ -48,7 +48,7 @@ export const SubmitRequest = z.object({
     .min(LIFETIME_MIN_SEC)
     .max(LIFETIME_MAX_SEC)
     .refine((v) => v % LIFETIME_STEP_SEC === 0, `lifetime must be a multiple of ${LIFETIME_STEP_SEC} s`),
-  /** No expiration: the writer creates the entity with `ExpirationTime.permanent()`. */
+  /** The longest choice: the writer creates the entity with Rabdi's maximum lifetime (LONGEST_EXPIRATION). */
   noExpiry: z.boolean().optional(),
 });
 export type SubmitRequest = z.infer<typeof SubmitRequest>;
@@ -183,11 +183,14 @@ export type PresenterStatus = z.infer<typeof PresenterStatus>;
  * Five steps slide. Rabdi was announced only inside the team, so the writer reads these from
  * server-only env vars (lib/server/rabdi.ts) and this repo never holds them; while any is missing it
  * answers 503 `network_not_configured`. */
+/** Rabdi's RPC takes the access key as the URL's path. The wallet gets the keyless base only (host,
+ * optional "/"): a keyed URL in wallet_addEthereumChain would hand the key to the wallet. */
+const keylessRpc = /^https:\/\/[A-Za-z0-9.-]+(:\d+)?\/?$/;
 export const RabdiNetwork = z.object({
   /** The chain ID in decimal, and in hex for wallet_addEthereumChain. */
   chainId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
   chainIdHex: hex,
-  rpcUrl: z.string().regex(/^https:\/\/\S+$/),
+  rpcUrl: z.string().regex(keylessRpc),
   explorerUrl: z.string().regex(/^https:\/\/\S+$/),
   /** The native token's symbol, as the wallet shows it. */
   currencySymbol: z.string().regex(/^[A-Za-z0-9]{2,6}$/),

@@ -69,8 +69,8 @@ export function createStageEffects(options: StageEffectsOptions): (command: Comm
           // A deleted entity is gone from the DB-Chain even while the map still draws it.
           targets = targets.filter((entity) => !options.deletions.has(entity.key));
           if (!targets.length) throw new Error("Select an entity first.");
-          // An entity with no expiration already has the largest deadline a u64 holds: one more
-          // block would overflow, so it is left out, and with nothing else to extend no wallet opens.
+          // An entity with the longest lifetime is already at Rabdi's maximum: extending it would
+          // revert, so it is left out, and with nothing else to extend no wallet opens.
           keys = targets.filter((entity) => !hasNoExpiry(entity.expiresAtBlock)).map((entity) => entity.key);
           if (!keys.length) throw new Error(NOTHING_TO_EXTEND);
         }

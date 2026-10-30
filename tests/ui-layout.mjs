@@ -437,7 +437,7 @@ try {
   const writePopup = page.getByRole("dialog", { name: "Write it", exact: true });
   await expect(writePopup).toBeVisible();
   await expect(writePopup.getByLabel("createEntity call")).toContainText("const { entityKey } = await walletClient.createEntity(");
-  await expect(writePopup).toContainText("expires: ExpirationTime.fromSeconds(15 * 60),");
+  await expect(writePopup).toContainText("{ expiration: ExpirationTime.fromMinutes(15) },");
   await checkPopup("Write it");
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1-write-it.png") }); }
   // The other button swaps the popup: one at a time.

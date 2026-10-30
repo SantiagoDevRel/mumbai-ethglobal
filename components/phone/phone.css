@@ -8,11 +8,11 @@
 .phone-form input[name=name][aria-invalid=true]{border-color:#fe7446}
 .phone-field-error{margin:-12px 0 0;font-size:14px;line-height:1.4;color:#fe7446}
 
-/* "Permanent" (October 29, named "No expiration" until October 30): one tap under the slider. While
-   it is on, the slider is switched off and dimmed, and the written ticket shows $expiresAt = 2**64 - 1
-   with a full ring. The word never shows alone: the toggle, the readout and the list carry 2**64 - 1
-   with it, small and muted (PERMANENT_DEADLINE in JoinPhone.tsx). Same type roles as the rest of the
-   phone: the toggle is a field like the country picker, the readouts keep their own treatment. */
+/* The longest choice (6 months, Rabdi's maximum; Permanent on the previous testnet): one tap under
+   the slider. While it is on, the slider is switched off and dimmed, and the written ticket shows a
+   full ring. The toggle and the readout carry a small, muted note ("the longest", "max"). Same type
+   roles as the rest of the phone: the toggle is a field like the country picker, the readouts keep
+   their own treatment. */
 .lifetime-value{text-align:right}
 .lifetime-value small{display:block;margin-top:2px;font:400 13px/1.3 var(--font-mono);color:var(--muted)}
 .lifetime-forever small{margin-left:4px;font:400 13px var(--font-mono);color:var(--muted);white-space:nowrap}

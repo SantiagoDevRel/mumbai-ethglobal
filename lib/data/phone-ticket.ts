@@ -24,7 +24,7 @@ export function entityName(typed: string): string {
   return name;
 }
 
-/** Whether a written entity has no expiration. The writer's `expiresAtBlock` (the chain's own
+/** Whether a written entity has the longest lifetime. The writer's `expiresAtBlock` (the chain's own
  * deadline) decides when it is there; otherwise what the phone asked for. */
 export function writtenWithoutExpiry(expiresAtBlock: string | undefined, requested: boolean | undefined): boolean {
   if (expiresAtBlock !== undefined && /^\d+$/.test(expiresAtBlock)) return hasNoExpiry(BigInt(expiresAtBlock));
