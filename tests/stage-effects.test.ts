@@ -139,3 +139,20 @@ test("the deletion registry keeps each entity once, with its block, and tells it
   assert.equal(registry.has(endless.key), true);
   assert.equal(registry.has(given.key), false);
 });
+
+// A second /map follows the leading one: it hears each delete too, so it never calls the dot "expired".
+test("a delete recorded on the leading /map reaches the other windows on the channel", async () => {
+  const name = `arkiv-mumbai-deleted-test-${process.pid}`;
+  const leader = createDeletions(name), follower = createDeletions(name), alone = createDeletions();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const heard = new Promise<{ key: Hex; expiresAtBlock: bigint; block: bigint }>((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error("The follower never heard the delete.")), 2000);
+      follower.subscribe(({ entity, block }) => resolve({ key: entity.key, expiresAtBlock: entity.expiresAtBlock, block }));
+    });
+    leader.record(timed, 9n);
+    assert.deepEqual(await heard, { key: timed.key, expiresAtBlock: timed.expiresAtBlock, block: 9n });
+    assert.equal(follower.blocks().get(timed.key), 9n);
+    assert.equal(alone.has(timed.key), false, "a registry without a channel stays in its window");
+  } finally { clearTimeout(timer); leader.close(); follower.close(); alone.close(); }
+});

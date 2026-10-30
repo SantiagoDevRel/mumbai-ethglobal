@@ -64,6 +64,8 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
   const previous = useRef<{ adapter: ArkivAdapter; queryKey: string; entities: LiveEntity[] } | null>(null);
   const awake = useReadsAwake();
   const seen = useRef<{ adapter: ArkivAdapter; session: string; dots: Map<string, LiveEntity> } | null>(null);
+  // Every key a query of this window returned: only those get a "deleted" row (a mock world is per window).
+  const shown = useRef(new Set<string>());
   const [data, setData] = useState<Omit<LiveData, "paused">>({ adapter: null, source: "mock", run: null, events: [], expired: [], error: null });
   useEffect(() => {
     let stopped = false;
@@ -107,6 +109,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
           const deleted = deletions.blocks();
           const events = diffEntities(before?.adapter === adapter ? before.entities : [], run, before?.adapter === adapter && before.queryKey === queryKey, deleted);
           previous.current = { adapter, queryKey, entities: snapshotEntities(run.entities) };
+          for (const entity of run.entities) shown.current.add(entity.key);
           lastBlock = run.block;
           if (seen.current?.adapter !== adapter || seen.current.session !== parsed.session) seen.current = { adapter, session: parsed.session ?? "", dots: new Map() };
           const expired = rememberExpired(seen.current.dots, run, deleted);
@@ -122,9 +125,9 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
     return () => { stopped = true; clearTimeout(timer); };
   }, [data.adapter, queryKey, awake]);
   // A delete from the entity card is logged when the next query no longer has the dot. When a query
-  // already dropped it before the receipt came back, it is logged here instead.
+  // already dropped it before the receipt (or the leading /map's message) came, it is logged here.
   useEffect(() => deletions.subscribe(({ entity, block }) => {
-    if (previous.current?.entities.some((item) => item.key === entity.key)) return;
+    if (!shown.current.has(entity.key) || previous.current?.entities.some((item) => item.key === entity.key)) return;
     const event = deletedEvent(entity, block, Date.now());
     setData((old) => ({ ...old, events: logEvents(old.events, [event]), expired: old.expired.filter((item) => item.key !== entity.key) }));
   }), []);
