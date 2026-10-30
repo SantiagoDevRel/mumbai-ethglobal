@@ -21,6 +21,8 @@ if (capture) await mkdir(capture, { recursive: true });
 const app = await startApp();
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--renderer-process-limit=2"] });
 const errors = [];
+/** Every slide step whose logo is missing or crossed, so one run lists them all. */
+const logoProblems = [];
 try {
   const context = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
   await context.addInitScript(() => {
@@ -86,14 +88,15 @@ try {
       // Let the reveal and the slide change settle (REVEAL_TIME 0.3 s, the print toss on ME 0.45 s).
       await page.waitForTimeout(700);
       const { logos, hits } = await logoCheck();
-      assert.equal(logos, 1, `${scene.id} step ${step + 1}: one logo at the bottom center`);
-      assert.deepEqual(hits, [], `${scene.id} step ${step + 1}: crosses the logo at the bottom center`);
+      if (logos !== 1) logoProblems.push(`${scene.id} step ${step + 1}: ${logos} logos at the bottom center, not 1`);
+      for (const hit of hits) logoProblems.push(`${scene.id} step ${step + 1}: ${hit} crosses the logo at the bottom center`);
     }
     await expect(page.locator(`[data-screen="map"][data-scene="${scene.id}"]`)).toBeVisible();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, scene.id);
     if (shot) await shoot(`${prefix}.png`);
   }
   assert.deepEqual(errors, []);
+  assert.deepEqual(logoProblems, [], "Every slide keeps one logo at the bottom center, with no text or picture on it.");
   console.log(JSON.stringify({ scenes: SCENES.length, errors: errors.length }));
 } finally {
   await browser.close();
