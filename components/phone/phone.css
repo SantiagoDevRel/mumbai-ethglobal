@@ -8,10 +8,15 @@
 .phone-form input[name=name][aria-invalid=true]{border-color:#fe7446}
 .phone-field-error{margin:-12px 0 0;font-size:14px;line-height:1.4;color:#fe7446}
 
-/* "No expiration" (October 29): one tap under the slider. While it is on, the slider is switched off
-   and dimmed, and the written ticket shows $expiresAt = 2**64 - 1 with a full ring. Same type roles
-   as the rest of the phone: the toggle is a field like the country picker, the readouts keep their
-   own treatment. */
+/* "Permanent" (October 29, named "No expiration" until October 30): one tap under the slider. While
+   it is on, the slider is switched off and dimmed, and the written ticket shows $expiresAt = 2**64 - 1
+   with a full ring. The word never shows alone: the toggle, the readout and the list carry 2**64 - 1
+   with it, small and muted (PERMANENT_DEADLINE in JoinPhone.tsx). Same type roles as the rest of the
+   phone: the toggle is a field like the country picker, the readouts keep their own treatment. */
+.lifetime-value{text-align:right}
+.lifetime-value small{display:block;margin-top:2px;font:400 13px/1.3 var(--font-mono);color:var(--muted)}
+.lifetime-forever small{margin-left:4px;font:400 13px var(--font-mono);color:var(--muted);white-space:nowrap}
+.phone-mine-time small{display:block;font-size:12px;line-height:1.3}
 .phone-form input[type=range]:disabled{opacity:.35;cursor:default}
 .phone-lifetime.is-forever .range-labels{opacity:.35}
 .lifetime-forever{display:flex;align-items:center;gap:10px;width:100%;height:52px;margin-top:16px;padding:0 16px;box-sizing:border-box;border:1.5px solid var(--field-line);border-radius:12px;background:var(--field);color:var(--ink);font:400 17px var(--font-sans);text-align:left;cursor:pointer}
@@ -23,3 +28,6 @@
 .lifetime-forever[aria-pressed=true] .lifetime-forever-box{border-color:#fe7446;background:#fe7446;color:#111111}
 .phone-expires-at{display:flex;flex-direction:column;align-items:center;gap:4px;max-width:100%;margin:0;font:600 20px/1.2 var(--font-mono);overflow-wrap:anywhere}
 .phone-expires-at span{font:400 13px var(--font-mono);color:var(--muted)}
+/* On a 320 px phone the written entity's sides narrow to 16 px, so its 20-digit block number (240 px)
+   stays on one line. */
+@media(max-width:359px){.phone-entity{padding-inline:16px}}

@@ -33,7 +33,8 @@ export type CameraCue = "globe-idle" | "globe" | "india" | "mumbai-street" | "ke
 /** Which data layer the map shows. */
 export type MapMode = "dots" | "business" | "owner";
 
-export type QrLabel = "Scan now" | "Join the map";
+/** S7's big QR says "Your first entity" (Santiago, October 30); the corner card on L1 keeps "Join the map". */
+export type QrLabel = "Your first entity" | "Join the map";
 
 /** The talk's parts, in order. The index (IX) lists them and the outline bar across the top tracks
  * them; every scene after the index belongs to one. */
@@ -85,7 +86,7 @@ export const SCENES: readonly SceneDef[] = [
   { id: "W4", title: "What is Arkiv", at: 165, kind: "slide", steps: 4, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
   { id: "ST", title: "Five steps to get started", at: 225, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
   { id: "NT", title: "What Arkiv DB-Chain is not", at: 305, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
-  { id: "S7", title: "Your entity: scan and fill the form", at: 345, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "center" }, camera: "globe", map: "dots", section: "build" },
+  { id: "S7", title: "Your entity: scan and fill the form", at: 345, kind: "slide", steps: 2, qr: { label: "Your first entity", placement: "center" }, camera: "globe", map: "dots", section: "build" },
   // October 30 (Santiago): the Write it and Query it slides became two buttons on L1's map that open
   // the createEntity call and the query in a popup (app/deck/scenes/live.tsx); → goes on to L3.
   { id: "L1", title: "Write it: your entities, live", at: 425, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },

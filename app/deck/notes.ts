@@ -35,8 +35,8 @@ export const NOTES: Record<SceneId, string[]> = {
   ST: ST_NOTES,
   NT: NT_NOTES,
   S7: [
-    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out. Scan the code and fill the form: name, color, country and a lifetime from 5 to 15 minutes, or no expiration at all. Everything is saved in lowercase. Don't press Write yet: we write together.",
-    "→ shows what your form becomes: one entity. Three attributes anyone can query by, and an Entity Expiration, or none. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
+    "Switch Writing ON on /map before this scene: phones only write while it is on. Phones out: this is your first entity. Scan the code and fill the form: a name, a color, a country, and how long it lives, 5 to 15 minutes, or Permanent, which the phone shows with its deadline, 2**64 − 1. Everything is saved in lowercase. Don't press Write yet: we write together.",
+    "→ shows your entity: name, color and country are attributes anyone can query by, and expiration is its Entity Expiration, 15 minutes unless you moved the slider. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
   ],
   L1: [
     "Every dot is an entity you just wrote: your phone sent one request, our wallet signed for the room. The list on the right shows every write as it lands; click a dot for its entity card (no expiration shows $expiresAt = 2**64 − 1). Click Write it: the call your phone triggered, createEntity. Select each part as you name it: attributes (your form plus a category our app picked, what anyone can query by), expires (Entity Expiration, the lifetime you chose), entityKey (the entity's address on the DB-Chain). In your app, your user's wallet or your server signs. Click Query it: Arkiv has a query language, like a database. Every cafe AND only the ones in India; in the SDK, one where per clause. It also has OR, NOT and comparisons. Click + AND name: one more clause narrows it to one place. Values match exactly, which is why everything you wrote is in lower case. Esc closes the code; → runs queries like it on your entities.",
@@ -66,7 +66,7 @@ export const REVEALS: Record<SceneId, string[]> = {
   W4: ["your app: SDK or JSON-RPC into the DB-Chain", "your logic: chain logos or a web2 backend", "storage: Swarm and IPFS"],
   ST: ["step 2 · a wallet, with Add network", "step 3 · test funds", "step 4 · free reads, with Get balance", "step 5 · an RPC access key"],
   NT: ["not built for big files", "not private by default"],
-  S7: ["your form as one entity"],
+  S7: ["your entity: name, color, country and its expiration"],
   L1: [],
   L3: [],
   B4: ["owner_phone, encrypted", "the arkiv-encryption skill and npm package"],
