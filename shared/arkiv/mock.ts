@@ -1,6 +1,6 @@
 // In-memory adapter so the UI can be built before the chain is wired. It simulates blocks,
-// Entity Expiration (and entities with no expiration) and Lifetime Extension. Never shown as live:
-// the stage labels mock data.
+// Entity Expiration (and entities with no expiration), Lifetime Extension, transfers and deletes.
+// Never shown as live: the stage labels mock data.
 
 import type { ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter";
@@ -206,6 +206,14 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
     async changeOwner(key: Hex, newOwner: Hex) {
       const e = store.get(key);
       if (e) e.owner = newOwner;
+      return { txHash: randomHex(32), block: currentBlock(), keys: [key] };
+    },
+    async deleteEntity(key: Hex) {
+      // As on the DB-Chain, only a live entity's owner can delete it; the next query no longer has it.
+      const e = store.get(key);
+      if (!e || e.expiresAtBlock <= currentBlock()) throw new WriteNotSentError("No live entity has that key.");
+      if (e.owner.toLowerCase() !== WRITER_ADDRESS.toLowerCase()) throw new WriteNotSentError("Only its owner can delete it.");
+      store.delete(key);
       return { txHash: randomHex(32), block: currentBlock(), keys: [key] };
     },
     spawnRandom,

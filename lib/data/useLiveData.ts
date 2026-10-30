@@ -5,7 +5,8 @@ import type { ArkivAdapter } from "../../shared/arkiv/adapter";
 import { createMockAdapter } from "../../shared/arkiv/mock";
 import type { ChainFilters, LiveEntity, QueryRun } from "../../shared/types";
 import { blockFeed } from "./block-feed";
-import { diffEntities, rememberExpired, snapshotEntities, type VisualStageEvent } from "./entity-state";
+import { deletedEvent, diffEntities, logEvents, rememberExpired, snapshotEntities, type VisualStageEvent } from "./entity-state";
+import { deletions } from "./deleted-entities";
 import { stageReadTransport, usePresenterToken } from "./presenter-auth";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
@@ -103,12 +104,13 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
           const run = await queryStage(adapter, parsed);
           if (stopped) return;
           const before = previous.current;
-          const events = diffEntities(before?.adapter === adapter ? before.entities : [], run, before?.adapter === adapter && before.queryKey === queryKey);
+          const deleted = deletions.blocks();
+          const events = diffEntities(before?.adapter === adapter ? before.entities : [], run, before?.adapter === adapter && before.queryKey === queryKey, deleted);
           previous.current = { adapter, queryKey, entities: snapshotEntities(run.entities) };
           lastBlock = run.block;
           if (seen.current?.adapter !== adapter || seen.current.session !== parsed.session) seen.current = { adapter, session: parsed.session ?? "", dots: new Map() };
-          const expired = rememberExpired(seen.current.dots, run);
-          setData((old) => ({ ...old, run, events: [...events.reverse(), ...old.events].slice(0, 120), expired, error: null }));
+          const expired = rememberExpired(seen.current.dots, run, deleted);
+          setData((old) => ({ ...old, run, events: logEvents(old.events, events), expired, error: null }));
         }
       } catch (error) {
         if (!stopped) setData((old) => ({ ...old, error: readError(error) }));
@@ -119,5 +121,12 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
     void tick();
     return () => { stopped = true; clearTimeout(timer); };
   }, [data.adapter, queryKey, awake]);
+  // A delete from the entity card is logged when the next query no longer has the dot. When a query
+  // already dropped it before the receipt came back, it is logged here instead.
+  useEffect(() => deletions.subscribe(({ entity, block }) => {
+    if (previous.current?.entities.some((item) => item.key === entity.key)) return;
+    const event = deletedEvent(entity, block, Date.now());
+    setData((old) => ({ ...old, events: logEvents(old.events, [event]), expired: old.expired.filter((item) => item.key !== entity.key) }));
+  }), []);
   return { ...data, paused: !awake };
 }

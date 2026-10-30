@@ -54,6 +54,8 @@ export type Command =
   | { type: "makeBusiness"; key: Hex }
   /** A real changeOwnership of one entity, signed in Rabby by the workshop wallet. */
   | { type: "transferTo"; key: Hex; newOwner: Hex }
+  /** A real deleteEntity of one entity, signed in Rabby by the workshop wallet. */
+  | { type: "deleteEntity"; key: Hex }
   | { type: "setMap"; map: MapMode }
   | { type: "transfer" }
   | { type: "undoTransfer" }
@@ -200,6 +202,7 @@ export function reduce(state: StageState, cmd: Command, now = Date.now()): Stage
     case "extend":
     case "makeBusiness":
     case "transferTo":
+    case "deleteEntity":
       return state;
   }
 }

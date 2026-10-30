@@ -230,5 +230,9 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       const result = await requireWriter().changeOwnership({ entityKey: key, newOwner });
       return finish(result.txHash, [key]);
     }),
+    deleteEntity: key => serializeWrite(async () => {
+      const result = await requireWriter().deleteEntity({ entityKey: key });
+      return finish(result.txHash, [key]);
+    }),
   };
 }

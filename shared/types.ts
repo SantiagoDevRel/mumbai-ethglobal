@@ -191,7 +191,7 @@ export interface WriteResult {
 /** Event log row on the stage (bounded list, about 6 visible). */
 export interface StageEvent {
   id: string;
-  type: "created" | "extended" | "expired" | "patched";
+  type: "created" | "extended" | "expired" | "patched" | "deleted";
   key: Hex;
   name: string;
   detail: string;

@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { NOTHING_TO_EXTEND, type ArkivAdapter } from "../../shared/arkiv/adapter";
+import type { ArkivAdapter } from "../../shared/arkiv/adapter";
 import type { Hex, LiveEntity } from "../../shared/types";
-import { hasNoExpiry, STAGE_EXTENSION_SEC } from "../../shared/types";
 import { HoldResponse } from "../../shared/writer-api";
 import { WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import { stage } from "../stage/store";
 import { WRITER_ROUTES, WRITER_URL } from "./writer-client";
 import { presenterRequest, stageReadTransport, usePresenterToken } from "./presenter-auth";
 import { createLiveAdapter } from "./adapter-loader";
+import { createStageEffects } from "./stage-effects";
+import { deletions } from "./deleted-entities";
 
 interface Provider { request(args: { method: string; params?: unknown[] }): Promise<unknown>; isRabby?: boolean; providers?: Provider[] }
 function rabbyProvider(): Provider {
@@ -55,74 +56,26 @@ export function useStageEffects(adapter: ArkivAdapter | null, source: "mock" | "
     return () => clearTimeout(timer);
   }, [notice]);
   useEffect(() => {
-    let busy = false;
     let stopped = false;
-    let wallet: ArkivAdapter | null = null;
-    let lastPhase = stage.getState().phase;
-    const notify = (value: string) => { if (!stopped) setNotice(value); };
     const presenter = presenterRequest;
-    const disconnect = stage.onCommand(async (command, state) => {
-      try {
-        if (state.phase !== lastPhase && source === "live") { lastPhase = state.phase; await presenter(WRITER_ROUTES.presenter.phase, { phase: state.phase }); }
-        if (command.type === "replay") {
-          if (source === "live") await presenter(WRITER_ROUTES.presenter.replay, { on: state.replay });
-          notify("Replay requested. A recorded rehearsal must be loaded before playback.");
-        }
-        if (command.type !== "extend" && command.type !== "makeBusiness" && command.type !== "transferTo") return;
-        if (!adapter) throw new Error("Network not configured");
-        if (busy) throw new Error("Wait for the current transaction to finish.");
-        busy = true;
-        let held = false;
-        let heartbeat: ReturnType<typeof setInterval> | undefined;
-        try {
-          let keys: Hex[] = command.type === "extend" ? [] : [command.key];
-          if (command.type === "extend") {
-            let targets = latest.current.filter((entity) => state.selected.includes(entity.key));
-            if (command.scope === "all") {
-              if (source === "live" && !state.session) throw new Error("No session yet. Press Reset.");
-              targets = (await adapter.query({ kinds: ["dot", "business"], session: source === "mock" ? "MOCK" : state.session! })).entities;
-            }
-            if (!targets.length) throw new Error("Select an entity first.");
-            // An entity with no expiration already has the largest deadline a u64 holds: one more
-            // block would overflow, so it is left out, and with nothing else to extend no wallet opens.
-            keys = targets.filter((entity) => !hasNoExpiry(entity.expiresAtBlock)).map((entity) => entity.key);
-            if (!keys.length) throw new Error(NOTHING_TO_EXTEND);
-          }
-          let writer = adapter;
-          if (source === "live") {
-            // Finish wallet setup before reserving the writer's bounded hold window.
-            wallet ??= await connectWallet(adapter, token);
-            writer = wallet;
-            const hold = HoldResponse.parse(await presenter(WRITER_ROUTES.presenter.hold, {}));
-            held = hold.held;
-            if (!hold.idle) throw new Error("The writer is still sending. Wait for it to become idle.");
-            heartbeat = setInterval(() => { void presenter(WRITER_ROUTES.presenter.hold, {}).catch(() => notify("Writer hold renewal failed. Wait a minute before another transaction.")); }, 20_000);
-          }
-          notify(source === "mock" ? "Mock data · applying demo action" : "Confirm in Rabby…");
-          if (command.type === "extend") await writer.extend(keys, STAGE_EXTENSION_SEC);
-          else if (command.type === "transferTo") await writer.changeOwner(command.key, command.newOwner);
-          else {
-            const entity = latest.current.find((item) => item.key === command.key);
-            if (!entity || entity.attrs.kind === "review") throw new Error("Select a live dot first.");
-            await writer.patch(command.key, { kind: "business", name: entity.attrs.name, category: "cafe", rating: 4.6, opens: 480, closes: 1320, city: "Mumbai" }, entity.attrs);
-            stage.dispatch({ type: "setMap", map: "business" });
-          }
-          if (source === "live") awaitingQuery.current = true;
-          notify(source === "mock" ? "Mock data · action applied" : command.type === "transferTo" ? "Ownership transferred. $owner changes on the next query." : "Transaction confirmed. Waiting for the next query…");
-        } finally {
-          clearInterval(heartbeat);
-          if (held) {
-            try { await presenter(WRITER_ROUTES.presenter.resume, {}); }
-            catch { notify("Writer resume failed. It resumes on its own within a minute."); }
-          }
-          busy = false;
-        }
-      } catch (error) {
-        // Rabby rejects with a plain { code, message } object, not an Error.
-        const message = error && typeof error === "object" && "message" in error && typeof error.message === "string" ? error.message : null;
-        notify(message ?? "Presenter action failed.");
-      }
-    });
+    // Extend, Transfer and Delete (and the writer's phase and replay) live in stage-effects.ts.
+    const disconnect = stage.onCommand(createStageEffects({
+      adapter, source,
+      entities: () => latest.current,
+      connect: (reader) => connectWallet(reader, token),
+      writer: {
+        phase: (phase) => presenter(WRITER_ROUTES.presenter.phase, { phase }),
+        replay: (on) => presenter(WRITER_ROUTES.presenter.replay, { on }),
+        hold: async () => HoldResponse.parse(await presenter(WRITER_ROUTES.presenter.hold, {})),
+        resume: () => presenter(WRITER_ROUTES.presenter.resume, {}),
+      },
+      notify: (value) => { if (!stopped) setNotice(value); },
+      awaitQuery: () => { awaitingQuery.current = true; },
+      dispatch: stage.dispatch,
+      getState: stage.getState,
+      deletions,
+      initialPhase: stage.getState().phase,
+    }));
     return () => { stopped = true; disconnect(); };
   }, [adapter, source, token]);
   return notice;

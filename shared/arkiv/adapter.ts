@@ -71,8 +71,11 @@ export interface ArkivAdapter {
   extend(keys: Hex[], addSeconds: number): Promise<WriteResult>;
   /** Real patch: keeps existing attributes, sets the given ones. */
   patch(key: Hex, fields: PatchFields, current: EntityAttrs): Promise<WriteResult>;
-  /** The entity card's Transfer ownership (signed in Rabby by the workshop wallet; the mock moves $owner in place). */
+  /** The entity card's Transfer (signed in Rabby by the workshop wallet; the mock moves $owner in place). */
   changeOwner(key: Hex, newOwner: Hex): Promise<WriteResult>;
+  /** The entity card's Delete: a real deleteEntity, signed like changeOwner. Only the entity's owner
+   * can delete it; the mock refuses anyone else with `WriteNotSentError`. */
+  deleteEntity(key: Hex): Promise<WriteResult>;
 }
 
 /** Read-only subset the phone and the stage use when no wallet is connected. */

@@ -161,3 +161,52 @@ test("extending only entities with no expiration signs nothing and leaves the ne
     assert.ok(walletCalls > 0);
   } finally { globalThis.fetch = original; }
 });
+
+// The entity card's Delete (October 30), signed like Transfer by the workshop wallet.
+test("Delete sends one deleteEntity from the workshop wallet and returns its receipt's block", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("A relay read must not fetch."); };
+  const key = `0x${"7".repeat(64)}` as Hex, hash = `0x${"a".repeat(64)}` as Hex;
+  const sent: { from?: string; to?: string; data?: string }[] = [];
+  const walletMethods: string[] = [];
+  const receipt = () => ({ transactionHash: hash, transactionIndex: "0x0", blockHash: `0x${"b".repeat(64)}`, blockNumber: "0x64",
+    from: WRITER_ADDRESS.toLowerCase(), to: sent[0]?.to ?? null, contractAddress: null, cumulativeGasUsed: "0x5208", gasUsed: "0x5208",
+    effectiveGasPrice: "0x1", logs: [], logsBloom: `0x${"0".repeat(512)}`, status: "0x1", type: "0x2" });
+  try {
+    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
+      read: { kind: "relay", send: async (method) => {
+        if (method === "eth_chainId") return "0x7614d1";
+        if (method === "eth_getTransactionReceipt") return receipt();
+        throw new Error(`Unexpected RPC method ${method}`);
+      } },
+      wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async ({ method, params }: { method: string; params?: unknown[] }) => {
+        walletMethods.push(method);
+        if (method === "eth_chainId") return "0x7614d1";
+        if (method === "eth_sendTransaction") { sent.push((params as [{ from?: string; to?: string; data?: string }])[0]); return hash; }
+        if (method === "eth_blockNumber") return "0x64";
+        if (method === "eth_getTransactionReceipt") return receipt();
+        throw new Error(`Unexpected wallet method ${method}`);
+      } } } });
+    assert.deepEqual(await adapter.deleteEntity(key), { txHash: hash, block: 100n, keys: [key] });
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0]!.from?.toLowerCase(), WRITER_ADDRESS.toLowerCase());
+    assert.ok(sent[0]!.data?.toLowerCase().includes(key.slice(2)), "the transaction names the entity's key");
+    assert.equal(walletMethods.filter((method) => method.endsWith("_sendTransaction")).length, 1);
+  } finally { globalThis.fetch = original; }
+});
+
+test("a delete rejected in the wallet leaves the next delete free", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error("A relay read must not fetch."); };
+  let prompts = 0;
+  try {
+    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
+      read: { kind: "relay", send: async (method) => { if (method === "eth_chainId") return "0x7614d1"; throw new Error(`Unexpected RPC method ${method}`); } },
+      wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { prompts++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } } } });
+    const key = `0x${"7".repeat(64)}` as Hex;
+    // A rejection sent nothing, so there is nothing to reconcile: the second delete asks the wallet again.
+    await assert.rejects(adapter.deleteEntity(key));
+    await assert.rejects(adapter.deleteEntity(key));
+    assert.equal(prompts, 2);
+  } finally { globalThis.fetch = original; }
+});

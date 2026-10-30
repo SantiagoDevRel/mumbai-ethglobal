@@ -73,12 +73,13 @@ test("only L3 shows the query panel and the filter bar", () => {
   assert.equal(at("L3").panels.query, true);
 });
 
-test("the entity card opens from a dot on L1 and L3: transfer and extend live there", () => {
+test("the entity card opens from a dot on L1 and L3: extend, transfer and delete live there", () => {
   for (const id of ["L1", "L3"] as const) {
     const state = reduce(at(id), { type: "inspect", key: "0x01" });
     assert.equal(state.panels.inspector, true, id);
     assert.equal(state.map, "dots", id);
     assert.equal(reduce(state, { type: "transferTo", key: "0x01", newOwner: "0x02" }), state, "a transfer is a side effect, not a state change");
+    assert.equal(reduce(state, { type: "deleteEntity", key: "0x01" }), state, "a delete is a side effect, not a state change");
   }
 });
 
