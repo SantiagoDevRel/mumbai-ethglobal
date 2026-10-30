@@ -190,8 +190,10 @@ function Title({ prize }: { prize: Prize }) {
 
 export function Prizes({ step }: SceneContentProps) {
   const uid = useId();
-  // The rubric open on this step, if any: one at a time, and a step change closes it.
+  // The rubric open on this step, if any: one at a time, and a step change closes it for good (the
+  // stage's arrow can re-render this before the key listener below runs, so the step itself clears it).
   const [rubric, setRubric] = useState<{ key: string; step: number } | null>(null);
+  if (rubric !== null && rubric.step !== step) setRubric(null);
   const open = rubric !== null && rubric.step === step ? rubric.key : null;
   const toggle = (key: string) => setRubric(open === key ? null : { key, step });
 
