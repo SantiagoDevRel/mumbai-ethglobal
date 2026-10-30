@@ -29,10 +29,10 @@ const BOX = { left: 285, top: 88, width: 1350, height: 900 };
 
 /** Each label in the art's pixels, on each picture: centered over its character, the last line's
  * baseline just above its head. In the hug the heads sit close together and higher up, so the labels
- * move in and up, clear of the faces. */
+ * move up and to the outer side of their heads, so ARKIV fits between them with room on both sides. */
 const LABELS: { lines: string[]; meme: { x: number; y: number }; hug: { x: number; y: number } }[] = [
-  { lines: ["Web3 data"], meme: { x: 292, y: 148 }, hug: { x: 460, y: 140 } },
-  { lines: ["Your web2", "database"], meme: { x: 1310, y: 220 }, hug: { x: 1150, y: 190 } },
+  { lines: ["Web3 data"], meme: { x: 292, y: 148 }, hug: { x: 330, y: 150 } },
+  { lines: ["Your web2", "database"], meme: { x: 1310, y: 220 }, hug: { x: 1300, y: 190 } },
 ];
 /** The middle robot's name, only on the hug: it fades in where the others make room for it. */
 const ARKIV = { text: "ARKIV", x: 800, y: 128 };

@@ -136,7 +136,7 @@ try {
     const without = await t2.getByText("Without the plugin", { exact: true }).boundingBox();
     const withIt = await t2.getByText("With the plugin", { exact: true }).boundingBox();
     assert.ok(without.y + without.height <= withIt.y, "Without the plugin sits above With the plugin.");
-    for (const example of ["Your agent has to guess how Arkiv works.", "Your agent builds with Arkiv's skills and docs."]) await expect(t2.getByText(example, { exact: true })).toBeVisible();
+    for (const example of ["Your agent has to guess how Arkiv works.", "Your agent uses Arkiv's skills and docs."]) await expect(t2.getByText(example, { exact: true })).toBeVisible();
     await shoot("map-1920-T2.png");
     // PZ: medals instead of 1st and 2nd, the gold one for a single winner.
     await commands(page, [go("PZ")]);
@@ -1082,7 +1082,8 @@ try {
       for (const [i, label] of after.entries()) {
         if (before[i]) assert.notEqual(Math.round(label.left), Math.round(before[i].left), `"${label.name}" moves to its robot on the hug`);
         assert.ok(label.left >= picture.x && label.right <= picture.x + picture.width && label.top >= picture.y, `"${label.name}" stays on the picture`);
-        for (const other of after.slice(i + 1)) assert.ok(label.right <= other.left || other.right <= label.left || label.bottom <= other.top || other.bottom <= label.top, `"${label.name}" and "${other.name}" don't touch`);
+        // At least 24 px apart: three labels in one row must read as three, not one line.
+        for (const other of after.slice(i + 1)) assert.ok(label.right + 24 <= other.left || other.right + 24 <= label.left || label.bottom <= other.top || other.bottom <= label.top, `"${label.name}" and "${other.name}" keep apart`);
       }
       if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-W2-hug.png") });
       // W3: who may extend and who may edit are two bullets of their own.

@@ -4,7 +4,7 @@
 // the mascot (Santiago, October 29; its name never goes in alt text, see Mascot.tsx), about the Arkiv
 // AI plugin rather than MCP (October 30). Top, without the plugin: the mascot disappointed, with a
 // small tear, over a short example (your agent has to guess how Arkiv works). Bottom, with the plugin:
-// the mascot smiling (your agent builds with Arkiv's skills and docs). Santiago, October 30: no "old
+// the mascot smiling (your agent uses Arkiv's skills and docs). Santiago, October 30: no "old
 // SDK" wording, which sounds as if the SDK were out of date; the gap is what the agent knows. Both pictures (public/deck/memes,
 // 1536x1024, same framing) are cropped to a wide strip around the eyes, the tear and the mouth so the
 // panels stack like the original; the labels sit beside them, Stone for the bad one and Sand for the
@@ -89,7 +89,7 @@ export function A1(_props: SceneContentProps) {
         />
         <Panel
           label="With the plugin"
-          example="Your agent builds with Arkiv's skills and docs."
+          example="Your agent uses Arkiv's skills and docs."
           src="/deck/memes/arkiv-meme-mcp-happy.webp"
           alt="Arkiv mascot, smiling"
           good
