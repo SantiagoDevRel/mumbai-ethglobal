@@ -715,7 +715,11 @@ try {
   await commands(page, [go("S7")]);
   // The follower changes scene once the leader, still drawing the 1920 px globe in software WebGL,
   // handles the command: as long as the other waits in this block.
-  await expect(slides.locator('[data-scene="S7"]')).toBeVisible({ timeout: 20000 });
+  await expect(slides.locator('[data-scene="S7"]')).toBeVisible({ timeout: 20000 }).catch(async (error) => {
+    const scene = (target) => target.evaluate(() => [...document.querySelectorAll("[data-scene]")].map((element) => `${element.getAttribute("data-screen") ?? "?"}:${element.getAttribute("data-scene")}`).join(" "));
+    console.error(JSON.stringify({ follower: await scene(slides).catch(String), leader: await scene(page).catch(String), state: await stageState(page).then((state) => state && { sceneIndex: state.sceneIndex, step: state.step }).catch(String), errors }));
+    throw error;
+  });
   // The scan column sits in the middle of the slide (x 960 of 1920) until S7's → moves it aside.
   await expect.poll(async () => { const box = await slides.locator(".join-qr-scan").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(960 * 1280 / 1920));
   await expect(slides.locator(".join-qr-scan .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
