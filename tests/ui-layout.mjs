@@ -572,9 +572,9 @@ try {
     // left within 3 s. A clock threshold could not hold on the shared runner: with the other window
     // drawing the globe in software, three changes in one run took 347, 788 and 1507 ms, while on a
     // laptop against production six changes per window took 337-383 ms (October 29). The clock times
-    // are kept in the evidence. Both from-scenes have one step, so the → changes the scene.
+    // are kept in the evidence. The → is pressed on the from-scene's last step, so it changes the scene.
     const sample = async (target, from, to) => {
-      await commands(page, [go(from)]);
+      await commands(page, [go(from), ...Array.from({ length: SCENES[sceneIndex(from)].steps - 1 }, () => ({ type: "next" }))]);
       await expect(target.locator(`[data-scene-layer="${from}"]`)).toHaveCount(1);
       await expect(target.locator("[data-scene-layer]")).toHaveCount(1);
       await target.waitForTimeout(800);
@@ -605,7 +605,6 @@ try {
       }), [from, to]);
     };
     for (const [target, from, to] of [[slides, "B5", "T1"], [page, "W2", "W3"]]) {
-      assert.equal(SCENES[sceneIndex(from)].steps, 1);
       const samples = [];
       for (let i = 0; i < 3; i++) samples.push(await sample(target, from, to));
       for (const timing of samples) {
@@ -614,6 +613,63 @@ try {
         assert.ok(timing.exit && timing.exit.delay + timing.exit.duration <= 400, `${from} is gone within 0.4 s: ${JSON.stringify(timing.exit)}`);
       }
       evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, enter: samples[0].enter, exit: samples[0].exit, clockChangeMs: samples.map((timing) => Math.round(timing.change)), clockTotalMs: samples.map((timing) => Math.round(timing.total)) });
+    }
+    // Why Arkiv and What Arkiv DB-Chain is not (Santiago, October 30), on /slides. Hidden reveals are
+    // aria-hidden, so a role query finds only what the room sees.
+    {
+      const settled = (locator) => expect.poll(() => locator.evaluate((element) => { for (let e = element; e; e = e.parentElement) if (Number(getComputedStyle(e).opacity) < 1) return false; return true; })).toBe(true);
+      // W2: the → swaps the meme for the hug, and each label glides to its robot without touching another.
+      await commands(page, [go("W2")]);
+      const meme = slides.getByRole("img", { name: /turns to look/ });
+      const hug = slides.getByRole("img", { name: /hugs the blue and orange robot and the grey robot/ });
+      await expect(meme).toBeVisible();
+      await expect(hug).toHaveCount(0);
+      const labels = () => slides.locator("[data-label]").evaluateAll((groups) => groups.map((group) => { const r = group.getBoundingClientRect(); return { name: group.getAttribute("data-label"), left: r.left, right: r.right, top: r.top, bottom: r.bottom }; }));
+      const before = await labels();
+      await commands(page, [{ type: "next" }]);
+      await expect(hug).toBeVisible();
+      await expect(meme).toHaveCount(0);
+      await settled(hug);
+      await slides.waitForTimeout(600);
+      const after = await labels();
+      const picture = await hug.boundingBox();
+      assert.equal(after.length, 3);
+      for (const [i, label] of after.entries()) {
+        assert.notEqual(Math.round(label.left), Math.round(before[i].left), `"${label.name}" moves to its robot on the hug`);
+        assert.ok(label.left >= picture.x && label.right <= picture.x + picture.width && label.top >= picture.y, `"${label.name}" stays on the picture`);
+        for (const other of after.slice(i + 1)) assert.ok(label.right <= other.left || other.right <= label.left || label.bottom <= other.top || other.bottom <= label.top, `"${label.name}" and "${other.name}" don't touch`);
+      }
+      if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-W2-hug.png") });
+      // W3: who may extend and who may edit are two bullets of their own.
+      await commands(page, [go("W3"), { type: "next" }, { type: "next" }]);
+      for (const item of ["a lifetime", "who may extend it", "who may edit it"]) await expect(slides.getByRole("listitem").filter({ hasText: new RegExp(`^${item}$`) })).toBeVisible();
+      await expect(slides.getByText("who may extend or change it")).toHaveCount(0);
+      // W4: the network, then one column of the app view per →; logos only, straight on the panel.
+      await commands(page, [go("W4")]);
+      const solana = slides.getByRole("img", { name: "Solana", exact: true });
+      const ipfs = slides.getByRole("img", { name: "IPFS", exact: true });
+      await settled(slides.getByText("Previous testnets", { exact: true }));
+      await commands(page, [{ type: "next" }]);
+      await settled(slides.getByText("Keeps your Arkiv entities", { exact: true }));
+      await expect(solana).toHaveCount(0);
+      await expect(ipfs).toHaveCount(0);
+      await commands(page, [{ type: "next" }]);
+      for (const name of ["Ethereum", "Base", "Optimism", "Arbitrum", "Solana"]) await expect(slides.getByRole("img", { name, exact: true })).toBeVisible();
+      await expect(ipfs).toHaveCount(0);
+      await commands(page, [{ type: "next" }]);
+      await expect(ipfs).toBeVisible();
+      await expect(slides.getByRole("img", { name: "Swarm", exact: true })).toBeVisible();
+      await settled(ipfs);
+      for (const text of ["Your logic", "Wherever you want", "A web2 backend", "Storage", "Heavy files"]) await expect(slides.getByText(text, { exact: true })).toBeVisible();
+      for (const gone of ["Arkiv runs no smart contracts", "Smart contracts on any EVM chain", "Big files"]) await expect(slides.getByText(gone, { exact: true })).toHaveCount(0);
+      const tiled = await slides.locator("[data-column] img").evaluateAll((images) => images.filter((image) => { for (let e = image.parentElement; e && !e.hasAttribute("data-column"); e = e.parentElement) if (getComputedStyle(e).backgroundColor !== "rgba(0, 0, 0, 0)") return true; return false; }).map((image) => image.alt));
+      assert.deepEqual(tiled, [], "every logo sits straight on its panel, with no tile behind it");
+      if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-W4-4.png") });
+      // NT: titles and icons; only the big-files and privacy rows keep one short line.
+      await commands(page, [go("NT"), { type: "next" }, { type: "next" }]);
+      await expect(slides.getByRole("listitem")).toHaveText([/^Not a smart-contract chain$/, /^Not built for big files\s*128 KB per entity: about 40 pages of text or a 640×480 photo$/, /^Not private by default\s*You can encrypt values yourself$/]);
+      await expect(slides.getByText("Three edges to know before your first build.")).toHaveCount(0);
+      evidence.push({ surface: "why-arkiv", hugOnArrow: true, labelsFollow: true, w3Bullets: true, w4ColumnPerArrow: true, logosWithoutTiles: true, ntMinimal: true });
     }
     // Boxes: only a right-drag draws one, on a slide and on the map; a right-click clears them; a
     // left-drag selects text or moves the globe and draws nothing.

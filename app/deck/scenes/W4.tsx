@@ -1,6 +1,7 @@
 "use client";
 
-// W4 · What is Arkiv: the Web3 database. Two views, one per → (Santiago, October 29):
+// W4 · What is Arkiv: the Web3 database. Two views (Santiago, October 29), and the second one builds
+// up one column per → (October 30):
 //   step 0 · the network, after the Arkiv leaflet's "How it works": DB-Chains on the left, wired to
 //            Arkiv's own chain (under construction), which bridges to Ethereum mainnet; the footer
 //            rows are the leaflet's (DB ENGINE / EVM / EVM, GLM / GLM · ETH · … / ETH). The live
@@ -10,16 +11,25 @@
 //            Braga, Kaolin and Mendoza are switched off. Only the live DB-Chains are wired, and
 //            neither shows a block here, only a LIVE pill (October 29). Network names only: no RPC
 //            URL, chain ID or explorer for Rabdi or Sorbet in this public repo.
-//   step 1 · your app: it reaches a DB-Chain through the SDK or straight through JSON-RPC, and Rabdi
-//            keeps its entities. No live block until this app itself moves to Rabdi: today it would
-//            be Tiramisu's (October 29). Arkiv runs no contracts, so your logic lives in contracts on
-//            any EVM chain or in a web2 backend, and big files go to Swarm. The app talks to each
-//            side: contracts on other chains can't read entities directly, so nothing joins the
-//            DB-Chain to them.
-// Logos: official files, colors unchanged, each on a Sand tile so every one reads on the dark stage.
-//   ethereum-diamond-purple.svg · ethereum.org/en/assets, "ETH diamond (purple)":
+//   step 1 · your app and the DB-Chain: the app reaches a DB-Chain through the SDK or straight
+//            through JSON-RPC, and Rabdi keeps its entities. No live block until this app itself
+//            moves to Rabdi: today it would be Tiramisu's (October 29).
+//   step 2 · your logic, wherever you want: only the logos of chains it can live on (Ethereum, Base,
+//            OP, Arbitrum, Solana), or a web2 backend. "Arkiv runs no smart contracts" is NT's line
+//            now (Santiago, October 30). The app talks to each side: contracts on other chains can't
+//            read entities directly, so nothing joins the DB-Chain to them.
+//   step 3 · storage for heavy files: Swarm and IPFS.
+// Each column fades and rises in on its →, like the deck's Reveal; its line from the app fades in
+// with it. The DB-Chain's orange line owns the trunk; the others branch off where it turns.
+// Logos: official files, colors unchanged. The network view sets Ethereum's mark on a Sand circle;
+// the app view sets every logo straight on its dark panel, no tile, in the variant each brand offers
+// for a dark background (Santiago, October 30).
+//   ethereum-diamond-purple.svg (network view) · ethereum.org/en/assets, "ETH diamond (purple)":
 //     https://ethereum.org/images/assets/svgs/eth-diamond-purple.svg
-//   base-square-blue.svg · Base brand kit, "The Square":
+//   ethereum-diamond-color.svg (app view) · ethereum.org/en/assets, "ETH diamond (color)":
+//     https://raw.githubusercontent.com/ethereum/ethereum-org-website/master/public/images/assets/svgs/eth-diamond-rainbow.svg
+//   base-square-blue.svg · Base brand kit, "The Square" (Base's blue in-product icon, made for light
+//     and dark backgrounds):
 //     https://raw.githubusercontent.com/base/brand-kit/main/logo/TheSquare/Digital/Base_square_blue.svg
 //   op-mainnet-symbol.svg · optimism.io/brand, "OP Mainnet symbol", cropped to the symbol (the brand
 //     page's grey card background removed):
@@ -27,15 +37,22 @@
 //   arbitrum-logomark.svg · arbitrum.io/brand-kit, 1225_Arbitrum_Logomark_FullColor.zip
 //     (…_ClearSpace.svg), viewBox cropped to the mark's own clip rectangle:
 //     https://arbitrum.io/brandkit/downloads/1225_Arbitrum_Logomark_FullColor.zip
-//   swarm-logo.svg · Swarm's documentation repository (Swarm publishes no press kit):
-//     https://raw.githubusercontent.com/ethersphere/bee-docs/master/static/img/swarm-logo-2.svg
+//   solana-logomark.svg · the gradient logomark of solana.com/branding, from the site's source
+//     repository, unchanged:
+//     https://raw.githubusercontent.com/solana-foundation/solana-com/main/apps/web/public/src/img/branding/solanaLogoMark.svg
+//   swarm-logo-lockup.svg · Swarm's documentation repository (Swarm publishes no press kit), the
+//     orange logo with its name, unchanged:
+//     https://raw.githubusercontent.com/ethersphere/bee-docs/master/static/img/logo.svg
+//   ipfs-logo-text.svg · the IPFS documentation repository, the logo with white lettering for dark
+//     backgrounds, unchanged (© Protocol Labs, Inc., Creative Commons Attribution-ShareAlike):
+//     https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/.vuepress/public/images/ipfs-logo-text.svg
 //   The [A] marks are Arkiv's own (public/brand/a-white.svg, a-orange.svg).
 
 import { AppWindow, ArrowDown, Server } from "lucide-react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
-import { EASE, REVEAL_TIME, Slide, T } from "../ui";
+import { EASE, REVEAL_TIME, Reveal, Slide, T } from "../ui";
 
 /** Both views share one box on the stage, under the headline. It ends at y 1000, clear of the logo at
  * the bottom center (FOOT_LOGO in ../ui). */
@@ -208,27 +225,61 @@ function Network() {
   );
 }
 
-// ── Step 1 · your app ────────────────────────────────────────────────────────────────────────────
+// ── Steps 1-3 · your app ─────────────────────────────────────────────────────────────────────────
 
 const APP = { x: 664, w: 400, h: 104 };
 const COLS = { top: 188, a: { x: 0, w: 760 }, b: { x: 784, w: 540 }, c: { x: 1348, w: 380 } };
+/** Where the app's line turns toward the DB-Chain; the other columns' lines start here. */
+const JUNCTION = 140;
+/** Chains your logic can live on: logos only, no names (Santiago, October 30). The solid squares
+ * run a little smaller so the five weigh the same. */
 const CHAINS = [
-  { src: "/deck/logos/ethereum-diamond-purple.svg", name: "Ethereum" },
-  { src: "/deck/logos/base-square-blue.svg", name: "Base" },
-  { src: "/deck/logos/op-mainnet-symbol.svg", name: "Optimism" },
-  { src: "/deck/logos/arbitrum-logomark.svg", name: "Arbitrum" },
+  { src: "/deck/logos/ethereum-diamond-color.svg", name: "Ethereum", width: 48, height: 80 },
+  { src: "/deck/logos/base-square-blue.svg", name: "Base", width: 62, height: 62 },
+  { src: "/deck/logos/op-mainnet-symbol.svg", name: "Optimism", width: 62, height: 62 },
+  { src: "/deck/logos/arbitrum-logomark.svg", name: "Arbitrum", width: 68, height: 77 },
+  { src: "/deck/logos/solana-logomark.svg", name: "Solana", width: 80, height: 70 },
+];
+/** Storage for heavy files: each logo with its name, straight on the panel. */
+const STORES = [
+  { src: "/deck/logos/swarm-logo-lockup.svg", name: "Swarm", width: 254, height: 67 },
+  { src: "/deck/logos/ipfs-logo-text.svg", name: "IPFS", width: 228, height: 97 },
 ];
 
-/** An official logo on a Sand tile, its name under it. */
-function LogoTile({ src, name }: { src: string; name: string }) {
+/** An official logo at its own aspect, with no tile behind it. */
+function BrandLogo({ src, name, width, height }: { src: string; name: string; width: number; height: number }) {
   return (
-    <span className="flex w-[104px] flex-col items-center gap-2.5">
-      <span className="flex h-[84px] w-[84px] items-center justify-center rounded-[18px] bg-[var(--arkiv-sand)]">
-        {/* eslint-disable-next-line @next/next/no-img-element -- official logo files at their own aspect */}
-        <img src={src} alt="" width={56} height={56} draggable={false} className="block h-[56px] w-[56px] object-contain" />
-      </span>
-      <span className="text-[20px] font-medium leading-none" style={{ color: T.t84 }}>{name}</span>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element -- official logo files at their own aspect
+    <img src={src} alt={name} width={width} height={height} draggable={false} className="block shrink-0" style={{ width, height }} />
+  );
+}
+
+/** The line from your app into a column, arrowhead included. The DB-Chain's (`lit`) runs down from
+ * the app; the others start at the junction, beside its trunk. */
+function Branch({ x, lit = false }: { x: number; lit?: boolean }) {
+  const appX = APP.x + APP.w / 2;
+  const line = lit ? `M ${appX} ${APP.h} V ${JUNCTION} H ${x} V ${COLS.top - 12}` : `M ${appX + 1.75} ${JUNCTION} H ${x} V ${COLS.top - 12}`;
+  return (
+    <svg className="block" width={BOX.width} height={COLS.top} viewBox={`0 0 ${BOX.width} ${COLS.top}`} aria-hidden>
+      <g stroke={lit ? "#FE7446" : "#F6F4EF"} strokeOpacity={lit ? 1 : 0.7} strokeWidth="3.5" fill="none" strokeLinejoin="round">
+        <path d={line} strokeLinecap={lit ? "round" : "butt"} />
+        <path d={`M ${x - 11} ${COLS.top - 24} L ${x} ${COLS.top - 10} L ${x + 11} ${COLS.top - 24}`} strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+/** A column of the app view, faded and risen in on its →. Its line from the app only fades. */
+function AppColumn({ step, at, col, children }: { step: number; at: number; col: { x: number; w: number }; children: ReactNode }) {
+  return (
+    <>
+      <Reveal step={step} at={at} y={0} className="absolute left-0 top-0">
+        <Branch x={col.x + col.w / 2} />
+      </Reveal>
+      <Reveal step={step} at={at} className="absolute" style={{ left: col.x, top: COLS.top, width: col.w, height: BOX.height - COLS.top }}>
+        {children}
+      </Reveal>
+    </>
   );
 }
 
@@ -242,9 +293,10 @@ function WayIn({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-function YourApp() {
-  const appX = APP.x + APP.w / 2;
-  const drops = [COLS.a.x + COLS.a.w / 2, COLS.b.x + COLS.b.w / 2, COLS.c.x + COLS.c.w / 2];
+/** The panel of the columns beside the DB-Chain. */
+const SIDE_PANEL = "flex h-full w-full flex-col rounded-[20px] border-[3px] border-[rgba(246,244,239,0.14)] bg-[rgba(17,17,17,0.82)] px-8 pb-7 pt-6";
+
+function YourApp({ step }: { step: number }) {
   return (
     <div className="relative h-full w-full">
       <div
@@ -255,15 +307,10 @@ function YourApp() {
         <span className="text-[48px] font-bold leading-none">Your app</span>
       </div>
 
-      {/* Your app talks to each side. Nothing joins the DB-Chain to the contracts. */}
-      <svg className="absolute left-0 top-0" width={BOX.width} height={COLS.top} viewBox={`0 0 ${BOX.width} ${COLS.top}`} aria-hidden>
-        {drops.map((x, i) => (
-          <g key={x} stroke={i === 0 ? "#FE7446" : "#F6F4EF"} strokeOpacity={i === 0 ? 1 : 0.7} strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-            <path d={`M ${appX} ${APP.h} V 140 H ${x} V ${COLS.top - 12}`} />
-            <path d={`M ${x - 11} ${COLS.top - 24} L ${x} ${COLS.top - 10} L ${x + 11} ${COLS.top - 24}`} />
-          </g>
-        ))}
-      </svg>
+      {/* Your app talks to each side, one → per column. Nothing joins the DB-Chain to the contracts. */}
+      <div className="absolute left-0 top-0">
+        <Branch x={COLS.a.x + COLS.a.w / 2} lit />
+      </div>
 
       {/* The DB-Chain: the SDK or JSON-RPC, then Rabdi, which keeps the entities. */}
       <div
@@ -296,47 +343,42 @@ function YourApp() {
         </span>
       </div>
 
-      {/* Your logic: Arkiv runs no contracts, so it lives on an EVM chain or in a backend. */}
-      <div
-        className="absolute flex flex-col rounded-[20px] border-[3px] border-[rgba(246,244,239,0.14)] bg-[rgba(17,17,17,0.82)] px-8 pb-7 pt-6"
-        style={{ left: COLS.b.x, top: COLS.top, width: COLS.b.w, height: BOX.height - COLS.top }}
-      >
-        <span className="text-[44px] font-bold leading-none">Your logic</span>
-        <span className="mt-2.5 text-[26px] leading-[1.25]" style={{ color: T.t84 }}>Arkiv runs no smart contracts</span>
-        <span className="mt-6 text-[28px] font-semibold leading-none">Smart contracts on any EVM chain</span>
-        <span className="mt-4 flex gap-2">
-          {CHAINS.map((chain) => (
-            <LogoTile key={chain.name} src={chain.src} name={chain.name} />
-          ))}
-        </span>
-        <span className="mt-5 flex items-center gap-4 text-[22px]" style={{ color: T.t64 }}>
-          <span className="h-px flex-1" style={{ background: T.t14 }} />
-          or
-          <span className="h-px flex-1" style={{ background: T.t14 }} />
-        </span>
-        <span className="mt-4 flex items-center gap-5">
-          <span className="flex h-[84px] w-[84px] items-center justify-center rounded-[18px] bg-[var(--arkiv-sand)] text-[var(--arkiv-ink)]">
-            <Server size={46} strokeWidth={1.8} aria-hidden />
+      {/* Your logic, wherever you want: the chains' logos, or a web2 backend. */}
+      <AppColumn step={step} at={2} col={COLS.b}>
+        <div data-column="logic" className={SIDE_PANEL}>
+          <span className="text-[44px] font-bold leading-none">Your logic</span>
+          <span className="mt-2.5 text-[26px] leading-[1.25]" style={{ color: T.t84 }}>Wherever you want</span>
+          <span className="flex flex-1 flex-col justify-center gap-7">
+            <span className="flex h-[80px] items-center justify-between">
+              {CHAINS.map((chain) => (
+                <BrandLogo key={chain.name} {...chain} />
+              ))}
+            </span>
+            <span className="flex items-center gap-4 text-[22px]" style={{ color: T.t64 }}>
+              <span className="h-px flex-1" style={{ background: T.t14 }} />
+              or
+              <span className="h-px flex-1" style={{ background: T.t14 }} />
+            </span>
+            <span className="flex items-center gap-5">
+              <Server size={56} strokeWidth={1.8} className="shrink-0 text-[var(--arkiv-sand)]" aria-hidden />
+              <span className="text-[30px] font-semibold leading-none">A web2 backend</span>
+            </span>
           </span>
-          <span className="text-[30px] font-semibold leading-none">A web2 backend</span>
-        </span>
-      </div>
+        </div>
+      </AppColumn>
 
-      {/* Big files: Swarm. */}
-      <div
-        className="absolute flex flex-col rounded-[20px] border-[3px] border-[rgba(246,244,239,0.14)] bg-[rgba(17,17,17,0.82)] px-8 pb-7 pt-6"
-        style={{ left: COLS.c.x, top: COLS.top, width: COLS.c.w, height: BOX.height - COLS.top }}
-      >
-        <span className="text-[44px] font-bold leading-none">Big files</span>
-        <span className="mt-2.5 text-[26px] leading-[1.25]" style={{ color: T.t84 }}>Photos, video, documents</span>
-        <span className="flex flex-1 flex-col items-center justify-center gap-4">
-          <span className="flex h-[144px] w-[144px] items-center justify-center rounded-[28px] bg-[var(--arkiv-sand)]">
-            {/* eslint-disable-next-line @next/next/no-img-element -- the official Swarm mark at its own aspect */}
-            <img src="/deck/logos/swarm-logo.svg" alt="" width={112} height={112} draggable={false} className="block h-[112px] w-[112px]" />
+      {/* Storage for heavy files: Swarm and IPFS. */}
+      <AppColumn step={step} at={3} col={COLS.c}>
+        <div data-column="storage" className={SIDE_PANEL}>
+          <span className="text-[44px] font-bold leading-none">Storage</span>
+          <span className="mt-2.5 text-[26px] leading-[1.25]" style={{ color: T.t84 }}>Heavy files</span>
+          <span className="flex flex-1 flex-col items-center justify-center gap-12">
+            {STORES.map((store) => (
+              <BrandLogo key={store.name} {...store} />
+            ))}
           </span>
-          <span className="text-[36px] font-semibold leading-none">Swarm</span>
-        </span>
-      </div>
+        </div>
+      </AppColumn>
     </div>
   );
 }
@@ -348,7 +390,7 @@ export function W4({ step }: SceneContentProps) {
         <Network />
       </View>
       <View shown={step >= 1}>
-        <YourApp />
+        <YourApp step={step} />
       </View>
     </Slide>
   );
@@ -356,5 +398,7 @@ export function W4({ step }: SceneContentProps) {
 
 export const W4_NOTES: string[] = [
   "Arkiv is the Web3 database. Here's the network: DB-Chains, chains built to store and query app data, joined by Arkiv's own chain, still under construction, which bridges to Ethereum mainnet. A DB-Chain runs a database engine instead of the EVM. Two DB-Chains are live: Rabdi, the one you build on this weekend, and Sorbet, which holds Sourcify's verified contracts. Tiramisu was our previous testnet; Braga, Kaolin and Mendoza came before it and are switched off.",
-  "And here's your app. It talks to a DB-Chain through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: small data you search and filter. This weekend, that's Rabdi. Arkiv runs no smart contracts, so your logic lives in contracts on any EVM chain, like Ethereum, Base, Optimism or Arbitrum, or in a web2 backend. Those contracts can't read your entities directly: your app talks to each side. Big files, like photos and video, go on Swarm.",
+  "And here's your app. It talks to a DB-Chain through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: small data you search and filter. This weekend, that's Rabdi.",
+  "Your logic lives wherever you want: on Ethereum, Base, Optimism, Arbitrum or Solana, or in a web2 backend. Those chains can't read your entities directly: your app talks to each side.",
+  "Heavy files, like photos and video, go to storage built for them: Swarm or IPFS. Your entity keeps the reference.",
 ];
