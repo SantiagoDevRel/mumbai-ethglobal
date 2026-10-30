@@ -812,13 +812,20 @@ try {
       await expect(rubric(label)).not.toContainText("feedback.md");
       if (files.length === 1) await expect(rubric(label)).not.toContainText("%");
       const box = await rubric(label).boundingBox();
-      for (const [what, zone] of keepOut) assert.ok(box.x >= zone.right || box.x + box.width <= zone.left || box.y >= zone.bottom || box.y + box.height <= zone.top, `${label}'s rubric stays off ${what}.`);
-      assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 1920 && box.y + box.height <= 1080, `${label}'s rubric stays on the stage.`);
+      await shoot(`map-1920-PZ-rubric-${RUBRICS.findIndex(([name]) => name === label)}.png`);
+      // Where it is, and anything scrolled under it, for the failure message.
+      const where = await rubric(label).evaluate((element) => {
+        const scrolled = [];
+        for (let node = element.parentElement; node; node = node.parentElement) if (node.scrollLeft || node.scrollTop) scrolled.push({ tag: node.tagName, cls: String(node.className).slice(0, 60), left: node.scrollLeft, top: node.scrollTop });
+        const rect = (node) => { const r = node.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; };
+        const layer = element.closest("[data-scene-layer]");
+        return { rubric: rect(element), row: rect(element.parentElement), layer: layer ? rect(layer) : null, window: [scrollX, scrollY, innerWidth, innerHeight], scrolled, width: element.scrollWidth };
+      });
+      for (const [what, zone] of keepOut) assert.ok(box.x >= zone.right || box.x + box.width <= zone.left || box.y >= zone.bottom || box.y + box.height <= zone.top, `${label}'s rubric stays off ${what}: ${JSON.stringify(where)}`);
+      assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 1920 && box.y + box.height <= 1080, `${label}'s rubric stays on the stage: ${JSON.stringify(where)}`);
       // Drawn over the rows around it, not under them.
       assert.equal(await rubric(label).evaluate((element) => { const r = element.getBoundingClientRect(); return element.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }), true, `${label}'s rubric is on top.`);
       evidence.push({ surface: "prize-rubric", label, files: files.length, box: { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) } });
-      if (label === "Build on Arkiv, from scratch") await shoot("map-1920-PZ-rubric.png");
-      if (label === "Arkiv + Swarm bonus") await shoot("map-1920-PZ-rubric-swarm.png");
       await page.keyboard.press("Escape");
       await expect(rubrics).toHaveCount(0);
       await expect(button(label)).toHaveAttribute("aria-expanded", "false");
