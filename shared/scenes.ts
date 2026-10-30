@@ -14,8 +14,6 @@ export type SceneId =
   | "NT"
   | "S7"
   | "L1"
-  | "B2"
-  | "B3"
   | "L3"
   | "B4"
   | "B5"
@@ -88,9 +86,9 @@ export const SCENES: readonly SceneDef[] = [
   { id: "ST", title: "Five steps to get started", at: 225, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
   { id: "NT", title: "What Arkiv DB-Chain is not", at: 305, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "start" },
   { id: "S7", title: "Your entity: scan and fill the form", at: 345, kind: "slide", steps: 2, qr: { label: "Scan now", placement: "center" }, camera: "globe", map: "dots", section: "build" },
+  // October 30 (Santiago): the Write it and Query it slides became two buttons on L1's map that open
+  // the createEntity call and the query in a popup (app/deck/scenes/live.tsx); → goes on to L3.
   { id: "L1", title: "Write it: your entities, live", at: 425, kind: "live", steps: 1, qr: CORNER_QR, camera: "globe", map: "dots", section: "build" },
-  { id: "B2", title: "Write it: the SDK call", at: 465, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "B3", title: "Query it like a database", at: 515, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
   // L3 opens on the whole globe with no filter and no QR; the presenter filters by hand (name,
   // country, color) and a country filter flies the camera to that country (lib/stage/choreography.ts).
   { id: "L3", title: "Query it, live", at: 575, kind: "live", steps: 1, qr: NO_QR, camera: "globe", map: "dots", section: "build" },

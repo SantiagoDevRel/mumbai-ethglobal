@@ -5,8 +5,6 @@
 import type { SceneId } from "../../shared/scenes";
 import { A1_NOTES } from "./scenes/ai/A1";
 import { PRIZES_NOTES } from "./scenes/ai/Prizes";
-import { B2_NOTES } from "./scenes/B2";
-import { B3_NOTES } from "./scenes/B3";
 import { B5_NOTES } from "./scenes/B5";
 import { D6_NOTES } from "./scenes/data/D6";
 import { TOUR } from "./scenes/me-tour";
@@ -41,10 +39,8 @@ export const NOTES: Record<SceneId, string[]> = {
     "→ shows what your form becomes: one entity. Three attributes anyone can query by, and an Entity Expiration, or none. Press D for the write! frame: everyone taps Write my entity together. Then → to the map.",
   ],
   L1: [
-    "Every dot is an entity you just wrote. Your phone sent one request; our wallet signed for the room. Find yourself on the map: the list on the right shows every write as it lands. Click a dot to open its entity card: an entity with no expiration shows $expiresAt = 2**64 − 1.",
+    "Every dot is an entity you just wrote: your phone sent one request, our wallet signed for the room. The list on the right shows every write as it lands; click a dot for its entity card (no expiration shows $expiresAt = 2**64 − 1). Click Write it: the call your phone triggered, createEntity. Select each part as you name it: attributes (your form plus a category our app picked, what anyone can query by), expires (Entity Expiration, the lifetime you chose), entityKey (the entity's address on the DB-Chain). In your app, your user's wallet or your server signs. Click Query it: Arkiv has a query language, like a database. Every cafe AND only the ones in India; in the SDK, one where per clause. It also has OR, NOT and comparisons. Click + AND name: one more clause narrows it to one place. Values match exactly, which is why everything you wrote is in lower case. Esc closes the code; → runs queries like it on your entities.",
   ],
-  B2: B2_NOTES,
-  B3: B3_NOTES,
   L3: [
     "The same kind of query, on your entities. No filter yet: every entity in this session, on the whole globe. Filter by hand in the bar at the top: a name, a country (the camera flies there) or a color. The query panel shows each clause on its own line, joined by AND.",
     "Own it: click a dot, press Transfer ownership, type 0x and a space for a fresh random wallet (or paste one), then sign once in Rabby (the MUMBAI account, the writer wallet). $owner changes on the next query, and only that wallet can update or delete the entity now. Extend: press Extend in the card (or select dots and E), sign in Rabby, and the ring refills: we switched on permissionless extension, so anyone can extend these.",
@@ -72,8 +68,6 @@ export const REVEALS: Record<SceneId, string[]> = {
   NT: ["not built for big files", "not private by default"],
   S7: ["your form as one entity"],
   L1: [],
-  B2: [],
-  B3: ["one more clause: AND name"],
   L3: [],
   B4: ["owner_phone, encrypted", "the arkiv-encryption skill and npm package"],
   B5: [],

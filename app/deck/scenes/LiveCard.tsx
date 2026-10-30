@@ -18,7 +18,7 @@ type Explainer = { pose: MascotPose; lines: string[] };
 const EXPLAIN: Partial<Record<SceneId, Explainer>> = {
   L1: {
     pose: "laptop",
-    lines: ["Your phone sends one request.", "Our wallet writes it to the DB-Chain as an entity.", "Each entity is a dot on the map."],
+    lines: ["Your phone sends one request.", "Our wallet writes it to the DB-Chain as an entity.", "Each entity is a dot on the map.", "Write it and Query it open the code."],
   },
   L3: {
     pose: "magnifier",

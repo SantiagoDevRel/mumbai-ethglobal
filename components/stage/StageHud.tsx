@@ -52,7 +52,7 @@ export function StageHud({ data, block, state, entities, appSteps, reviews, desc
   const text = state.map === "business" ? fullText.split(tab === "code" ? "// Seed businesses\n" : "Seed businesses:\n").at(-1)! : fullText;
   const lines = queryLayout(text, tab);
   const extraSteps = state.map === "business" ? ["Audience session + seed businesses; other sessions excluded; deduplicated by key. Audience dots use invented business attributes."] : [...(data.run?.description.appSide ?? []), ...appSteps];
-  // B3 already says there is no ORDER BY; L3 doesn't repeat it (one idea, said once).
+  // Only the business view adds that there is no ORDER BY; L3 leaves it out (one idea, said once).
   const appLine = [...new Set([...extraSteps, ...(state.map === "business" ? ["No ORDER BY. Your app sorts."] : [])])].join(" ");
   const ownerView = state.map === "owner";
   const count = ownerView ? (state.transferred ? entities.length : Math.min(1, entities.length)) : data.run?.entities.length ?? 0;
