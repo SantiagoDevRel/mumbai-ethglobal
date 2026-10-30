@@ -70,7 +70,7 @@ export function StageBox({ children, interactive = false }: { children: ReactNod
   const { width, height } = useViewport();
   const box = stageGeometry(width, height, fit);
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-clip">
       <div
         className={interactive ? "pointer-events-auto relative shrink-0" : "relative shrink-0"}
         style={{ width: box.boxW, height: box.boxH, transform: `scale(${box.scale})`, transformOrigin: "center" }}

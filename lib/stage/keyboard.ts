@@ -16,7 +16,7 @@ export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "P", action: "Plan B: replay mode" },
   { keys: "Right-drag", action: "Draw a box to point at something (a right-click clears them)" },
   { keys: "? or /", action: "Show or hide these controls (or the ? button, bottom left)" },
-  { keys: "Esc", action: "Close these controls" },
+  { keys: "Esc", action: "Close a popup or these controls" },
 ];
 
 export function commandForKey(e: Pick<KeyboardEvent, "key" | "shiftKey">): Command | null {

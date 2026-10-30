@@ -16,7 +16,7 @@
 // guidance in one install"), both read October 30.
 // Pictures:
 //   arkiv-meme-plugin-sad.webp · an original illustration made for this deck, in the same set as the
-//     other memes: an AI-generated edit of arkiv-meme-mcp-sad.webp that adds the tear, with no
+//     other memes: an AI-generated edit of the deck's earlier sad MCP meme (removed October 30) that adds the tear, with no
 //     third-party assets.
 //   claude-code-ivory.svg · Anthropic's press kit (https://www.anthropic.com/press-kit, "Download press
 //     kit"), "Anthropic media resources/Anthropic logos/Claude logos/2 Claude Code logo/SVG/Claude Code

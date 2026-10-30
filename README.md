@@ -133,4 +133,4 @@ The MIT license covers the code. The Arkiv logos and brand assets in `public/bra
 
 The mascot art in `public/deck/mascot/` (3D renders made with ChatGPT image generation from the team's reference art) is a proposal pending brand review and is not covered by the MIT license.
 
-The photos in `public/deck/me/` are the speaker's own and are not covered by the MIT license. The round flags in `public/deck/flags/` are unchanged files from circle-flags (MIT): see [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
+The photos in `public/deck/me/` are the speaker's own and are not covered by the MIT license. The round flags in `public/deck/flags/` are unchanged files from circle-flags (MIT). The other projects' logos in `public/deck/logos/` belong to their owners and are not covered by the MIT license either: see [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md).
