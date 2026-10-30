@@ -64,7 +64,7 @@ export const REVEALS: Record<SceneId, string[]> = {
   W2: ["the hug: all three robots together"],
   W3: ["column: from web3", "column: of its own, and the closing line"],
   W4: ["your app: SDK or JSON-RPC into the DB-Chain", "your logic: chain logos or a web2 backend", "storage: Swarm and IPFS"],
-  ST: ["step 2 · a wallet", "step 3 · test funds", "step 4 · free reads", "step 5 · an RPC access key"],
+  ST: ["step 2 · a wallet, with Add network", "step 3 · test funds", "step 4 · free reads, with Get balance", "step 5 · an RPC access key"],
   NT: ["not built for big files", "not private by default"],
   S7: ["your form as one entity"],
   L1: [],

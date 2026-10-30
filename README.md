@@ -76,8 +76,11 @@ npm run dev            # the app and its writer on http://localhost:3000
 The app runs on mock data until `NEXT_PUBLIC_WRITER_URL` is set: `same-origin` for the app's own
 `/api`. The writer also needs `DATABASE_URL` (Postgres), `ARKIV_PROFILE`, `RPC`, `ACCESS_KEY`,
 `WORKSHOP_WRITER_PRIVATE_KEY`, `WORKSHOP_PRESENTER_TOKEN`, `PRESENTER_PASSWORD` and
-`MIN_WRITER_BALANCE_WEI`, all server-side only. `writer/` is the earlier Cloudflare Worker, kept for
-rollback.
+`MIN_WRITER_BALANCE_WEI`, all server-side only. The Five steps slide's Add network button gets
+Rabdi's details from `GET /api/presenter/rabdi`, which reads `RABDI_CHAIN_ID` (decimal),
+`RABDI_RPC_URL`, `RABDI_EXPLORER_URL` and `RABDI_CURRENCY_SYMBOL`, also server-side only; until they
+are set, the button says "Network details not configured". `writer/` is the earlier Cloudflare
+Worker, kept for rollback.
 
 ## Requests and limits
 

@@ -179,6 +179,21 @@ export const PresenterStatus = z.object({
 });
 export type PresenterStatus = z.infer<typeof PresenterStatus>;
 
+/** GET /api/presenter/rabdi: what a wallet needs to add Rabdi, for the Add network button on the
+ * Five steps slide. Rabdi was announced only inside the team, so the writer reads these from
+ * server-only env vars (lib/server/rabdi.ts) and this repo never holds them; while any is missing it
+ * answers 503 `network_not_configured`. */
+export const RabdiNetwork = z.object({
+  /** The chain ID in decimal, and in hex for wallet_addEthereumChain. */
+  chainId: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  chainIdHex: hex,
+  rpcUrl: z.string().regex(/^https:\/\/\S+$/),
+  explorerUrl: z.string().regex(/^https:\/\/\S+$/),
+  /** The native token's symbol, as the wallet shows it. */
+  currencySymbol: z.string().regex(/^[A-Za-z0-9]{2,6}$/),
+});
+export type RabdiNetwork = z.infer<typeof RabdiNetwork>;
+
 /** POST /api/rpc: read-only JSON-RPC proxy through the keyed RPC (presenter token or login token).
  * Only these methods are forwarded; anything else gets a JSON-RPC error. */
 export const RPC_READ_ALLOWLIST = [
@@ -211,6 +226,7 @@ export const WRITER_ROUTES = {
     hold: "/api/presenter/hold",
     resume: "/api/presenter/resume",
     status: "/api/presenter/status",
+    rabdi: "/api/presenter/rabdi",
   },
 } as const;
 
