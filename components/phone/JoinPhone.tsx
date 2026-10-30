@@ -5,7 +5,7 @@ import { DOT_COLOR_NAMES, DOT_PALETTE, shortKey } from "../../shared/encoding";
 import { explorerUrl, getProfile } from "../../shared/arkiv/profiles";
 import { hasVisibleName, SubmitRequest, SubmitResponse } from "../../shared/writer-api";
 import type { DotDraft, Hex } from "../../shared/types";
-import { LIFETIME_DEFAULT_SEC, LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, MAX_ENTITIES_PER_DEVICE, NAME_MAX_CHARS, NO_EXPIRY_BLOCK } from "../../shared/types";
+import { LIFETIME_DEFAULT_SEC, LIFETIME_MIN_SEC, LIFETIME_MAX_SEC, LIFETIME_STEP_SEC, MAX_ENTITIES_PER_DEVICE, NAME_MAX_CHARS, LONGEST_LIFETIME_LABEL } from "../../shared/types";
 import { deviceToken, writerRequest, WriterRequestError, WRITER_ROUTES, WRITER_CONNECTED } from "../../lib/data/writer-client";
 import { entityName, phoneWriteMessage, writtenWithoutExpiry } from "../../lib/data/phone-ticket";
 import { CountryPicker } from "./CountryPicker";
@@ -20,12 +20,10 @@ type PhoneState = { status: "form" } | { status: "submitting" } | { status: "que
 /** One entity this phone wrote: the rows under "Your entities". `key` is null while it is on its way. */
 type Mine = { key: Hex | null; name: string; color: string; endsAt: number | null };
 
-/** "Permanent" (Santiago, October 30; "No expiration" until then) is the SDK's
- * ExpirationTime.permanent(): the deadline `$expiresAt` = 2**64 − 1, the largest block a u64 holds
- * (NO_EXPIRY_BLOCK). The phone always shows the word with that deadline, on the toggle, the readout,
- * the written entity and the list, never alone as a promise: the brand never says an unqualified
- * "permanent". The map side (entity card, list of writes, globe) still says "no expiration". */
-const PERMANENT_DEADLINE = "2**64 − 1";
+/** The longest choice, next to the slider: Rabdi's maximum lifetime, six months (shared/types.ts
+ * MAX_LIFETIME_BLOCKS). It was "Permanent" (2**64 − 1) on the previous testnet; Rabdi refuses that
+ * deadline. The toggle, the readout, the written entity and the list name it the same way. */
+const LONGEST = LONGEST_LIFETIME_LABEL;
 
 const MINE_KEY = "arkiv-mumbai-mine";
 function loadMine(): Mine[] {
@@ -119,7 +117,7 @@ export function JoinPhone() {
     {error && <p className="phone-notice" role="alert">{error}</p>}
     {state.status === "written" ? <section className="phone-entity" aria-live="polite">
       <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={state.draft.color} progress={state.endsAt === null ? 1 : left / state.draft.lifetimeSec} muted={state.endsAt !== null && left === 0} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country.toUpperCase())}</p>
-      {state.endsAt === null ? <><p className="phone-lifetime-status">Permanent</p><p className="phone-expires-at"><span>$expiresAt = {PERMANENT_DEADLINE}</span>{NO_EXPIRY_BLOCK.toString()}</p></> : left > 0 ? <p className="phone-countdown" aria-label="Time left">{formatClock(left)}</p> : <p className="phone-lifetime-status">Time’s up. Unless someone extended it, your entity has expired: that’s Entity Expiration.</p>}
+      {state.endsAt === null ? <><p className="phone-lifetime-status">{LONGEST}</p><p className="phone-expires-at"><span>The longest lifetime</span> Rabdi allows</p></> : left > 0 ? <p className="phone-countdown" aria-label="Time left">{formatClock(left)}</p> : <p className="phone-lifetime-status">Time’s up. Unless someone extended it, your entity has expired: that’s Entity Expiration.</p>}
       <code>{shortKey(state.key)}</code>
       {entityLink && <a className="entity-explorer" href={entityLink} target="_blank" rel="noreferrer">View in explorer <ArrowUpRight size={18} /></a>}
     </section> : state.status === "queued" ? <section className="phone-entity" role="status"><p className="phone-status">On its way</p><LifetimeRing color={state.draft.color} progress={0} muted /><h2>{state.draft.name}</h2><p>Your dot is on its way. Watch the map.</p></section> : <form className="phone-form" onSubmit={submit} noValidate>
@@ -127,13 +125,12 @@ export function JoinPhone() {
       {nameMissing && <p className="phone-field-error" id="name-missing" role="alert">Add a name or nickname: it shows next to your dot.</p>}
       <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={DOT_COLOR_NAMES[color]} aria-pressed={draft.color === color} onClick={() => setDraft({ ...draft, color })} />)}</div></fieldset>
       <div className="phone-field"><span>Choose a country</span><CountryPicker value={draft.country} onChange={(country) => setDraft({ ...draft, country })} /></div>
-      {/* "Permanent" sits under the slider and switches it off: the entity is written with
-          ExpirationTime.permanent(), so its $expiresAt is 2**64 - 1, shown with the word on the
-          toggle and the readout (PERMANENT_DEADLINE). The slider keeps its value. */}
+      {/* The longest choice sits under the slider and switches it off: the entity is written with
+          Rabdi's maximum lifetime, six months (LONGEST). The slider keeps its value. */}
       <div className={`phone-lifetime${forever ? " is-forever" : ""}`}>
-        <div className="lifetime-head"><label htmlFor="lifetime">How long should this data (entity) live?</label><output className="lifetime-value" htmlFor="lifetime">{forever ? <>Permanent <small>{PERMANENT_DEADLINE}</small></> : `${draft.lifetimeSec / 60} min`}</output></div>
+        <div className="lifetime-head"><label htmlFor="lifetime">How long should this data (entity) live?</label><output className="lifetime-value" htmlFor="lifetime">{forever ? <>{LONGEST} <small>max</small></> : `${draft.lifetimeSec / 60} min`}</output></div>
         <input id="lifetime" type="range" disabled={forever} style={{ background: forever ? "var(--phone-track)" : `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span>
-        <button type="button" className="lifetime-forever" aria-pressed={forever} onClick={() => setDraft({ ...draft, noExpiry: !forever })}><InfinityIcon size={20} aria-hidden="true" /><span>Permanent <small>{PERMANENT_DEADLINE}</small></span><span className="lifetime-forever-box" aria-hidden="true">{forever && <Check size={16} strokeWidth={3} />}</span></button>
+        <button type="button" className="lifetime-forever" aria-pressed={forever} onClick={() => setDraft({ ...draft, noExpiry: !forever })}><InfinityIcon size={20} aria-hidden="true" /><span>{LONGEST} <small>the longest</small></span><span className="lifetime-forever-box" aria-hidden="true">{forever && <Check size={16} strokeWidth={3} />}</span></button>
       </div>
       <button className="phone-submit" disabled={!ready || !device || state.status === "submitting"}>{state.status === "submitting" ? "Writing… (a few seconds)" : "Write my entity"}</button>
     </form>}
@@ -146,7 +143,7 @@ export function JoinPhone() {
         return <li key={`${row.key ?? "queued"}-${index}`}>
           <span className="phone-mine-dot" style={{ background: row.color }} aria-hidden="true" />
           <span className="phone-mine-name">{row.name}</span>
-          <span className="phone-mine-time">{!row.key ? "on its way" : row.endsAt === null ? <>permanent <small>{PERMANENT_DEADLINE}</small></> : rest > 0 ? formatClock(rest) : "expired"}</span>
+          <span className="phone-mine-time">{!row.key ? "on its way" : row.endsAt === null ? LONGEST : rest > 0 ? formatClock(rest) : "expired"}</span>
           {link ? <a href={link} target="_blank" rel="noreferrer" aria-label={`View ${row.name} in explorer`}><ArrowUpRight size={16} /></a> : <span />}
         </li>;
       })}</ul>

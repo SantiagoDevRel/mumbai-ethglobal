@@ -16,7 +16,7 @@ import type {
   RawAttribute,
   WriteResult,
 } from "../types";
-import { APP_ID, DOT_CATEGORIES, hasNoExpiry, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC, NO_EXPIRY_BLOCK } from "../types";
+import { APP_ID, DOT_CATEGORIES, hasNoExpiry, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC, LONGEST_LIFETIME_BLOCKS } from "../types";
 import { DOT_PALETTE, encodeCoord, encodeRating } from "../encoding";
 import { countryName } from "../geo/country-name";
 
@@ -99,8 +99,8 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
         owner: WRITER_ADDRESS,
         creator: WRITER_ADDRESS,
         createdAtBlock: block,
-        // No expiration is ExpirationTime.permanent(): the largest block a u64 holds.
-        expiresAtBlock: noExpiry ? NO_EXPIRY_BLOCK : block + blocksFor(lifetimeSec),
+        // The longest lifetime, as the SDK adapter writes it: Rabdi's maximum, six months.
+        expiresAtBlock: noExpiry ? block + LONGEST_LIFETIME_BLOCKS : block + blocksFor(lifetimeSec),
         attrs,
         raw: rawOf(attrs),
       });
@@ -150,8 +150,8 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
       lifetimeSec: LIFETIME_MIN_SEC + LIFETIME_STEP_SEC * Math.floor(Math.random() * ((LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) / LIFETIME_STEP_SEC + 1)),
     }]);
   };
-  // Two phones that chose "No expiration" ($expiresAt = NO_EXPIRY_BLOCK), so mock mode shows from
-  // the start how the stage draws an entity that never expires.
+  // Two phones that chose the longest lifetime (6 months), so mock mode shows from the start how
+  // the stage draws an entity that outlives the workshop.
   write([
     { attrs: { kind: "dot", session: "MOCK", name: "ada", color: "#14f195", country: "in", category: "cafe", lat: 19.12, lng: 72.85 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },
     { attrs: { kind: "dot", session: "MOCK", name: "omar", color: "#00c2ff", country: "co", category: "bookstore", lat: 4.71, lng: -74.07 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },

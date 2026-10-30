@@ -1,7 +1,6 @@
 // Full phone lifecycle against writer fixtures: nothing on load, one submit that answers once the
 // block is in, then a countdown on the phone's own clock with no more requests. The name is lower
-// case as you type, and "Permanent" (October 30; "No expiration" until then) always shows its
-// deadline 2**64 - 1, with no countdown. From a 320 px phone up. Any RPC or other external request is
+// case as you type, and the longest choice (6 months, Rabdi's maximum) shows no countdown. From a 320 px phone up. Any RPC or other external request is
 // a failure.
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
@@ -17,8 +16,8 @@ if (capture) await mkdir(capture, { recursive: true });
 const raw = "An unknown RPC error occurred. Details: RPC request rejected (429). Version: viem@2.57.11";
 const key = `0x${"12".repeat(32)}`;
 const foreverKey = `0x${"34".repeat(32)}`;
-// ExpirationTime.permanent(): the largest block a u64 holds.
-const NO_EXPIRY_BLOCK = "18446744073709551615";
+// A deadline as the writer answers for the longest choice: block 100 + 7,883,970.
+const NO_EXPIRY_BLOCK = "7884070";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const results = [];
 const errors = [];
@@ -136,10 +135,10 @@ try {
     await expect(page.locator(".phone-mine li")).toHaveCount(2);
     await tick(60000);
     assert.equal(api.length, before + 2, "A queued answer is not followed by polling.");
-    // Permanent (October 29, named "No expiration" until October 30): one tap under the slider
-    // switches it off; the toggle, the readout, the written entity and the list show its deadline,
-    // 2**64 - 1, and it never counts down.
-    const forever = page.getByRole("button", { name: "Permanent 2**64 − 1", exact: true });
+    // The longest choice (October 31; Permanent on the previous testnet): one tap under the slider
+    // switches it off; the toggle, the readout, the written entity and the list say 6 months, the
+    // longest lifetime Rabdi allows, and it never counts down.
+    const forever = page.getByRole("button", { name: "6 months the longest", exact: true });
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Ada FOREVER");
     await expect(page.getByRole("textbox", { name: "Your name", exact: true })).toHaveValue("ada forever");
     await expect(forever).toHaveAttribute("aria-pressed", "false");
@@ -152,8 +151,8 @@ try {
     await forever.click();
     await expect(forever).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("slider", { name: "How long should this data (entity) live?" })).toBeDisabled();
-    await expect(page.locator(".lifetime-value")).toHaveText("Permanent 2**64 − 1");
-    assert.equal(await type(".lifetime-value"), readout, "The readout keeps its type when it says Permanent.");
+    await expect(page.locator(".lifetime-value")).toHaveText("6 months max");
+    assert.equal(await type(".lifetime-value"), readout, "The readout keeps its type when it says 6 months.");
     await fits(forever);
     await snapshot("permanent-form");
     phase = "forever";
@@ -161,22 +160,20 @@ try {
     await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
     await expect(page.locator(".phone-entity h2")).toHaveText("ada forever");
     const status = page.locator(".phone-entity .phone-lifetime-status");
-    await expect(status).toHaveText("Permanent");
-    // Written as on the map's entity card: 2**64 − 1, then the block number itself.
-    await expect(page.locator(".phone-expires-at span")).toHaveText("$expiresAt = 2**64 − 1");
-    await expect(page.locator(".phone-expires-at")).toContainText(NO_EXPIRY_BLOCK);
-    assert.equal(await type(".phone-expires-at"), readout, "The deadline reads like the lifetime it replaces.");
+    await expect(status).toHaveText("6 months");
+    await expect(page.locator(".phone-expires-at")).toHaveText("The longest lifetime Rabdi allows");
+    assert.equal(await type(".phone-expires-at"), readout, "The line reads like the lifetime it replaces.");
     await expect(page.getByLabel("Time left")).toHaveCount(0);
     await fits(page.locator(".phone-expires-at"));
     await snapshot("permanent-written");
     await tick(20 * 60_000);
-    await expect(status).toHaveText("Permanent");
+    await expect(status).toHaveText("6 months");
     await expect(page.getByText(/Time’s up/)).toHaveCount(0);
     await expect(page.locator(".phone-mine li")).toHaveCount(3);
-    await expect(page.locator(".phone-mine-time").first()).toHaveText("permanent 2**64 − 1");
+    await expect(page.locator(".phone-mine-time").first()).toHaveText("6 months");
     assert.equal(submissions.at(-1).body.noExpiry, true);
     assert.equal(submissions.at(-1).body.name, "ada forever");
-    assert.equal(api.length, before + 3, "Permanent is still one request.");
+    assert.equal(api.length, before + 3, "The longest choice is still one request.");
     assert.deepEqual(rpc, [], "The phone must never attempt an RPC.");
     assert.ok(submissions.every((item) => !("session" in item.body)), "Phones send no session code.");
     assert.ok(submissions.every((item) => /^[a-f0-9-]{36}$/i.test(item.device)));

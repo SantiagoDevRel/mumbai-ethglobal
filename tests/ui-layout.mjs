@@ -6,7 +6,7 @@ import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 import { getAddress } from "viem";
 import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
-import { NO_EXPIRY_BLOCK } from "../shared/types.ts";
+import { LONGEST_LIFETIME_BLOCKS } from "../shared/types.ts";
 import { NOTHING_TO_EXTEND } from "../shared/arkiv/adapter.ts";
 import { NOT_YOURS_TO_DELETE } from "../lib/data/stage-effects.ts";
 import { startApp } from "./local-app.mjs";
@@ -592,7 +592,7 @@ try {
   await commands(page, [go("L1")]);
   await expect(page.locator(".filter-bar,.query-panel")).toHaveCount(0);
   const entityCard = page.locator(".inspector-panel");
-  const timed = page.locator('.event-log li[data-event="created"] button').filter({ hasNotText: "no expiration" });
+  const timed = page.locator('.event-log li[data-event="created"] button').filter({ hasNotText: "6 months" });
   await expect(timed.first()).toBeVisible({ timeout: 10000 });
   await timed.first().click();
   await expect(entityCard.locator(".inspector-columns")).toBeVisible();
@@ -837,14 +837,14 @@ try {
   await commands(page, [{ type: "togglePanel", panel: "controls", open: false }]);
   await expect(card).toHaveCount(0);
   await expect(page.getByText(/Mock data|Live · Arkiv DB-Chain/)).toHaveCount(0);
-  // No expiration: the fresh mock writes two such entities in its first block. Their card shows
-  // $expiresAt = 2**64 − 1, counts nothing down and has nothing to extend; extending one alone says so.
-  const endless = page.locator('.event-log li[data-event="created"] button').filter({ hasText: "no expiration" });
+  // The longest lifetime: the fresh mock writes two such entities in its first block. Their card
+  // says 6 months, counts nothing down and has nothing to extend; extending one alone says so.
+  const endless = page.locator('.event-log li[data-event="created"] button').filter({ hasText: "6 months" });
   await expect(endless).toHaveCount(2, { timeout: 15000 });
   await endless.first().click();
-  await expect(entityCard.locator(".field-countdown")).toHaveText("2**64 − 1 · no expiration");
-  await expect(entityCard.locator('[data-field="$expiresAt"] dd')).toContainText(`block ${NO_EXPIRY_BLOCK}`);
-  await expect(entityCard.locator('[data-field="$expiresAt"] small')).toHaveText("no expiration");
+  await expect(entityCard.locator(".field-countdown")).toHaveText("6 months · the longest");
+  await expect(entityCard.locator('[data-field="$expiresAt"] dd')).toContainText(/block \d+/);
+  await expect(entityCard.locator('[data-field="$expiresAt"] small')).toHaveText("longest lifetime");
   await expect(entityCard.locator(".extend-suggestion")).toHaveCount(0);
   await expect(entityCard).not.toContainText(/can be extended|min left|under a minute|Less than 60 s/);
   await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Extend", exact: true })).toBeDisabled();
@@ -1283,60 +1283,38 @@ try {
     await expect(page.getByRole("combobox", { name: "Your country" })).toBeFocused();
     await page.getByRole("button", { name: "Green", exact: true }).click();
     await expect(page.getByRole("button", { name: "Green", exact: true })).toHaveAttribute("aria-pressed", "true");
-    // Permanent (October 30; "No expiration" until then) is ExpirationTime.permanent(). The brand never
-    // says an unqualified "permanent": wherever the phone says it, its deadline 2**64 − 1 is in the same
-    // element or right beside it, on the toggle, the readout, the written entity and the list.
-    const permanentMentions = () => page.locator(".phone-main").evaluate((main) => {
-      const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
-      const mentions = { found: 0, alone: [] };
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-        if (!/permanent/i.test(node.data)) continue;
-        mentions.found++;
-        const parent = node.parentElement;
-        if (![parent, parent.parentElement].some((element) => element.textContent.includes("2**64 − 1"))) mentions.alone.push(parent.outerHTML);
-      }
-      return mentions;
-    });
+    // The longest choice (October 31): Rabdi's maximum lifetime, six months. It was Permanent
+    // (2**64 − 1) on the previous testnet; Rabdi refuses that deadline. "permanent" never shows.
     const fitsMain = (selector) => page.locator(selector).first().evaluate((element) => {
       const box = element.getBoundingClientRect(), main = document.querySelector(".phone-main").getBoundingClientRect();
       return box.left >= main.left && box.right <= main.right && element.scrollWidth <= element.clientWidth;
     });
-    const permanent = page.getByRole("button", { name: "Permanent 2**64 − 1", exact: true });
-    await expect(permanent).toHaveAttribute("aria-pressed", "false");
+    const longest = page.getByRole("button", { name: "6 months the longest", exact: true });
+    await expect(longest).toHaveAttribute("aria-pressed", "false");
     await expect(page.locator(".lifetime-value")).toHaveText("15 min");
-    await permanent.click();
-    await expect(permanent).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(".lifetime-value")).toHaveText("Permanent 2**64 − 1");
+    await longest.click();
+    await expect(longest).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".lifetime-value")).toHaveText("6 months max");
     for (const selector of [".lifetime-forever", ".lifetime-value"]) assert.ok(await fitsMain(selector), `${selector} fits at ${width}px`);
-    // The toggle's label, the word and its deadline, stays on one line.
-    assert.ok(await permanent.locator("span").first().evaluate((element) => element.getBoundingClientRect().height < 2 * parseFloat(getComputedStyle(element).fontSize)), `The toggle's label is one line at ${width}px`);
-    {
-      const mentions = await permanentMentions();
-      assert.equal(mentions.found, 2, "The toggle and the readout say Permanent.");
-      assert.deepEqual(mentions.alone, []);
-    }
+    assert.ok(await longest.locator("span").first().evaluate((element) => element.getBoundingClientRect().height < 2 * parseFloat(getComputedStyle(element).fontSize)), `The toggle's label is one line at ${width}px`);
+    await expect(page.locator(".phone-main")).not.toContainText(/permanent|2\*\*64/i);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-permanent.png`), fullPage: true });
-    // Written with Permanent: the word, $expiresAt = 2**64 − 1 and the block number on one line; the
-    // list under it says the same. The fixture answers as the writer does once the block is in.
-    await context.route(`${writer}/api/submit*`, (route) => route.fulfill({ json: { ticket: "11111111-1111-4111-8111-111111111111", position: 0, lat: 19, lng: 72, session: "UI-LAYOUT", status: "written", entityKey: `0x${"34".repeat(32)}`, block: "100", expiresAtBlock: NO_EXPIRY_BLOCK.toString() } }));
+    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-longest.png`), fullPage: true });
+    // Written with the longest lifetime: no countdown; the list under it says the same. The fixture
+    // answers as the writer does once the block is in (deadline 100 + LONGEST_LIFETIME_BLOCKS).
+    await context.route(`${writer}/api/submit*`, (route) => route.fulfill({ json: { ticket: "11111111-1111-4111-8111-111111111111", position: 0, lat: 19, lng: 72, session: "UI-LAYOUT", status: "written", entityKey: `0x${"34".repeat(32)}`, block: "100", expiresAtBlock: (100n + LONGEST_LIFETIME_BLOCKS).toString() } }));
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("ada");
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
     await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
-    await expect(page.locator(".phone-entity .phone-lifetime-status")).toHaveText("Permanent");
-    await expect(page.locator(".phone-expires-at span")).toHaveText("$expiresAt = 2**64 − 1");
-    await expect(page.locator(".phone-expires-at")).toContainText(NO_EXPIRY_BLOCK.toString());
-    await expect(page.locator(".phone-mine-time")).toHaveText("permanent 2**64 − 1");
+    await expect(page.locator(".phone-entity .phone-lifetime-status")).toHaveText("6 months");
+    await expect(page.locator(".phone-expires-at")).toHaveText("The longest lifetime Rabdi allows");
+    await expect(page.locator(".phone-mine-time")).toHaveText("6 months");
+    await expect(page.getByLabel("Time left")).toHaveCount(0);
     for (const selector of [".phone-expires-at", ".phone-mine-time"]) assert.ok(await fitsMain(selector), `${selector} fits at ${width}px`);
-    assert.equal(await page.locator(".phone-expires-at").evaluate((element) => { const range = document.createRange(); range.selectNodeContents(element.lastChild); return range.getClientRects().length; }), 1, `The block number is one line at ${width}px`);
-    {
-      const mentions = await permanentMentions();
-      assert.equal(mentions.found, 2, "The written entity and the list say Permanent.");
-      assert.deepEqual(mentions.alone, []);
-    }
+    await expect(page.locator(".phone-main")).not.toContainText(/permanent|2\*\*64/i);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-permanent-written.png`), fullPage: true });
-    evidence.push({ surface: "phone", viewport: `${width}x${height}`, colorScheme, layout: { ...layout, text: undefined }, countryKeyboard: true, permanentWithDeadline: true });
+    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-longest-written.png`), fullPage: true });
+    evidence.push({ surface: "phone", viewport: `${width}x${height}`, colorScheme, layout: { ...layout, text: undefined }, countryKeyboard: true, longestLifetime: true });
     await context.close();
   }
   for (const width of [360, 390]) for (const colorScheme of ["light", "dark"]) {

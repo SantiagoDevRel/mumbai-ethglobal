@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { decodeEventLog, keccak256, parseTransaction } from "viem";
 import { ENTITY_EVENTS_ABI, type CreateEntityValues } from "@arkiv-network/sdk";
 import { createSdkClients } from "../shared/arkiv/clients-1.0.ts";
-import { encodedFields, lifetime, PLACE, REVIEW } from "../shared/arkiv/sdk-1.0.ts";
+import { encodedFields, lifetime, PLACE, REVIEW, writeParams } from "../shared/arkiv/sdk-1.0.ts";
 import { explorerUrl, getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { SEED_BUSINESSES } from "../shared/data/seed-businesses.ts";
 import { APP_ID, type Hex } from "../shared/types.ts";
@@ -101,7 +101,7 @@ async function main() {
         active = batch;
         if (!batch.txHash) {
           await checkNetwork();
-          batch.nonce = await reader.getTransactionCount({ address: WRITER_ADDRESS, blockTag: "pending" });
+          batch.nonce = await reader.getTransactionCount({ address: WRITER_ADDRESS, blockTag: "latest" });
           await save();
           // SDK estimation remains enabled; no fixed gas limit bypasses preflight.
           try {
@@ -110,7 +110,7 @@ async function main() {
               values: { ...encodedFields(row.attrs), app: APP_ID, kind: row.kind, seed_id: `${DAY}:${row.id}` } as unknown as CreateEntityValues<typeof PLACE>,
               flags: { permissionlessExtension: true },
               expiration: lifetime(12 * 60 * 60), salt: BigInt(`0x${digest({ day: DAY, id: row.id }).slice(0, 32)}`),
-            })) }, { nonce: batch.nonce });
+            })) }, await writeParams(reader, WRITER_ADDRESS, batchRows.length, batch.nonce));
           } catch (error) { if (!batch.txHash) throw error; }
         }
         if (!batch.txHash || !batch.raw || keccak256(batch.raw) !== batch.txHash) throw new Error("Seed write needs reconciliation; do not resend.");

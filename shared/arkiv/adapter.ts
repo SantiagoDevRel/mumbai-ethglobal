@@ -27,8 +27,8 @@ export interface DotCreate {
   lng: number;
   category?: BusinessCategory;
   lifetimeSec: number;
-  /** No expiration: created with `ExpirationTime.permanent()`, so `$expiresAt` is `NO_EXPIRY_BLOCK`
-   * and `lifetimeSec` is ignored. Neither is written as an attribute. */
+  /** The longest lifetime: created with `ExpirationTime.fromBlocks(LONGEST_LIFETIME_BLOCKS)`, six
+   * months on Rabdi, and `lifetimeSec` is ignored. Neither is written as an attribute. */
   noExpiry?: boolean;
 }
 
@@ -38,8 +38,8 @@ export class WriteNotSentError extends Error {
   constructor(message: string) { super(message); this.name = "WriteNotSentError"; }
 }
 
-/** Why a Lifetime Extension of entities that all have no expiration sends nothing (stage copy). */
-export const NOTHING_TO_EXTEND = "Nothing to extend: an entity with no expiration never expires.";
+/** Why a Lifetime Extension of entities that all have the longest lifetime sends nothing (stage copy). */
+export const NOTHING_TO_EXTEND = "Nothing to extend: these entities already have the longest lifetime, 6 months.";
 
 export type BusinessCreate = Omit<BusinessAttrs, "kind"> & { lifetimeSec: number };
 export type ReviewCreate = Omit<ReviewAttrs, "kind"> & { lifetimeSec: number };
@@ -67,7 +67,7 @@ export interface ArkivAdapter {
   createBusinesses(items: BusinessCreate[]): Promise<WriteResult>;
   createReviews(items: ReviewCreate[]): Promise<WriteResult>;
   /** Lifetime Extension of each key by `addSeconds` (one batch), returning the keys it extended.
-   * Entities with no expiration are skipped; if none is left it rejects with `WriteNotSentError`. */
+   * Entities with the longest lifetime are skipped; if none is left it rejects with `WriteNotSentError`. */
   extend(keys: Hex[], addSeconds: number): Promise<WriteResult>;
   /** Real patch: keeps existing attributes, sets the given ones. */
   patch(key: Hex, fields: PatchFields, current: EntityAttrs): Promise<WriteResult>;

@@ -1,11 +1,11 @@
-import { defineSchema, ExpirationTime, i32, key as entityKey, MAX_EXPIRES_AT, str, u64, type Attributes, type CreateEntityValues, type PatchEntityValues } from "@arkiv-network/sdk";
+import { defineSchema, ExpirationTime, i32, key as entityKey, str, u64, type Attributes, type CreateEntityValues, type PatchEntityValues } from "@arkiv-network/sdk";
 import { asc, eq, gt, gte, lte, or, startsWith, type Expression } from "@arkiv-network/sdk/query";
 import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
 import { createSdkClients } from "./clients-1.0.ts";
 import { decodeCoord, decodeRating, encodeCoord, encodeRating } from "../encoding.ts";
 import { countryName } from "../geo/country-name.ts";
-import { APP_ID, hasNoExpiry, type BlockInfo, type ChainFilters, type EntityAttrs, type Hex, type LiveEntity, type QueryDescription, type WriteResult } from "../types.ts";
+import { APP_ID, hasNoExpiry, LONGEST_LIFETIME_BLOCKS, type BlockInfo, type ChainFilters, type EntityAttrs, type Hex, type LiveEntity, type QueryDescription, type WriteResult } from "../types.ts";
 
 export const LIVE_SELECTION = { $key: true, $owner: true, $creator: true, $createdAt: true, $updatedAt: true, $expiresAt: true, $attributes: true } as const;
 
@@ -67,13 +67,32 @@ export function encodedFields(fields: Record<string, unknown>): Record<string, s
 }
 
 /** A lifetime in whole blocks of the SDK's 2 s, rounded up, so any number of seconds is accepted. */
+/** Gas for one write of `operations` entity operations. SDK 1.0's default estimate runs short on
+ * Rabdi: 3 of 10 default-signed writes reverted at exactly their gas limit (migration lane W,
+ * October 31), and explicit parameters passed 10/10 in Rabby and MetaMask and 20/20 with a local
+ * key. Measured October 31: one create used 190,179 gas, ten used 1,500,092; this leaves well over 2×
+ * headroom and stays far under the 30,000,000 block gas limit for a 20-entity batch. */
+export function writeGas(operations: number): bigint {
+  return 1_000_000n + 400_000n * BigInt(Math.max(0, operations - 1));
+}
+
+/** Explicit parameters for every write: the nonce at `latest` (Rabdi serves state at the chain head
+ * only), the current gas price and writeGas. */
+export async function writeParams(
+  reader: { getTransactionCount(args: { address: Hex; blockTag: "latest" }): Promise<number>; getGasPrice(): Promise<bigint> },
+  address: Hex, operations: number, nonce?: number,
+): Promise<{ nonce: number; gas: bigint; gasPrice: bigint }> {
+  const [latest, gasPrice] = await Promise.all([nonce ?? reader.getTransactionCount({ address, blockTag: "latest" }), reader.getGasPrice()]);
+  return { nonce: latest, gas: writeGas(operations), gasPrice };
+}
+
 export function lifetime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds <= 0) throw new Error("Invalid lifetime.");
   return ExpirationTime.fromBlocks(Math.ceil(seconds / 2));
 }
 
-/** "No expiration": the deadline is the largest block a u64 holds, `$expiresAt` = 2**64 - 1. */
-export const NO_EXPIRATION = ExpirationTime.atBlock(MAX_EXPIRES_AT);
+/** The longest lifetime Rabdi accepts (six months; a deadline at 2**64 - 1 reverts there). */
+export const LONGEST_EXPIRATION = ExpirationTime.fromBlocks(Number(LONGEST_LIFETIME_BLOCKS));
 
 /** On-screen text (L7) of `extend` below, for `addSeconds`. Change the two together. */
 export function describeExtend(addSeconds: number): { code: string } {
@@ -83,8 +102,8 @@ export function describeExtend(addSeconds: number): { code: string } {
     `const extraBlocks = BigInt(Math.ceil(${ms} / blockTimeMs))`,
     `const entities = await Promise.all(`,
     `  keys.map((key) => reader.getEntity(key)))`,
-    `// No expiration ($expiresAt = 2n ** 64n - 1n): nothing to extend`,
-    `const expiring = entities.filter((entity) => entity.$expiresAt !== 2n ** 64n - 1n)`,
+    `// Already at the longest lifetime (6 months): nothing to extend`,
+    `const expiring = entities.filter((entity) => entity.$expiresAt < LONGEST)`,
     `await writer.executeBatch({ extensions: expiring.map((entity) => ({`,
     `  entityKey: entity.$key,`,
     `  expiration: ExpirationTime.atBlock(entity.$expiresAt + extraBlocks),`,
@@ -92,9 +111,9 @@ export function describeExtend(addSeconds: number): { code: string } {
   ].join("\n") };
 }
 
-/** The extensions `extend` sends: each deadline `extraBlocks` later. An entity with no expiration is
- * skipped: it already sits at NO_EXPIRY_BLOCK, the largest block a u64 holds, so `atBlock(expiresAt + n)`
- * would not fit (the SDK refuses it at send). When that leaves nothing, nothing is signed or sent. */
+/** The extensions `extend` sends: each deadline `extraBlocks` later. An entity with the longest
+ * lifetime is skipped: it already sits at Rabdi's maximum, so `atBlock(expiresAt + n)` would revert
+ * (ExpiryBeyondMaxLifetime). When that leaves nothing, nothing is signed or sent. */
 export function extensionsFor(entities: readonly { key: Hex; expiresAt: bigint }[], extraBlocks: bigint) {
   const extensions = entities.filter(entity => !hasNoExpiry(entity.expiresAt))
     .map(entity => ({ entityKey: entity.key, expiration: ExpirationTime.atBlock(entity.expiresAt + extraBlocks) }));
@@ -102,7 +121,7 @@ export function extensionsFor(entities: readonly { key: Hex; expiresAt: bigint }
   return extensions;
 }
 
-/** "No expiration" is the u64 maximum deadline: `$expiresAt` becomes NO_EXPIRY_BLOCK, 2**64 - 1.
+/** The longest choice writes LONGEST_EXPIRATION, six months on Rabdi.
  * The country is stored by its full name ("india"), not the code the writer placed it with. */
 export function dotToCreate(dot: DotCreate) {
   const fields = encodedFields(dot as unknown as Record<string, unknown>);
@@ -110,7 +129,7 @@ export function dotToCreate(dot: DotCreate) {
     schema: PLACE,
     values: { ...fields, app: APP_ID, kind: "dot", country: countryName(dot.country) } as unknown as CreateEntityValues<typeof PLACE>,
     flags: { permissionlessExtension: true },
-    expiration: dot.noExpiry ? NO_EXPIRATION : lifetime(dot.lifetimeSec),
+    expiration: dot.noExpiry ? LONGEST_EXPIRATION : lifetime(dot.lifetimeSec),
   };
 }
 
@@ -204,6 +223,12 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
     if (!writer) throw new Error("A wallet is required to write Arkiv entities.");
     return writer;
   }
+  /** The explicit nonce, gas and gas price every write sends (writeParams). */
+  function params(operations: number) {
+    const address = requireWriter().account?.address;
+    if (!address) throw new Error("The wallet has no account.");
+    return writeParams(reader, address, operations);
+  }
   function serializeWrite(work: () => Promise<WriteResult>): Promise<WriteResult> {
     const next = writes.then(async () => {
       if (uncertain) throw new Error("Previous write needs reconciliation before another write.");
@@ -236,7 +261,7 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       schema: (kind === "review" ? REVIEW : PLACE) as typeof PLACE,
       values: { ...encodedFields(item as unknown as Record<string, unknown>), app: APP_ID, kind } as unknown as CreateEntityValues<typeof PLACE>,
       flags: { permissionlessExtension: true }, expiration: lifetime(item.lifetimeSec),
-    })) });
+    })) }, await params(items.length));
     return finish(result.txHash, result.createdEntities);
   });
 
@@ -264,7 +289,7 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
     },
     createDots: dots => serializeWrite(async () => {
       if (!dots.length) throw new Error("No entities to create.");
-      const result = await requireWriter().executeBatch({ creates: dots.map(dotToCreate) });
+      const result = await requireWriter().executeBatch({ creates: dots.map(dotToCreate) }, await params(dots.length));
       return finish(result.txHash, result.createdEntities);
     }),
     createBusinesses: items => create("business", items),
@@ -275,19 +300,19 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       const extraBlocks = BigInt(Math.ceil(addSeconds * 1000 / block.blockTimeMs));
       const current = await Promise.all(keys.map(async key => ({ key, expiresAt: (await reader.getEntity(key)).$expiresAt })));
       const extensions = extensionsFor(current, extraBlocks);
-      const result = await requireWriter().executeBatch({ extensions });
+      const result = await requireWriter().executeBatch({ extensions }, await params(extensions.length));
       return finish(result.txHash, extensions.map(extension => extension.entityKey));
     }),
     patch: (key: Hex, fields: PatchFields, _current: EntityAttrs) => serializeWrite(async () => {
-      const result = await requireWriter().patchEntity(PLACE, key, { set: encodedFields(fields as Record<string, unknown>) as unknown as PatchEntityValues<typeof PLACE> });
+      const result = await requireWriter().patchEntity(PLACE, key, { set: encodedFields(fields as Record<string, unknown>) as unknown as PatchEntityValues<typeof PLACE> }, await params(1));
       return finish(result.txHash, [key]);
     }),
     changeOwner: (key, newOwner) => serializeWrite(async () => {
-      const result = await requireWriter().changeOwnership({ entityKey: key, newOwner });
+      const result = await requireWriter().changeOwnership({ entityKey: key, newOwner }, await params(1));
       return finish(result.txHash, [key]);
     }),
     deleteEntity: key => serializeWrite(async () => {
-      const result = await requireWriter().deleteEntity({ entityKey: key });
+      const result = await requireWriter().deleteEntity({ entityKey: key }, await params(1));
       return finish(result.txHash, [key]);
     }),
   };

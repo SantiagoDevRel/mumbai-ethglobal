@@ -15,14 +15,25 @@ export const LIFETIME_STEP_SEC = 60;
 /** The phone slider starts here. */
 export const LIFETIME_DEFAULT_SEC = LIFETIME_MAX_SEC;
 
-/** `$expiresAt` of an entity with no expiration: the largest block a u64 holds, 2**64 - 1. The SDK's
- * `ExpirationTime.permanent()` writes exactly this deadline; there is no other permanence flag.
- * The phone offers it next to the lifetime slider (Santiago, October 29). */
+/** The largest block a u64 holds, 2**64 - 1: the SDK's `MAX_EXPIRES_AT`. */
 export const NO_EXPIRY_BLOCK = (1n << 64n) - 1n;
 
-/** True for an entity whose `$expiresAt` is `NO_EXPIRY_BLOCK`: show "no expiration", never a countdown. */
+/** Rabdi refuses a deadline more than 7,884,000 blocks after the current block (about 182 days at
+ * 2 s a block; `ExpiryBeyondMaxLifetime`, measured October 31 with a create at 2**64 - 1). So the
+ * phone's longest choice, next to the lifetime slider (Santiago, October 29: "Permanent" on the
+ * previous testnet), is Rabdi's maximum: six months. */
+export const MAX_LIFETIME_BLOCKS = 7_884_000n;
+/** What the app writes for the longest choice: Rabdi's maximum less a small margin. */
+export const LONGEST_LIFETIME_BLOCKS = MAX_LIFETIME_BLOCKS - 30n;
+/** How the screens name the longest choice. */
+export const LONGEST_LIFETIME_LABEL = "6 months";
+
+/** True for an entity written with the longest lifetime: show LONGEST_LIFETIME_LABEL, never a
+ * countdown, and never extend it (it already sits at Rabdi's maximum). Its deadline is at least
+ * LONGEST_LIFETIME_BLOCKS; a timed entity (minutes, plus extensions) stays far below half of that
+ * until Rabdi passes block 3,942,000, about 91 days after its genesis. */
 export function hasNoExpiry(expiresAtBlock: bigint): boolean {
-  return expiresAtBlock === NO_EXPIRY_BLOCK;
+  return expiresAtBlock >= MAX_LIFETIME_BLOCKS / 2n;
 }
 
 export const NAME_MAX_CHARS = 24;
@@ -42,8 +53,7 @@ export interface DotDraft {
   /** ISO 3166-1 alpha-2, lower case (`in`). */
   country: string;
   lifetimeSec: number;
-  /** No expiration: written with `ExpirationTime.permanent()`, so `$expiresAt` is `NO_EXPIRY_BLOCK`
-   * and `lifetimeSec` is ignored. */
+  /** The longest lifetime (LONGEST_LIFETIME_BLOCKS, six months on Rabdi); `lifetimeSec` is ignored. */
   noExpiry?: boolean;
 }
 

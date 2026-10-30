@@ -3,14 +3,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createMockAdapter } from "./mock.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
-import { NO_EXPIRY_BLOCK, type DotAttrs, type Hex } from "../types.ts";
+import { hasNoExpiry, LONGEST_LIFETIME_BLOCKS, type DotAttrs, type Hex } from "../types.ts";
 
 test("mock mode starts with dots that have no expiration, in lower case like every write", async () => {
   const mock = createMockAdapter();
   try {
     for (let i = 0; i < 20; i++) mock.spawnRandom();
     const { entities } = await mock.query<DotAttrs>({ kinds: ["dot"], session: "MOCK" });
-    const endless = entities.filter((entity) => entity.expiresAtBlock === NO_EXPIRY_BLOCK);
+    const endless = entities.filter((entity) => hasNoExpiry(entity.expiresAtBlock));
     assert.deepEqual(endless.map((entity) => entity.attrs.name).sort(), ["ada", "omar"]);
     assert.equal(entities.length, 22);
     for (const entity of entities) {
@@ -31,16 +31,17 @@ test("mock writes and Lifetime Extension treat no expiration like the SDK adapte
     const { keys: [timed, endless] } = await mock.createDots([dot, { ...dot, name: "ada", noExpiry: true }]);
     const read = async () => new Map((await mock.query({ kinds: ["dot"], session: "TEST" })).entities.map((entity) => [entity.key, entity]));
     const before = await read();
-    assert.equal(before.get(endless!)!.expiresAtBlock, NO_EXPIRY_BLOCK);
+    const longest = before.get(endless!)!.expiresAtBlock;
+    assert.equal(longest - before.get(endless!)!.createdAtBlock, LONGEST_LIFETIME_BLOCKS);
     const deadline = before.get(timed!)!.expiresAtBlock;
-    assert.ok(deadline < NO_EXPIRY_BLOCK);
+    assert.equal(hasNoExpiry(deadline), false);
     assert.equal(before.get(endless!)!.raw.some((attribute) => attribute.name === "noExpiry"), false);
     // Only the entity that expires gets the extension: 600 s is 300 blocks of 2 s.
     const extended = await mock.extend([timed!, endless!], 600);
     assert.deepEqual(extended.keys, [timed]);
     const after = await read();
     assert.equal(after.get(timed!)!.expiresAtBlock, deadline + 300n);
-    assert.equal(after.get(endless!)!.expiresAtBlock, NO_EXPIRY_BLOCK);
+    assert.equal(after.get(endless!)!.expiresAtBlock, longest);
     await assert.rejects(mock.extend([endless!], 600), (error: unknown) => error instanceof WriteNotSentError && error.message === NOTHING_TO_EXTEND);
     // "Expiring soon" never lists an entity with no expiration.
     const soon = await mock.query({ kinds: ["dot"], session: "TEST", expiringWithinSec: 3600 });

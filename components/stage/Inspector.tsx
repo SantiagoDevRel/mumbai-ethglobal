@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { decodeCoord, shortKey } from "../../shared/encoding";
-import { hasNoExpiry, type BlockInfo, type LiveEntity, type RawAttribute } from "../../shared/types";
+import { hasNoExpiry, LONGEST_LIFETIME_LABEL, type BlockInfo, type LiveEntity, type RawAttribute } from "../../shared/types";
 import { stage } from "../../lib/stage/store";
 import { remainingSeconds } from "../../lib/data/entity-state";
 import { randomAddress } from "../../lib/data/random-address";
@@ -65,7 +65,7 @@ export function Inspector({ entity, block, businessMode, reviews, showReviews = 
   const fields = [
     { name: "$key", value: entity.key, badge: "its address" },
     { name: "$owner", value: entity.owner, badge: "who controls it" },
-    { name: "$expiresAt", value: `${entity.expiresAtBlock}`, badge: endless ? "no expiration" : "can be extended" },
+    { name: "$expiresAt", value: `${entity.expiresAtBlock}`, badge: endless ? "longest lifetime" : "can be extended" },
   ];
   const stored = [...entity.raw].sort((a, b) => rank(a) - rank(b));
   const shown = everyKey === entity.key ? stored : stored.filter((attribute) => THEIR_ATTRIBUTES.includes(attribute.name));
@@ -82,7 +82,7 @@ export function Inspector({ entity, block, businessMode, reviews, showReviews = 
         const decoded = degrees(attribute);
         return <tr key={attribute.name}><th scope="row">{attribute.name}</th><td>{attribute.type}</td><td title={decoded === null ? attribute.stored : `${attribute.stored} = ${decoded}°`}>{attribute.stored}{decoded !== null && <small> · {decoded.toFixed(2)}°</small>}</td></tr>;
       })}</tbody>{shown.length < stored.length && <tfoot><tr className="more-attributes"><td colSpan={3}><button type="button" aria-label="Show the attributes the app adds" title="Show the attributes the app adds" onClick={() => setEveryKey(entity.key)}>…</button></td></tr></tfoot>}</table></div>
-      <div><h3>Arkiv fields</h3><dl>{fields.map((field) => <div key={field.name} data-field={field.name} className={field.name === "$owner" && transferred ? "badge-highlight" : ""}><dt>{field.name}</dt><dd title={field.value}>{field.name === "$expiresAt" ? <>block {field.value}<span className="field-countdown">{endless ? "2**64 − 1 · no expiration" : timeLeft(seconds)}</span></> : shortKey(field.value)}<small>{field.badge}</small></dd></div>)}</dl>
+      <div><h3>Arkiv fields</h3><dl>{fields.map((field) => <div key={field.name} data-field={field.name} className={field.name === "$owner" && transferred ? "badge-highlight" : ""}><dt>{field.name}</dt><dd title={field.value}>{field.name === "$expiresAt" ? <>block {field.value}<span className="field-countdown">{endless ? `${LONGEST_LIFETIME_LABEL} · the longest` : timeLeft(seconds)}</span></> : shortKey(field.value)}<small>{field.badge}</small></dd></div>)}</dl>
         {transferred && <p className="owner-note">Only this wallet can now update, transfer or delete it.</p>}</div>
     </div>}
     {businessMode && <details><summary>Stored attributes</summary><dl>{stored.map((attr) => <div key={attr.name}><dt>{attr.name} · {attr.type}</dt><dd>{attr.stored}</dd></div>)}</dl></details>}
@@ -93,8 +93,8 @@ export function Inspector({ entity, block, businessMode, reviews, showReviews = 
       <button type="submit" disabled={!ADDRESS.test(newOwner.trim())}>Transfer ownership</button>
       <button type="button" className="transfer-cancel" aria-label="Cancel transfer" onClick={() => { setTransferKey(null); setNewOwner(""); }}>×</button>
     </form> : <div className="inspector-actions">
-      {/* No expiration: Extend is off, and the guard keeps a stray click from reaching the wallet. */}
-      <button disabled={endless} title={endless ? "No expiration: there is nothing to extend." : undefined} onClick={() => { if (endless) return; stage.dispatch({ type: "select", keys: [entity.key], mode: "set" }); stage.dispatch({ type: "extend", scope: "selected" }); }}>Extend</button>
+      {/* The longest lifetime: Extend is off, and the guard keeps a stray click from reaching the wallet. */}
+      <button disabled={endless} title={endless ? "The longest lifetime: there is nothing to extend." : undefined} onClick={() => { if (endless) return; stage.dispatch({ type: "select", keys: [entity.key], mode: "set" }); stage.dispatch({ type: "extend", scope: "selected" }); }}>Extend</button>
       <button disabled={!ours} title={ours ? undefined : "Another wallet owns it now: only that wallet can transfer it."} onClick={() => setTransferKey(entity.key)}>Transfer</button>
       <button className="delete-action" disabled={!ours} title={ours ? undefined : NOT_YOURS_TO_DELETE} onClick={() => { if (ours) stage.dispatch({ type: "deleteEntity", key: entity.key }); }}>Delete</button>
       {link && <a className="explorer-link" href={link} target="_blank" rel="noreferrer" aria-label="Open in the data explorer" title="Open in the data explorer"><ArrowUpRight size={26} strokeWidth={2.4} aria-hidden /></a>}

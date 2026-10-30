@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Map as GLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { hasNoExpiry, type BlockInfo, type Hex, type LiveEntity } from "../../shared/types";
+import { hasNoExpiry, LONGEST_LIFETIME_LABEL, type BlockInfo, type Hex, type LiveEntity } from "../../shared/types";
 import { stage, type StageState } from "../../lib/stage/store";
 import { quietMap } from "../../lib/stage/choreography";
 import { darkStyle } from "../../lib/map/style";
@@ -217,7 +217,7 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
             const name = state.map === "owner" && state.transferred ? `${a.name} · owner` : a.kind === "dot" ? `${a.name} · ${a.country}` : a.name;
             const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
             // Whole minutes, like the entity card: the label changes about once a minute, never ticks.
-            const left = endless ? "no expiration" : seconds <= 0 ? "expired" : seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;
+            const left = endless ? LONGEST_LIFETIME_LABEL : seconds <= 0 ? "expired" : seconds < 60 ? "<1 min" : `${Math.round(seconds / 60)} min`;
             const suffix = state.map === "business" ? business.rating.toFixed(1) : a.kind === "business" && seconds > 120 ? `${clock(business.opens)}–${clock(business.closes)}` : left;
             ctx.font = `600 16px ${fontFamily}`;
             const labelWidth = ctx.measureText(name).width + suffix.length * 8.5 + 36;

@@ -1,11 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ExpirationTime } from "@arkiv-network/sdk";
-import { createArkivAdapter, dotToCreate, encodedFields, extensionsFor, lifetime, NO_EXPIRATION } from "../shared/arkiv/sdk-1.0.ts";
+import { createArkivAdapter, dotToCreate, encodedFields, extensionsFor, lifetime, LONGEST_EXPIRATION, writeGas } from "../shared/arkiv/sdk-1.0.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "../shared/arkiv/adapter.ts";
 import { createSdkClients, keyedUrl } from "../shared/arkiv/clients-1.0.ts";
 import { getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
-import { APP_ID, NO_EXPIRY_BLOCK, type Hex } from "../shared/types.ts";
+import { APP_ID, LONGEST_LIFETIME_BLOCKS, MAX_LIFETIME_BLOCKS, NO_EXPIRY_BLOCK, type Hex } from "../shared/types.ts";
 
 test("adapter walks every page by $key and describes the exact query sent", async () => {
   const original = globalThis.fetch;
@@ -119,12 +119,14 @@ test("the stage relay reads without any fetch: no browser touches the public RPC
   } finally { globalThis.fetch = original; }
 });
 
-// "No expiration" on the phone (Santiago, October 29) is the largest deadline a u64 holds.
-test("no expiration writes the u64 maximum deadline, and neither lifetime choice is an attribute", () => {
+// The phone's longest choice is Rabdi's maximum lifetime: a deadline at 2**64 - 1 reverts there
+// (ExpiryBeyondMaxLifetime, 7,884,000 blocks, October 31).
+test("the longest choice writes Rabdi's maximum lifetime, and neither lifetime choice is an attribute", () => {
   const dot = { session: "TEST", name: "asha", country: "in", color: "#fe7446", lat: 19.1, lng: 72.9, lifetimeSec: 900 };
   const forever = dotToCreate({ ...dot, noExpiry: true });
-  assert.deepEqual(forever.expiration, NO_EXPIRATION);
-  assert.equal(forever.expiration.expiresAt, NO_EXPIRY_BLOCK);
+  assert.deepEqual(forever.expiration, LONGEST_EXPIRATION);
+  assert.deepEqual(forever.expiration, ExpirationTime.fromBlocks(Number(LONGEST_LIFETIME_BLOCKS)));
+  assert.ok(LONGEST_LIFETIME_BLOCKS <= MAX_LIFETIME_BLOCKS);
   for (const timed of [dotToCreate(dot), dotToCreate({ ...dot, noExpiry: false })]) assert.deepEqual(timed.expiration, ExpirationTime.fromSeconds(900));
   // Any number of seconds becomes whole 2 s blocks, rounded up.
   assert.deepEqual(lifetime(901), ExpirationTime.fromBlocks(451));
@@ -137,15 +139,22 @@ test("no expiration writes the u64 maximum deadline, and neither lifetime choice
   }
 });
 
-test("Lifetime Extension skips entities with no expiration and refuses when none is left", () => {
+test("writes carry gas with at least twice the measured use, under the block gas limit", () => {
+  // Measured on Rabdi, October 31: one create 190,179 gas, ten creates 1,500,092.
+  assert.ok(writeGas(1) >= 2n * 190_179n);
+  assert.ok(writeGas(10) >= 2n * 1_500_092n);
+  assert.ok(writeGas(20) < 30_000_000n);
+});
+
+test("Lifetime Extension skips entities with the longest lifetime and refuses when none is left", () => {
   const timed = `0x${"1".repeat(64)}` as Hex, endless = `0x${"2".repeat(64)}` as Hex;
-  // atBlock(NO_EXPIRY_BLOCK + n) would not fit the u64 deadline: the entity with no expiration stays as it is.
+  // Extending an entity already at Rabdi's maximum would revert: it stays as it is.
   assert.deepEqual(extensionsFor([{ key: timed, expiresAt: 128n }, { key: endless, expiresAt: NO_EXPIRY_BLOCK }], 600n),
     [{ entityKey: timed, expiration: ExpirationTime.atBlock(728n) }]);
   assert.throws(() => extensionsFor([{ key: endless, expiresAt: NO_EXPIRY_BLOCK }], 600n), (error: unknown) => error instanceof WriteNotSentError && error.message === NOTHING_TO_EXTEND);
 });
 
-test("extending only entities with no expiration signs nothing and leaves the next write free", async () => {
+test("extending only entities with the longest lifetime signs nothing and leaves the next write free", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = async () => { throw new Error("A relay read must not fetch."); };
   const timed = `0x${"4".repeat(64)}` as Hex, endless = `0x${"3".repeat(64)}` as Hex;

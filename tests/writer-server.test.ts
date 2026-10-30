@@ -9,7 +9,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { ExpirationTime } from "@arkiv-network/sdk";
 import { createDb } from "../lib/server/db.ts";
 import { createWriter } from "../lib/server/writer.ts";
-import { dotToCreate, NO_EXPIRATION } from "../shared/arkiv/sdk-1.0.ts";
+import { dotToCreate, LONGEST_EXPIRATION } from "../shared/arkiv/sdk-1.0.ts";
 import type { DotCreate } from "../shared/arkiv/adapter.ts";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -37,7 +37,7 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const override = await onRpc?.(call);
   if (override !== undefined) return Response.json({ jsonrpc: "2.0", id: call.id, result: override });
   const values: Record<string, unknown> = { eth_chainId: "0x76edaf", arkiv_getBlockTiming: { current_block: 100, current_block_time: Date.now() / 1000, duration: 2 },
-    eth_getBalance: balance, eth_blockNumber: "0x64", eth_getTransactionCount: "0x0", eth_getBlockByNumber: null };
+    eth_getBalance: balance, eth_blockNumber: "0x64", eth_getTransactionCount: "0x0", eth_gasPrice: "0x3b9aca00", eth_getBlockByNumber: null };
   if (!(call.method in values)) throw new Error(`Unexpected RPC method ${call.method}`);
   return Response.json({ jsonrpc: "2.0", id: call.id, result: values[call.method] });
 };
@@ -328,8 +328,8 @@ test("two instances never send at once, and hold stops a batch that was not admi
   } finally { release(); await dispose(); }
 });
 
-// Santiago, October 29: text is stored in lower case, and "No expiration" reaches the create as the
-// u64 maximum deadline.
+// Santiago, October 29: text is stored in lower case, and the longest choice reaches the create as
+// Rabdi's maximum lifetime.
 test("the writer stores lower-case text and keeps No expiration for the create", opts, async () => {
   const { db, call, dispose } = await fixture();
   try {
@@ -343,7 +343,7 @@ test("the writer stores lower-case text and keeps No expiration for the create",
     assert.equal((await call("/api/submit", { name: "ravi", color: "#fe7446", country: "IND", lifetimeSec: 300 }, phone("lower-case-phone-device-3"))).data.error, "invalid");
     const rows = await db.query<{ dot: DotCreate }>(`select dot from ${db.t("tickets")} where session = $1 order by seq`, [code]);
     assert.deepEqual(rows.map(({ dot }) => [dot.name, dot.color, dot.country, dot.noExpiry]), [["asha rao", "#fe7446", "in", true], ["ravi", "#fe7446", "in", undefined]]);
-    assert.deepEqual(dotToCreate(rows[0]!.dot).expiration, NO_EXPIRATION);
+    assert.deepEqual(dotToCreate(rows[0]!.dot).expiration, LONGEST_EXPIRATION);
     assert.deepEqual(dotToCreate(rows[1]!.dot).expiration, ExpirationTime.fromSeconds(300));
     // Placement read the lower-case code: both dots are in India.
     for (const { data } of [forever, timed]) assert.ok(data.lat > 6 && data.lat < 36 && data.lng > 68 && data.lng < 98, JSON.stringify(data));

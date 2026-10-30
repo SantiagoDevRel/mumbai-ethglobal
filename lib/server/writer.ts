@@ -14,7 +14,7 @@ import { decodeEventLog, keccak256, parseTransaction, recoverTransactionAddress,
 import { ENTITY_EVENTS_ABI, key as entityKey } from "@arkiv-network/sdk";
 import { asc, eq, gt } from "@arkiv-network/sdk/query";
 import { createSdkClients, keyQuotaExhausted, postKeyed, type RpcObserver } from "../../shared/arkiv/clients-1.0";
-import { dotToCreate } from "../../shared/arkiv/sdk-1.0";
+import { dotToCreate, writeParams } from "../../shared/arkiv/sdk-1.0";
 import { getProfile, NetworkNotConfiguredError } from "../../shared/arkiv/profiles";
 import type { DotCreate } from "../../shared/arkiv/adapter";
 import { APP_ID, DOT_CATEGORIES, MAX_ENTITIES_PER_SESSION, type Hex } from "../../shared/types";
@@ -264,7 +264,8 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     const [[{ n }], block, balance, nonce] = await Promise.all([
       db.query<{ n: number }>(`select count(*)::int as n from ${t("tickets")} where status = 'queued'`) as Promise<[{ n: number }]>,
       reader.getBlockNumber(), reader.getBalance({ address: writerAddress }),
-      reader.getTransactionCount({ address: writerAddress, blockTag: "pending" })]);
+      // Rabdi serves state at the chain head only; one batch is in flight at a time, so latest is next.
+      reader.getTransactionCount({ address: writerAddress, blockTag: "latest" })]);
     if (!n) return "stop";
     if (block <= BigInt(meta.lastFlushBlock)) return Math.max(250, Math.round(blockTimeMs / 2));
     if (balance < BigInt(env.MIN_WRITER_BALANCE_WEI ?? "0")) {
@@ -300,7 +301,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       await saveMeta(q, locked);
     });
     try {
-      const result = await writer!.executeBatch({ creates: prepared.map(row => dotToCreate(row.dot)) }, { nonce });
+      const result = await writer!.executeBatch({ creates: prepared.map(row => dotToCreate(row.dot)) }, await writeParams(reader, writerAddress, prepared.length, nonce));
       journal = null;
       if ((await readMeta()).inFlight?.txHash !== result.txHash) throw new Error("Receipt hash differs from the signed batch.");
       await reconcile(holder);

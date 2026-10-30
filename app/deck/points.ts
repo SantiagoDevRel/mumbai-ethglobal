@@ -14,7 +14,7 @@ export const POINTS: Record<SceneId, string[]> = {
   W4: ["The network: DB-Chains joined by Arkiv, bridged to Ethereum", "Live: Rabdi and Sorbet (Sourcify)", "Your app, one → each: DB-Chain, logic anywhere, Swarm or IPFS"],
   ST: ["Use Rabdi testnet: everything is free", "SDK · wallet · faucet · RPC access key · free reads", "Live: Add network, then Get balance; the tags are links"],
   NT: ["Not a smart-contract chain", "Not built for big files: 128 KB per entity", "Not private by default: you can encrypt values yourself"],
-  S7: ["\"Your first entity\": big QR, everyone scans and fills the form", "Your entity: expiration 15 min, or Permanent (2**64 − 1)", "\"write!\": everyone taps Write together"],
+  S7: ["\"Your first entity\": big QR, everyone scans and fills the form", "Your entity: expiration 15 min, or 6 months (the longest)", "\"write!\": everyone taps Write together"],
   L1: ["Every dot is an entity the room just wrote", "One request per phone; our wallet signs", "Buttons: Write it (createEntity) · Query it (+ AND name)"],
   L3: ["The map is one query: filter it by hand", "Name, country (the camera flies) or color", "Transfer or extend from the entity card"],
   B4: ["All fields in an entity are public", "owner_phone keeps its name; its value is encrypted", "arkiv-encryption: the skill and the npm package"],

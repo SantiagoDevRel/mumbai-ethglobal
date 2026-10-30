@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, useState } from "react";
 import type { LiveData } from "../../lib/data/useLiveData";
-import type { BlockInfo, LiveEntity, QueryDescription } from "../../shared/types";
+import { LONGEST_LIFETIME_LABEL, type BlockInfo, type LiveEntity, type QueryDescription } from "../../shared/types";
 import { stage, type StageState } from "../../lib/stage/store";
 import { quietMap } from "../../lib/stage/choreography";
 import { Filters } from "./Filters";
@@ -56,7 +56,7 @@ function EventLog({ data, block }: { data: LiveData; block: BlockInfo | null }) 
     const frame = requestAnimationFrame(() => { element.scrollTop = 0; });
     return () => cancelAnimationFrame(frame);
   }, [newest]);
-  return <aside className="event-log panel pointer-events-auto"><h2>On the map <span className="live-dot" /></h2><ol ref={list} onScroll={(event) => { pinned.current = event.currentTarget.scrollTop < 38; }}>{data.events.map((event) => <li key={event.id} data-event={event.type} data-current={event.block === data.run?.block}><button onClick={() => stage.dispatch({ type: "inspect", key: event.key })}><i className="event-color" style={{ color: event.color ?? "#fe7446" }} /><div><b>{event.type === "created" ? "+" : event.type === "expired" ? "−" : event.type === "deleted" ? "×" : "↗"} {event.name}{event.country && ` · ${event.country}`}{event.type === "created" && (event.noExpiry ? " · no expiration" : block && ` · ${lifetimeLabel(Number(event.lifetimeBlocks) * block.blockTimeMs / 1000)}`)}</b><span>{event.type === "expired" || event.type === "deleted" ? event.detail : `block #${event.block}`}</span></div></button></li>)}</ol>{!data.events.length && <p>Waiting for the room…</p>}</aside>;
+  return <aside className="event-log panel pointer-events-auto"><h2>On the map <span className="live-dot" /></h2><ol ref={list} onScroll={(event) => { pinned.current = event.currentTarget.scrollTop < 38; }}>{data.events.map((event) => <li key={event.id} data-event={event.type} data-current={event.block === data.run?.block}><button onClick={() => stage.dispatch({ type: "inspect", key: event.key })}><i className="event-color" style={{ color: event.color ?? "#fe7446" }} /><div><b>{event.type === "created" ? "+" : event.type === "expired" ? "−" : event.type === "deleted" ? "×" : "↗"} {event.name}{event.country && ` · ${event.country}`}{event.type === "created" && (event.noExpiry ? ` · ${LONGEST_LIFETIME_LABEL}` : block && ` · ${lifetimeLabel(Number(event.lifetimeBlocks) * block.blockTimeMs / 1000)}`)}</b><span>{event.type === "expired" || event.type === "deleted" ? event.detail : `block #${event.block}`}</span></div></button></li>)}</ol>{!data.events.length && <p>Waiting for the room…</p>}</aside>;
 }
 
 /** `described`: the query for the filters on screen right now, so the panel follows typing at once.

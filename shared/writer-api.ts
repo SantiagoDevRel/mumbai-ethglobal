@@ -204,6 +204,9 @@ export const RPC_READ_ALLOWLIST = [
   "eth_getTransactionReceipt",
   "eth_getTransactionByHash",
   "eth_getLogs",
+  // writeParams (shared/arkiv/sdk-1.0.ts): the nonce and gas price every presenter write sends.
+  "eth_getTransactionCount",
+  "eth_gasPrice",
   "arkiv_query",
   "arkiv_getEntity",
   "arkiv_getEntityCount",

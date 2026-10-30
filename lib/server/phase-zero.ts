@@ -5,7 +5,7 @@
 import { i32 } from "@arkiv-network/sdk";
 import { eq, gte, lte } from "@arkiv-network/sdk/query";
 import { createSdkClients } from "../../shared/arkiv/clients-1.0";
-import { lifetime, PLACE } from "../../shared/arkiv/sdk-1.0";
+import { lifetime, PLACE, writeParams } from "../../shared/arkiv/sdk-1.0";
 import { getProfile, NetworkNotConfiguredError } from "../../shared/arkiv/profiles";
 import { APP_ID, type Hex } from "../../shared/types";
 import type { Db } from "./db";
@@ -60,14 +60,14 @@ export async function runPhaseZero(db: Db, env: WriterEnv, writerAddress: Hex): 
     return Response.json(publicProof());
   }
   if (proof.balanceWei === "0") return Response.json({ ...publicProof(), error: "Writer needs funding." }, { status: 409 });
-  proof.nonce = await reader.getTransactionCount({ address: writerAddress, blockTag: "pending" });
+  proof.nonce = await reader.getTransactionCount({ address: writerAddress, blockTag: "latest" });
   await save();
   try {
     const result = await writer!.executeBatch({ creates: [{
       schema: PLACE,
       values: { app: APP_ID, kind: "dot", session: "phase-zero", name: "writer check", color: "#fe7446", country: "india", lat: 19_076_000, lng: 72_877_700 },
       flags: { permissionlessExtension: true }, expiration: lifetime(120),
-    }] }, { nonce: proof.nonce });
+    }] }, await writeParams(reader, writerAddress, 1, proof.nonce));
     proof.txHash = result.txHash;
     proof.entityKey = result.createdEntities[0];
     const receipt = await reader.getTransactionReceipt({ hash: result.txHash });

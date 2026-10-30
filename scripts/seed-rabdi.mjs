@@ -1,8 +1,8 @@
 // Loads the map's sample businesses and their reviews onto Rabdi, and is safe to run again: it first
 // reads which seed entities the signer already has live on the chain and creates only the missing
 // ones. Run it after the team resets Rabdi, and on the workshop morning (seeds live 12 hours by
-// default). A rerun never sends while one of the signer's transactions is still pending, so a write
-// that has not landed yet is never sent twice.
+// default). Each batch waits for its receipt before the next, and every write sends an explicit nonce,
+// gas and gas price (writeParams in shared/arkiv/sdk-1.0.ts).
 //
 //   node --experimental-strip-types scripts/seed-rabdi.mjs [--dry-run] [--signer writer|test] [--hours 12]
 //
@@ -15,7 +15,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { asc, eq, gt } from "@arkiv-network/sdk/query";
 import { key } from "@arkiv-network/sdk";
 import { createSdkClients } from "../shared/arkiv/clients-1.0.ts";
-import { encodedFields, lifetime, PLACE, REVIEW } from "../shared/arkiv/sdk-1.0.ts";
+import { encodedFields, lifetime, PLACE, REVIEW, writeParams } from "../shared/arkiv/sdk-1.0.ts";
 import { explorerUrl, getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { SEED_BUSINESSES } from "../shared/data/seed-businesses.ts";
 import { APP_ID } from "../shared/types.ts";
@@ -88,7 +88,7 @@ async function send(kind, rows) {
       values: { ...encodedFields(row.attrs), app: APP_ID, kind, seed_id: `${DAY}:${row.id}` },
       flags: { permissionlessExtension: true },
       expiration: lifetime(hours * 60 * 60),
-    })) });
+    })) }, await writeParams(reader, address, slice.length));
     const receipt = await reader.getTransactionReceipt({ hash: result.txHash });
     assert.equal(receipt.status, "success", `Seed batch ${result.txHash} reverted.`);
     assert.equal(result.createdEntities.length, slice.length, "The batch created a different number of entities.");
@@ -106,8 +106,6 @@ if (dryRun || (!before.missingBusinesses.length && !before.missingReviews.length
   console.log(JSON.stringify({ ...summary, dryRun, written: false }));
   process.exit(0);
 }
-const [latest, pending] = await Promise.all([reader.getTransactionCount({ address, blockTag: "latest" }), reader.getTransactionCount({ address, blockTag: "pending" })]);
-assert.equal(pending, latest, "A transaction from this signer is still pending: wait for it to land, then run again.");
 let held = false;
 try {
   if (signer === "writer") {
