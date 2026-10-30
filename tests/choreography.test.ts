@@ -42,7 +42,7 @@ test("a country filter on L3 flies the camera there; a name or a color leaves it
 });
 
 test("filters move the camera only on L3, and the cue is lower case", () => {
-  for (const id of ["L1", "B3", "L9"] as const) {
+  for (const id of ["L1", "B4", "L9"] as const) {
     const state = at(id);
     assert.deepEqual(filter(state, { country: "in" }).camera, state.camera, id);
   }
@@ -134,9 +134,9 @@ test("one idea per scene, in the outline's order", () => {
   // Own it (L6) and Expire it (L2) are gone (October 29); What Arkiv DB-Chain is not (NT) follows the five steps.
   assert.deepEqual(
     SCENES.map((scene) => scene.id),
-    ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "NT", "S7", "L1", "B2", "B3", "L3", "B4", "B5", "T1", "T2", "PZ", "L9"],
+    ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "NT", "S7", "L1", "L3", "B4", "B5", "T1", "T2", "PZ", "L9"],
   );
-  assert.ok(order("B3") < order("L3"), "the query slide comes right before the query runs");
+  assert.equal(order("L3"), order("L1") + 1, "the query runs right after the write: L1's Write it and Query it buttons open the code on the map");
   assert.equal(new Set(SCENES.map((scene) => scene.title)).size, SCENES.length, "no title twice");
   for (let i = 1; i < SCENES.length; i++) assert.ok(SCENES[i]!.at > SCENES[i - 1]!.at, SCENES[i]!.id);
   for (const id of ["L1", "L3", "L9"] as const) assert.equal(SCENES[order(id)]!.steps, 1, `${id} has no reveal steps`);

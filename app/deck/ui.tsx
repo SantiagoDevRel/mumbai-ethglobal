@@ -41,7 +41,7 @@ export const REVEAL_TIME = 0.3;
 /** How far a slide's backdrop reaches past the 1920x1080 box on each side, in stage pixels. A slide
  * fits the window ("contain"), so a window wider or taller than 16:9 has bands beside or above the
  * box; the backdrop fills them (windows from about 1:3 to 6:1) and StageBox's window-sized wrapper
- * clips the rest. Santiago, October 29: on B3 the globe showed in a band on the left. */
+ * clips the rest. Santiago, October 29: the globe showed in a band beside a slide. */
 export const BLEED = 2400;
 
 /** A slide's backdrop over the whole window: `background` covers the box and the bands around it.
@@ -193,6 +193,13 @@ export function OverlayShell({ children }: { children: ReactNode }) {
     </MotionConfig>
   );
 }
+
+/** A code well inside a glass card (L1's Write it and Query it popups, ./scenes/live.tsx). */
+export const WELL = "rounded-[12px] border border-[rgba(246,244,239,0.1)] bg-[rgba(8,9,31,0.6)]";
+
+/** The Orange keyboard-focus ring of a button on the stage. */
+export const FOCUS =
+  "focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-4 focus-visible:outline-[var(--arkiv-orange)]";
 
 /**
  * Caption pill for live scenes (handoff 4): one line, 32/600, at (432, 60); at (352, 60) when the

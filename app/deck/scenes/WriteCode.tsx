@@ -1,0 +1,60 @@
+"use client";
+
+// Write it: the SDK call behind each phone's tap. It was the B2 slide; since October 30 (Santiago) the
+// Write it button on L1's map opens it in a popup (./live.tsx), so the room's dots stay on screen. The
+// call is the one the writer makes for every phone (shared/arkiv/sdk-0.8.ts `dotToCreate`), trimmed to
+// the form's fields plus the category the writer picks (Query it filters by it); the values are an
+// example, in lower case like everything the phones write. The presenter selects each part with the
+// left button as he names it (Santiago, October 29), so nothing here blocks text selection.
+
+import { T, WELL } from "../ui";
+
+/** The popup's heading and the line under it. */
+export const WRITE_IT = { title: "Write it", under: "The call behind your tap. Our wallet signed it for you." } as const;
+
+type Line = { text: string; quiet?: boolean };
+
+// SDK 0.8.1: every entity declares its contents; an attributes-only entity sends empty bytes. Those two
+// lines are required but not the lesson, so they stay dim.
+const CODE: Line[] = [
+  { text: "const { entityKey } = await walletClient.createEntity({" },
+  { text: "  attributes: {" },
+  { text: '    name: "chai corner",' },
+  { text: '    color: "#fe7446",' },
+  { text: '    country: "in",' },
+  { text: '    category: "cafe",' },
+  { text: "  }," },
+  { text: "  payload: new Uint8Array(),", quiet: true },
+  { text: '  contentType: "application/octet-stream",', quiet: true },
+  { text: "  expires: ExpirationTime.fromSeconds(15 * 60)," },
+  { text: "});" },
+];
+
+/** String literals in Orange, the rest as is. */
+function Tinted({ text }: { text: string }) {
+  return text.split(/("[^"]*")/).map((part, i) =>
+    part.startsWith('"') ? (
+      <span key={i} className="text-[var(--arkiv-orange)]">
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  );
+}
+
+/** The createEntity call. 18 px mono: its longest line (55 characters) fits the popup's 600 px well. */
+export function WriteCode() {
+  return (
+    <pre
+      className={`${WELL} cursor-text select-text px-3 py-3 font-mono text-[18px] leading-[1.5] selection:bg-[rgba(254,116,70,0.4)] selection:text-[var(--arkiv-sand)]`}
+      aria-label="createEntity call"
+    >
+      {CODE.map((line) => (
+        <span key={line.text} className="block" style={line.quiet ? { color: T.t42 } : undefined}>
+          {line.quiet ? line.text : <Tinted text={line.text} />}
+        </span>
+      ))}
+    </pre>
+  );
+}

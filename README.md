@@ -7,10 +7,11 @@ five steps before your first write (and what Arkiv is not), building your entity
 prizes for the weekend. An index after the title lists the parts, and a bar across the top shows where
 the talk is. In "Build your entity" everyone scans a QR code, picks a name, a color, a country and a
 lifetime (5 to 15 minutes, 15 by default, or no expiration), and their Arkiv entity drops onto a live 3D
-globe, where it counts down and expires, or stays. Everything is stored in lower case. Each idea gets
-one slide, then runs on the room's own entities: write it and query it (the panel under the map shows
-the query that ran: Code, the SDK call the app runs; Query, the query text the SDK sends to the
-DB-Chain). The entity card transfers and extends any entity. Expired dots leave the map.
+globe, where it counts down and expires, or stays. Everything is stored in lower case. Each idea runs
+on the room's own entities: write it and query it (on the map, Write it and Query it open the code in a
+popup, and the panel under the map shows the query that ran: Code, the SDK call the app runs; Query, the
+query text the SDK sends to the DB-Chain). The entity card transfers and extends any entity. Expired
+dots leave the map.
 
 | Route | Who | What |
 |---|---|---|
@@ -33,6 +34,9 @@ reduced motion the last frame shows at once). The dots and the scene counter (n 
 right show the steps of the current scene and where it is in the talk. Drag with the right mouse button, on a slide or on the map (panels and the QR card
 included), to draw a rectangle that points at something; a right-click without dragging clears them,
 and so does the next step or scene. The left button keeps clicks, text selection and moving the globe.
+
+On L1, Write it and Query it (under the counter) open the createEntity call and the query in a popup on
+the left of the map, one at a time; + AND name adds one more clause, and × or Esc closes it.
 
 On L3 the filter bar along the top filters by name (starts with), country (the camera flies there) and
 color; it counts the results and the query panel marks each filter line as you type. Text is stored in

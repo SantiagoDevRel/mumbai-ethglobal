@@ -187,11 +187,108 @@ try {
     evidence.push({ surface: "map", scene: "L1", viewport: `${width}x${height}`, layout });
   }
   await page.setViewportSize({ width: 1920, height: 1080 });
-  // The SDK call is a slide: the map's QR and HUD step aside.
+  // October 30: Write it and Query it are two buttons under the counter, no longer slides. Each opens
+  // its code in a popup on the left of L1's map, one at a time, clear of the HUD and of the room's dots
+  // (India starts near x 708, Europe sits above y 280); × or Esc closes it and → goes on to L3.
+  const codeButtons = page.getByRole("group", { name: "Show the code" });
+  const writeIt = codeButtons.getByRole("button", { name: "Write it", exact: true });
+  const queryIt = codeButtons.getByRole("button", { name: "Query it", exact: true });
+  const codePopup = page.locator("#l1-code-popup");
+  const dialogs = page.getByRole("dialog");
+  await expect(writeIt).toHaveAttribute("aria-expanded", "false");
+  await expect(dialogs).toHaveCount(0);
+  const overlaps = (a, b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+  const hudBoxes = () => Promise.all([".stage-counter", ".join-qr-corner", ".event-log"].map((selector) => page.locator(selector).boundingBox()));
+  for (const box of await hudBoxes()) assert.ok(!overlaps(box, await codeButtons.boundingBox()), "The code buttons leave the counter, the QR card and the list of writes clear.");
+  // Where the popup is, how many of the dots' pixels (alpha over half) sit under it and beside it, and
+  // whether its code fits without scrolling sideways.
+  const popupView = () => page.evaluate(() => {
+    const popup = document.querySelector("#l1-code-popup").getBoundingClientRect();
+    const canvas = document.querySelector(".globe-dots");
+    const box = canvas.getBoundingClientRect();
+    const sx = canvas.width / box.width;
+    const sy = canvas.height / box.height;
+    const area = { left: (popup.left - box.left) * sx, right: (popup.right - box.left) * sx, top: (popup.top - box.top) * sy, bottom: (popup.bottom - box.top) * sy };
+    const { data } = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height);
+    let inside = 0;
+    let outside = 0;
+    let beside = 0;
+    for (let y = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++) {
+      if (data[(y * canvas.width + x) * 4 + 3] <= 128) continue;
+      if (x >= area.left && x < area.right && y >= area.top && y < area.bottom) inside++;
+      else { outside++; if (x >= area.right) beside++; }
+    }
+    const code = [...document.querySelectorAll("#l1-code-popup .font-mono")];
+    return { x: popup.x, y: popup.y, right: popup.right, bottom: popup.bottom, inside, outside, beside, fits: code.length > 0 && code.every((element) => element.scrollWidth <= element.clientWidth) };
+  });
+  const checkPopup = async (name) => {
+    await expect.poll(async () => Math.round((await codePopup.boundingBox())?.y ?? -1)).toBe(280);
+    const view = await popupView();
+    assert.ok(Math.abs(view.x - 32) < 1 && view.right <= 692.5, `${name}: the popup sits on the left and ends before India (x ${view.x}-${view.right}).`);
+    assert.ok(view.bottom <= 1000, `${name}: the popup ends above the bottom chrome (y ${view.bottom}).`);
+    assert.equal(view.fits, true, `${name}: the code fits without scrolling sideways.`);
+    assert.ok(view.beside > 0, `${name}: the room's dots show beside the popup.`);
+    assert.ok(view.inside < 0.1 * (view.inside + view.outside), `${name}: ${view.inside} of ${view.inside + view.outside} dot pixels sit under the popup.`);
+    const popupBox = await codePopup.boundingBox();
+    for (const box of [...(await hudBoxes()), await codeButtons.boundingBox()]) assert.ok(!overlaps(box, popupBox), `${name}: the popup leaves the HUD and the buttons clear.`);
+    evidence.push({ surface: "map", scene: "L1", popup: name, view });
+  };
+  await writeIt.click();
+  await expect(writeIt).toHaveAttribute("aria-expanded", "true");
+  const writePopup = page.getByRole("dialog", { name: "Write it", exact: true });
+  await expect(writePopup).toBeVisible();
+  await expect(writePopup.getByLabel("createEntity call")).toContainText("const { entityKey } = await walletClient.createEntity({");
+  await expect(writePopup).toContainText("expires: ExpirationTime.fromSeconds(15 * 60),");
+  await checkPopup("Write it");
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1-write-it.png") }); }
+  // The other button swaps the popup: one at a time.
+  await queryIt.click();
+  const queryPopup = page.getByRole("dialog", { name: "Query it like a database", exact: true });
+  await expect(queryPopup).toBeVisible();
+  await expect(dialogs).toHaveCount(1);
+  await expect(writeIt).toHaveAttribute("aria-expanded", "false");
+  await expect(queryIt).toHaveAttribute("aria-expanded", "true");
+  await expect(queryPopup).toContainText("category = str('cafe')");
+  await expect(queryPopup).toContainText('.where(eq("country", "in"))');
+  // + AND name slides one more clause into both forms, marked; the same button takes it out again.
+  const nameClause = queryPopup.getByText("name = str('chai corner')");
+  const nameWhere = queryPopup.getByText('.where(eq("name", "chai corner"))');
+  await expect(nameClause).toBeHidden();
+  await expect(nameWhere).toBeHidden();
+  await queryPopup.getByRole("button", { name: "+ AND name", exact: true }).click();
+  await expect(nameClause).toBeVisible();
+  await expect(nameWhere).toBeVisible();
+  await checkPopup("Query it");
+  if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1-query-it.png") }); }
+  await queryPopup.getByRole("button", { name: "− AND name", exact: true }).click();
+  await expect(nameClause).toBeHidden();
+  // Esc closes it; so do × and a second click on its button.
+  await page.keyboard.press("Escape");
+  await expect(dialogs).toHaveCount(0);
+  await expect(queryIt).toHaveAttribute("aria-expanded", "false");
+  await writeIt.click();
+  await expect(writePopup).toBeVisible();
+  await writePopup.getByRole("button", { name: "Close the code", exact: true }).click();
+  await expect(dialogs).toHaveCount(0);
+  await queryIt.click();
+  await expect(queryPopup).toBeVisible();
+  await queryIt.click();
+  await expect(dialogs).toHaveCount(0);
+  // With the "?" card open, Esc closes the card first and leaves the popup.
+  await writeIt.click();
+  await expect(writePopup).toBeVisible();
+  await page.keyboard.press("?");
+  const controlsCard = page.getByRole("dialog", { name: "Presenter controls" });
+  await expect(controlsCard).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(controlsCard).toHaveCount(0);
+  await expect(writePopup).toBeVisible();
+  // → goes on to L3, popup open or not, and the popup leaves with L1.
   await page.keyboard.press("ArrowRight");
-  await expect(page.locator('[data-screen="map"][data-scene="B2"]')).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Write it", exact: true })).toBeVisible();
-  await expect(page.locator(".join-qr,.app-hud")).toHaveCount(0);
+  await expect(page.locator('[data-screen="map"][data-scene="L3"]')).toBeVisible();
+  await expect(codeButtons).toHaveCount(0);
+  await expect(dialogs).toHaveCount(0);
+  evidence.push({ surface: "map", scene: "L1", codeButtons: true, oneAtATime: true, andNameToggles: true, escCloses: true, closeButton: true, controlsCardFirst: true, nextGoesToL3: true });
   // L3 (October 29): the whole globe with no QR, no caption and no scripted filters. The presenter
   // filters by hand (name, color, country); each filter is its own marked line of the query and a
   // country flies the camera there. The query panel and the filter bar open with the scene.
@@ -412,6 +509,9 @@ try {
   await expect(slides.getByRole("heading", { name: "Write it: your entities, live", exact: true })).toBeVisible();
   // The live card explains the map in plain words, with the 3D mascot; the map itself has no caption.
   await expect(slides.getByText("Your phone sends one request.")).toBeVisible();
+  // The code buttons live on the map; the card only points at them.
+  await expect(slides.getByText("Write it and Query it open the code.")).toBeVisible();
+  await expect(slides.locator('[aria-label="Show the code"], #l1-code-popup')).toHaveCount(0);
   await expect(slides.getByRole("img", { name: "Arkiv mascot typing on a laptop" })).toBeVisible();
   await expect(page.getByText("Write it. Every dot is an entity you just wrote.")).toHaveCount(0);
   // /slides shows the same outline bar, on the same part.
@@ -726,6 +826,8 @@ try {
     const listed = await outlineText();
     assert.doesNotMatch(listed, /\b\d{1,2}:\d{2}\b|\bminutes\b|Script/, "/outline shows no times and no script");
     await expect(outline.locator("[data-preview] [data-stage]").first()).toBeAttached({ timeout: 20000 });
+    // L1's Write it and Query it popups open only on /map: the outline shows L1's card.
+    await expect(outline.locator('[aria-label="Show the code"], #l1-code-popup')).toHaveCount(0);
     await commands(page, [go("ST")]);
     const now = outline.locator('li[aria-current="step"]');
     await expect(now).toHaveCount(1);
