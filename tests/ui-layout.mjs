@@ -563,6 +563,10 @@ try {
   await expect(deletedRow).toHaveCount(1, { timeout: 10000 });
   await expect(deletedRow.locator("b")).toContainText(`× ${deletedName}`);
   await expect(deletedRow.locator("span")).toHaveText(/^deleted at block #\d+$/);
+  // The newest row is on top and in view: the snapping list must not re-snap it out of sight.
+  await expect(page.locator(".event-log li").first()).toHaveAttribute("data-event", "deleted");
+  await expect.poll(() => page.locator(".event-log ol").evaluate((list) => list.scrollTop), { timeout: 5000 }).toBe(0);
+  await expect(deletedRow).toBeInViewport({ ratio: 1 });
   if (capture) await page.locator(".event-log").screenshot({ path: path.join(capture, "1920-L1-event-log-deleted.png"), timeout: 60000 });
   // Its row still opens the card, and the latest query no longer has it: the dot is gone.
   await deletedRow.locator("button").click();
