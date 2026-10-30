@@ -4,8 +4,8 @@
 // "The first DevRel to do a Web3 Africa tour", who he worked for, and the slide's main picture: his
 // photos from the countries he has been to (`TOUR`), each printed on a card with its round flag
 // pinned to the corner. One → per photo: the next print lands on top of the pile, the ones under it
-// dim, and its flag lights up on the route at the left. Nothing moves on a timer. The globe shows
-// behind it, dimmed, as on the title.
+// dim and drop their name and flag, and its flag lights up on the route at the left. Nothing moves on
+// a timer. The globe shows behind it, dimmed, as on the title.
 
 import { motion, MotionConfig } from "motion/react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
@@ -120,9 +120,16 @@ function Print({ stop, shown, under }: { stop: TourStop; shown: boolean; under: 
         className="block rounded-[4px]"
         style={{ width: PHOTO.width, height: PHOTO.height }}
       />
-      <figcaption className="flex items-center pl-2 text-[40px] font-semibold text-[var(--arkiv-ink)]" style={{ height: STRIP }}>
+      {/* Only the print on top keeps its name and flag; the route at the left lists them all. */}
+      <motion.figcaption
+        className="flex items-center pl-2 text-[40px] font-semibold text-[var(--arkiv-ink)]"
+        style={{ height: STRIP }}
+        initial={false}
+        animate={{ opacity: under ? 0 : 1 }}
+        transition={{ duration: TOSS_TIME, ease: EASE }}
+      >
         {stop.name}
-      </figcaption>
+      </motion.figcaption>
       {/* The prints under the top one step back. */}
       <motion.div
         aria-hidden="true"
@@ -132,8 +139,7 @@ function Print({ stop, shown, under }: { stop: TourStop; shown: boolean; under: 
         transition={{ duration: TOSS_TIME, ease: EASE }}
       />
       {/* The flag, pinned to the corner like a sticker. */}
-      {/* eslint-disable-next-line @next/next/no-img-element -- fixed flag art */}
-      <img
+      <motion.img
         src={flagSrc(stop)}
         alt=""
         width={PIN}
@@ -141,6 +147,9 @@ function Print({ stop, shown, under }: { stop: TourStop; shown: boolean; under: 
         draggable={false}
         className="absolute rounded-full shadow-[0_10px_24px_rgba(0,0,0,0.45)] ring-[6px] ring-[var(--arkiv-sand)]"
         style={{ left: -30, top: -30, width: PIN, height: PIN }}
+        initial={false}
+        animate={{ opacity: under ? 0 : 1, scale: under ? 0.6 : 1 }}
+        transition={{ duration: TOSS_TIME, ease: EASE }}
       />
     </motion.figure>
   );
