@@ -85,6 +85,144 @@ try {
     await context.close();
   }
 
+  // Resources and prizes (October 30): B5's explorer address is a link; T1 adds AI tools on a third →;
+  // T2 is about the Arkiv AI plugin; PZ shows medals, and each prize's (i) opens its rubric, one at a
+  // time, clear of the link at the bottom and the logo.
+  {
+    const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
+    await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
+    // These are all slides: the globe under them only slows the software renderer down.
+    await page.addStyleTag({ content: ".globe-shell{display:none}" });
+    const layer = (id) => page.locator(`[data-scene-layer="${id}"]`);
+    const shoot = async (name) => { if (capture) { await page.waitForTimeout(900); await page.screenshot({ path: path.join(capture, name) }); } };
+    await commands(page, [go("B5")]);
+    const b5 = layer("B5");
+    await expect(b5.getByRole("heading", { name: "Explore it", exact: true })).toBeVisible({ timeout: 20000 });
+    const explorer = b5.getByRole("link");
+    await expect(explorer).toHaveCount(1);
+    const explorerHref = await explorer.getAttribute("href");
+    assert.match(explorerHref, /^https:\/\//);
+    await expect(explorer).toHaveText(new URL(explorerHref).host);
+    await expect(explorer).toHaveAttribute("target", "_blank");
+    await expect(explorer).toHaveAttribute("rel", "noreferrer");
+    await expect(b5).not.toContainText("no code");
+    // T1: Hub, then Docs, then AI tools, one card per →; hidden cards are out of reach.
+    await commands(page, [go("T1")]);
+    const t1 = layer("T1");
+    await expect(t1.getByRole("heading", { name: "Your turn: start here", exact: true })).toBeVisible({ timeout: 20000 });
+    await expect(t1).not.toContainText("Two links");
+    for (const [step, links] of [[1, 3], [2, 7], [3, 11]]) {
+      if (step > 1) await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("img", { name: `Step ${step} of 3` })).toBeVisible();
+      await expect(t1.getByRole("link")).toHaveCount(links);
+      await shoot(`map-1920-T1-${step}.png`);
+    }
+    await expect(t1.getByRole("link", { name: "hub.arkiv.network/ai-tools", exact: true })).toHaveAttribute("href", "https://hub.arkiv.network/ai-tools");
+    for (const [name, anchor] of [["Plugin", "arkiv-ai-plugin"], ["MCP", "mcp"], ["Skills", "skills"]])
+      await expect(t1.getByRole("link", { name, exact: true })).toHaveAttribute("href", `https://hub.arkiv.network/ai-tools#${anchor}`);
+    await expect(t1.getByRole("link", { name: "AI tools", exact: true })).toHaveCount(0);
+    // T2: without the plugin on top, with it below, and the agents it's made for.
+    await commands(page, [go("T2")]);
+    const t2 = layer("T2");
+    await expect(t2.getByRole("heading", { name: "Plugin: your agent knows Arkiv", exact: true })).toBeVisible({ timeout: 20000 });
+    for (const name of ["Claude Code", "OpenAI", "Arkiv mascot, disappointed, with a tear", "Arkiv mascot, smiling"])
+      await expect.poll(() => t2.getByRole("img", { name, exact: true }).evaluate((img) => img.complete && img.naturalWidth > 0), { timeout: 10000 }).toBe(true);
+    await expect(t2.getByRole("img", { name: "Arkiv mascot, disappointed, with a tear", exact: true })).toHaveAttribute("src", "/deck/memes/arkiv-meme-plugin-sad.webp");
+    await expect(t2).toContainText("Codex");
+    await expect(t2).not.toContainText(/\bMCP\b/);
+    const without = await t2.getByText("Without the plugin", { exact: true }).boundingBox();
+    const withIt = await t2.getByText("With the plugin", { exact: true }).boundingBox();
+    assert.ok(without.y + without.height <= withIt.y, "Without the plugin sits above With the plugin.");
+    for (const example of ["Your agent guesses old SDK calls.", "Your agent reads Arkiv's docs and skills."]) await expect(t2.getByText(example, { exact: true })).toBeVisible();
+    await shoot("map-1920-T2.png");
+    // PZ: medals instead of 1st and 2nd, the gold one for a single winner.
+    await commands(page, [go("PZ")]);
+    const pz = layer("PZ");
+    await expect(pz.getByRole("heading", { name: "Arkiv prizes at ETHGlobal Mumbai", exact: true })).toBeVisible({ timeout: 20000 });
+    for (let i = 1; i < 5; i++) await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("img", { name: "Step 5 of 5" })).toBeVisible();
+    const prizesText = await pz.innerText();
+    assert.doesNotMatch(prizesText, /\b(1st|2nd)\b|One winner/);
+    assert.equal(prizesText.match(/🥇 \$3,000 · 🥈 \$1,000/g)?.length, 3);
+    assert.match(prizesText, /🥇 \$2,000/);
+    // Each (i) opens its prize's rubric: one file per criterion, 25% each, and never "feedback.md".
+    const RUBRICS = [
+      ["Mirror", ["friction.md", "reach.md", "why-arkiv.md", "data-quality.md"]],
+      ["Build on Arkiv, from scratch", ["friction.md", "reach.md", "why-arkiv.md", "how-you-use-arkiv.md"]],
+      ["Build on Arkiv, Continuity", ["friction.md", "reach.md", "why-arkiv.md", "how-you-use-arkiv.md"]],
+      ["Node tooling", ["friction.md", "real-use.md", "whats-new.md", "easy-to-run.md"]],
+      ["Arkiv + Swarm bonus", ["swarm.md"]],
+    ];
+    const rubrics = pz.getByRole("dialog");
+    const button = (label) => pz.getByRole("button", { name: `Rubric for ${label}`, exact: true });
+    const rubric = (label) => pz.getByRole("dialog", { name: `Rubric for ${label}`, exact: true });
+    await expect(rubrics).toHaveCount(0);
+    const rulesBox = await pz.getByRole("link", { name: /Rules and rubric/ }).boundingBox();
+    const logoBox = await pz.locator("[data-foot-logo]").boundingBox();
+    const keepOut = [
+      ["the Rules and rubric link", { left: rulesBox.x, right: rulesBox.x + rulesBox.width, top: rulesBox.y, bottom: rulesBox.y + rulesBox.height }],
+      ["the logo", { left: logoBox.x - 16, right: logoBox.x + logoBox.width + 16, top: logoBox.y - 16, bottom: logoBox.y + logoBox.height + 16 }],
+    ];
+    for (const [label, files] of RUBRICS) {
+      await button(label).click();
+      await expect(rubric(label)).toBeVisible();
+      await expect(rubrics).toHaveCount(1);
+      await expect(button(label)).toHaveAttribute("aria-expanded", "true");
+      for (const file of files) await expect(rubric(label).getByText(file, { exact: true })).toBeVisible();
+      if (files.length > 1) await expect(rubric(label).getByText("25%", { exact: true })).toHaveCount(files.length);
+      else await expect(rubric(label)).toContainText("The most useful Swarm integration wins");
+      await expect(rubric(label)).not.toContainText("feedback.md");
+      if (files.length === 1) await expect(rubric(label)).not.toContainText("%");
+      const box = await rubric(label).boundingBox();
+      await shoot(`map-1920-PZ-rubric-${RUBRICS.findIndex(([name]) => name === label)}.png`);
+      // Where it is, and anything scrolled under it, for the failure message.
+      const where = await rubric(label).evaluate((element) => {
+        const scrolled = [];
+        for (let node = element.parentElement; node; node = node.parentElement) if (node.scrollLeft || node.scrollTop) scrolled.push({ tag: node.tagName, cls: String(node.className).slice(0, 60), left: node.scrollLeft, top: node.scrollTop });
+        const rect = (node) => { const r = node.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; };
+        const layer = element.closest("[data-scene-layer]");
+        return { rubric: rect(element), row: rect(element.parentElement), layer: layer ? rect(layer) : null, window: [scrollX, scrollY, innerWidth, innerHeight], scrolled, width: element.scrollWidth };
+      });
+      for (const [what, zone] of keepOut) assert.ok(box.x >= zone.right || box.x + box.width <= zone.left || box.y >= zone.bottom || box.y + box.height <= zone.top, `${label}'s rubric stays off ${what}: ${JSON.stringify(where)}`);
+      assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 1920 && box.y + box.height <= 1080, `${label}'s rubric stays on the stage: ${JSON.stringify(where)}`);
+      // Drawn over the rows around it, not under them.
+      assert.equal(await rubric(label).evaluate((element) => { const r = element.getBoundingClientRect(); return element.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }), true, `${label}'s rubric is on top.`);
+      evidence.push({ surface: "prize-rubric", label, files: files.length, box: { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) } });
+      await page.keyboard.press("Escape");
+      await expect(rubrics).toHaveCount(0);
+      await expect(button(label)).toHaveAttribute("aria-expanded", "false");
+    }
+    // Another (i) swaps the open rubric; the same (i) closes it; a click elsewhere closes it too.
+    await button("Node tooling").click();
+    await button("Mirror").click();
+    await expect(rubric("Mirror")).toBeVisible();
+    await expect(rubrics).toHaveCount(1);
+    await button("Mirror").click();
+    await expect(rubrics).toHaveCount(0);
+    await button("Mirror").click();
+    await page.mouse.click(1700, 240);
+    await expect(rubrics).toHaveCount(0);
+    // From the keyboard: Enter on a focused (i) opens it.
+    await button("Build on Arkiv, Continuity").focus();
+    await page.keyboard.press("Enter");
+    await expect(rubric("Build on Arkiv, Continuity")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(rubrics).toHaveCount(0);
+    // A → or ← closes it, and coming back to the step doesn't bring it back.
+    await button("Mirror").click();
+    await expect(rubric("Mirror")).toBeVisible();
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("img", { name: "Step 4 of 5" })).toBeVisible();
+    await expect(rubrics).toHaveCount(0);
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("img", { name: "Step 5 of 5" })).toBeVisible();
+    await page.waitForTimeout(400);
+    await expect(rubrics).toHaveCount(0);
+    evidence.push({ surface: "prizes", medals: true, rubricsOneAtATime: true, escClicksAndStepsClose: true, keyboardOpens: true });
+    await context.close();
+  }
+
   const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
   await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
   // One screen, one thing at a time: the title slide covers the map (no HUD), with no QR and no
@@ -719,144 +857,6 @@ try {
     await expect(linked.locator("#scene-W2")).toBeInViewport();
     await linked.close();
     evidence.push({ surface: "outline", parts: SECTIONS.length + 1, scenes: SCENES.length, startsFolded: true, linkOpensPart: true, marksSceneOnScreen: true, noTimesOrScript: true, folds: true, zoomSteps: true, noOverflow: [390, 768, 1440] });
-    await context.close();
-  }
-
-  // Resources and prizes (October 30): B5's explorer address is a link; T1 adds AI tools on a third →;
-  // T2 is about the Arkiv AI plugin; PZ shows medals, and each prize's (i) opens its rubric, one at a
-  // time, clear of the link at the bottom and the logo.
-  {
-    const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
-    await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
-    await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
-    // These are all slides: the globe under them only slows the software renderer down.
-    await page.addStyleTag({ content: ".globe-shell{display:none}" });
-    const layer = (id) => page.locator(`[data-scene-layer="${id}"]`);
-    const shoot = async (name) => { if (capture) { await page.waitForTimeout(900); await page.screenshot({ path: path.join(capture, name) }); } };
-    await commands(page, [go("B5")]);
-    const b5 = layer("B5");
-    await expect(b5.getByRole("heading", { name: "Explore it", exact: true })).toBeVisible({ timeout: 20000 });
-    const explorer = b5.getByRole("link");
-    await expect(explorer).toHaveCount(1);
-    const explorerHref = await explorer.getAttribute("href");
-    assert.match(explorerHref, /^https:\/\//);
-    await expect(explorer).toHaveText(new URL(explorerHref).host);
-    await expect(explorer).toHaveAttribute("target", "_blank");
-    await expect(explorer).toHaveAttribute("rel", "noreferrer");
-    await expect(b5).not.toContainText("no code");
-    // T1: Hub, then Docs, then AI tools, one card per →; hidden cards are out of reach.
-    await commands(page, [go("T1")]);
-    const t1 = layer("T1");
-    await expect(t1.getByRole("heading", { name: "Your turn: start here", exact: true })).toBeVisible({ timeout: 20000 });
-    await expect(t1).not.toContainText("Two links");
-    for (const [step, links] of [[1, 3], [2, 7], [3, 11]]) {
-      if (step > 1) await page.keyboard.press("ArrowRight");
-      await expect(page.getByRole("img", { name: `Step ${step} of 3` })).toBeVisible();
-      await expect(t1.getByRole("link")).toHaveCount(links);
-      await shoot(`map-1920-T1-${step}.png`);
-    }
-    await expect(t1.getByRole("link", { name: "hub.arkiv.network/ai-tools", exact: true })).toHaveAttribute("href", "https://hub.arkiv.network/ai-tools");
-    for (const [name, anchor] of [["Plugin", "arkiv-ai-plugin"], ["MCP", "mcp"], ["Skills", "skills"]])
-      await expect(t1.getByRole("link", { name, exact: true })).toHaveAttribute("href", `https://hub.arkiv.network/ai-tools#${anchor}`);
-    await expect(t1.getByRole("link", { name: "AI tools", exact: true })).toHaveCount(0);
-    // T2: without the plugin on top, with it below, and the agents it's made for.
-    await commands(page, [go("T2")]);
-    const t2 = layer("T2");
-    await expect(t2.getByRole("heading", { name: "Plugin: your agent knows Arkiv", exact: true })).toBeVisible({ timeout: 20000 });
-    for (const name of ["Claude Code", "OpenAI", "Arkiv mascot, disappointed, with a tear", "Arkiv mascot, smiling"])
-      await expect.poll(() => t2.getByRole("img", { name, exact: true }).evaluate((img) => img.complete && img.naturalWidth > 0), { timeout: 10000 }).toBe(true);
-    await expect(t2.getByRole("img", { name: "Arkiv mascot, disappointed, with a tear", exact: true })).toHaveAttribute("src", "/deck/memes/arkiv-meme-plugin-sad.webp");
-    await expect(t2).toContainText("Codex");
-    await expect(t2).not.toContainText(/\bMCP\b/);
-    const without = await t2.getByText("Without the plugin", { exact: true }).boundingBox();
-    const withIt = await t2.getByText("With the plugin", { exact: true }).boundingBox();
-    assert.ok(without.y + without.height <= withIt.y, "Without the plugin sits above With the plugin.");
-    for (const example of ["Your agent guesses old SDK calls.", "Your agent reads Arkiv's docs and skills."]) await expect(t2.getByText(example, { exact: true })).toBeVisible();
-    await shoot("map-1920-T2.png");
-    // PZ: medals instead of 1st and 2nd, the gold one for a single winner.
-    await commands(page, [go("PZ")]);
-    const pz = layer("PZ");
-    await expect(pz.getByRole("heading", { name: "Arkiv prizes at ETHGlobal Mumbai", exact: true })).toBeVisible({ timeout: 20000 });
-    for (let i = 1; i < 5; i++) await page.keyboard.press("ArrowRight");
-    await expect(page.getByRole("img", { name: "Step 5 of 5" })).toBeVisible();
-    const prizesText = await pz.innerText();
-    assert.doesNotMatch(prizesText, /\b(1st|2nd)\b|One winner/);
-    assert.equal(prizesText.match(/🥇 \$3,000 · 🥈 \$1,000/g)?.length, 3);
-    assert.match(prizesText, /🥇 \$2,000/);
-    // Each (i) opens its prize's rubric: one file per criterion, 25% each, and never "feedback.md".
-    const RUBRICS = [
-      ["Mirror", ["friction.md", "reach.md", "why-arkiv.md", "data-quality.md"]],
-      ["Build on Arkiv, from scratch", ["friction.md", "reach.md", "why-arkiv.md", "how-you-use-arkiv.md"]],
-      ["Build on Arkiv, Continuity", ["friction.md", "reach.md", "why-arkiv.md", "how-you-use-arkiv.md"]],
-      ["Node tooling", ["friction.md", "real-use.md", "whats-new.md", "easy-to-run.md"]],
-      ["Arkiv + Swarm bonus", ["swarm.md"]],
-    ];
-    const rubrics = pz.getByRole("dialog");
-    const button = (label) => pz.getByRole("button", { name: `Rubric for ${label}`, exact: true });
-    const rubric = (label) => pz.getByRole("dialog", { name: `Rubric for ${label}`, exact: true });
-    await expect(rubrics).toHaveCount(0);
-    const rulesBox = await pz.getByRole("link", { name: /Rules and rubric/ }).boundingBox();
-    const logoBox = await pz.locator("[data-foot-logo]").boundingBox();
-    const keepOut = [
-      ["the Rules and rubric link", { left: rulesBox.x, right: rulesBox.x + rulesBox.width, top: rulesBox.y, bottom: rulesBox.y + rulesBox.height }],
-      ["the logo", { left: logoBox.x - 16, right: logoBox.x + logoBox.width + 16, top: logoBox.y - 16, bottom: logoBox.y + logoBox.height + 16 }],
-    ];
-    for (const [label, files] of RUBRICS) {
-      await button(label).click();
-      await expect(rubric(label)).toBeVisible();
-      await expect(rubrics).toHaveCount(1);
-      await expect(button(label)).toHaveAttribute("aria-expanded", "true");
-      for (const file of files) await expect(rubric(label).getByText(file, { exact: true })).toBeVisible();
-      if (files.length > 1) await expect(rubric(label).getByText("25%", { exact: true })).toHaveCount(files.length);
-      else await expect(rubric(label)).toContainText("The most useful Swarm integration wins");
-      await expect(rubric(label)).not.toContainText("feedback.md");
-      if (files.length === 1) await expect(rubric(label)).not.toContainText("%");
-      const box = await rubric(label).boundingBox();
-      await shoot(`map-1920-PZ-rubric-${RUBRICS.findIndex(([name]) => name === label)}.png`);
-      // Where it is, and anything scrolled under it, for the failure message.
-      const where = await rubric(label).evaluate((element) => {
-        const scrolled = [];
-        for (let node = element.parentElement; node; node = node.parentElement) if (node.scrollLeft || node.scrollTop) scrolled.push({ tag: node.tagName, cls: String(node.className).slice(0, 60), left: node.scrollLeft, top: node.scrollTop });
-        const rect = (node) => { const r = node.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; };
-        const layer = element.closest("[data-scene-layer]");
-        return { rubric: rect(element), row: rect(element.parentElement), layer: layer ? rect(layer) : null, window: [scrollX, scrollY, innerWidth, innerHeight], scrolled, width: element.scrollWidth };
-      });
-      for (const [what, zone] of keepOut) assert.ok(box.x >= zone.right || box.x + box.width <= zone.left || box.y >= zone.bottom || box.y + box.height <= zone.top, `${label}'s rubric stays off ${what}: ${JSON.stringify(where)}`);
-      assert.ok(box.x >= 0 && box.y >= 0 && box.x + box.width <= 1920 && box.y + box.height <= 1080, `${label}'s rubric stays on the stage: ${JSON.stringify(where)}`);
-      // Drawn over the rows around it, not under them.
-      assert.equal(await rubric(label).evaluate((element) => { const r = element.getBoundingClientRect(); return element.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }), true, `${label}'s rubric is on top.`);
-      evidence.push({ surface: "prize-rubric", label, files: files.length, box: { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) } });
-      await page.keyboard.press("Escape");
-      await expect(rubrics).toHaveCount(0);
-      await expect(button(label)).toHaveAttribute("aria-expanded", "false");
-    }
-    // Another (i) swaps the open rubric; the same (i) closes it; a click elsewhere closes it too.
-    await button("Node tooling").click();
-    await button("Mirror").click();
-    await expect(rubric("Mirror")).toBeVisible();
-    await expect(rubrics).toHaveCount(1);
-    await button("Mirror").click();
-    await expect(rubrics).toHaveCount(0);
-    await button("Mirror").click();
-    await page.mouse.click(1700, 240);
-    await expect(rubrics).toHaveCount(0);
-    // From the keyboard: Enter on a focused (i) opens it.
-    await button("Build on Arkiv, Continuity").focus();
-    await page.keyboard.press("Enter");
-    await expect(rubric("Build on Arkiv, Continuity")).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(rubrics).toHaveCount(0);
-    // A → or ← closes it, and coming back to the step doesn't bring it back.
-    await button("Mirror").click();
-    await expect(rubric("Mirror")).toBeVisible();
-    await page.keyboard.press("ArrowLeft");
-    await expect(page.getByRole("img", { name: "Step 4 of 5" })).toBeVisible();
-    await expect(rubrics).toHaveCount(0);
-    await page.keyboard.press("ArrowRight");
-    await expect(page.getByRole("img", { name: "Step 5 of 5" })).toBeVisible();
-    await page.waitForTimeout(400);
-    await expect(rubrics).toHaveCount(0);
-    evidence.push({ surface: "prizes", medals: true, rubricsOneAtATime: true, escClicksAndStepsClose: true, keyboardOpens: true });
     await context.close();
   }
 
