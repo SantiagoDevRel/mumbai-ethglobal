@@ -603,12 +603,31 @@ try {
       await commands(page, [go("ST")]);
       for (let i = 0; i < 4; i++) await slides.keyboard.press("ArrowRight");
       await expect(slides.getByRole("img", { name: "Step 5 of 5" })).toBeVisible();
+      // Clicks wait until every row has landed (opacity 1, no offset). Playwright retries a click on a
+      // button that is still moving, and each retry scrolls it into view at another alignment; the
+      // slide's backdrop reaches past the stage box (BLEED in app/deck/ui.tsx), so the box around it
+      // can scroll, and the first run's capture showed the slide pushed to the top left (October 30).
+      for (const target of [page, slides]) {
+        await expect.poll(() => target.getByRole("listitem").evaluateAll((items) => items.length === 5 && items.every((item) => {
+          const style = getComputedStyle(item.parentElement);
+          return Number(style.opacity) === 1 && (style.transform === "none" || new DOMMatrix(style.transform).m42 === 0);
+        }))).toBe(true);
+      }
+      /** Boxes in the slide that scrolled: none, or the slide no longer sits where the room sees it. */
+      const scrolled = (target) => target.evaluate(() => [...document.querySelectorAll('[data-scene-layer="ST"], [data-scene-layer="ST"] *')].filter((element) => element.scrollTop !== 0 || element.scrollLeft !== 0).length);
+      /** What a mouse hits at the middle of a control where it is drawn: the control, or what covers it. */
+      const onTop = (locator) => locator.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        return hit && (hit === element || element.contains(hit)) ? "on top" : hit ? hit.outerHTML.slice(0, 160) : "nothing";
+      });
       const row = (target, title) => target.getByRole("listitem").filter({ hasText: title });
       for (const [text, href] of [["npm install @arkiv-network/sdk viem", "https://www.npmjs.com/package/@arkiv-network/sdk"], ["hub.arkiv.network/faucet", "https://hub.arkiv.network/faucet"], ["hub.arkiv.network/access-keys", "https://hub.arkiv.network/access-keys"]]) {
         const link = slides.getByRole("link", { name: text, exact: true });
         await expect(link).toHaveAttribute("href", href);
         await expect(link).toHaveAttribute("target", "_blank");
         await expect(link).toHaveAttribute("rel", "noreferrer");
+        assert.equal(await onTop(link), "on top", `${text} takes a click where it is drawn`);
       }
       const walletRow = row(slides, "A wallet to sign writes");
       await expect(walletRow.getByRole("link")).toHaveCount(0);
@@ -616,14 +635,18 @@ try {
       const add = walletRow.getByRole("button", { name: "Add network", exact: true });
       const addLine = walletRow.getByRole("status");
       await slides.evaluate(() => { window.__walletWait = new Promise((resolve) => { window.__walletGo = resolve; }); });
+      assert.equal(await onTop(add), "on top", "Add network takes a click where it is drawn");
       await add.click();
+      assert.equal(await scrolled(slides), 0, "Add network's click left the slide in place");
       await expect(addLine).toHaveText("Connecting…");
       await expect(add).toBeDisabled();
       await slides.evaluate(() => window.__walletGo());
       await expect(addLine).toHaveText("Connected 0x1234…5678 on Rabdi");
       await expect(add).toBeEnabled();
       const readsRow = row(slides, "Reads are free");
-      await readsRow.getByRole("button", { name: "Get balance", exact: true }).click();
+      const balance = readsRow.getByRole("button", { name: "Get balance", exact: true });
+      assert.equal(await onTop(balance), "on top", "Get balance takes a click where it is drawn");
+      await balance.click();
       await expect(readsRow.getByRole("status")).toHaveText("12.3457 tGLM");
       const calls = await slides.evaluate(() => window.__walletCalls);
       assert.deepEqual(calls.map((call) => call.method), ["eth_requestAccounts", "wallet_addEthereumChain", "wallet_switchEthereumChain", "eth_chainId", "eth_getBalance"]);
@@ -631,12 +654,16 @@ try {
       assert.deepEqual(calls[2].params, [{ chainId: "0x67932" }]);
       assert.deepEqual(calls[4].params, ["0x1234567890abcdef1234567890abcdef12345678", "latest"]);
       assert.deepEqual(rabdiReads, ["Bearer p.fixture"], "One read of Rabdi's details, with the presenter login.");
+      assert.equal(await scrolled(slides), 0, "The slide stays in place: nothing scrolled to reach a button.");
       if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-ST-wallet.png") });
       const mapReads = row(page, "Reads are free");
-      await mapReads.getByRole("button", { name: "Get balance", exact: true }).click();
+      const mapBalance = mapReads.getByRole("button", { name: "Get balance", exact: true });
+      assert.equal(await onTop(mapBalance), "on top", "On /map, Get balance takes a click where it is drawn");
+      await mapBalance.click();
       await expect(mapReads.getByRole("status")).toHaveText("Add the network first");
       assert.deepEqual(await page.evaluate(() => window.__walletCalls), []);
       assert.equal(rabdiReads.length, 1);
+      assert.equal(await scrolled(page), 0, "The slide on /map stays in place too.");
       evidence.push({ surface: "five-steps-wallet", links: 3, walletCalls: calls.map((call) => call.method), detailsReads: rabdiReads.length, perWindow: true });
     }
     // A scene change: the new scene fades in over 0.22 s while the old one waits under it and goes in
