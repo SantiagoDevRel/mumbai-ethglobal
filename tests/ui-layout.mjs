@@ -96,10 +96,41 @@ try {
   await expect(page.locator(".globe-dots")).toHaveCount(1);
   await expect(page.locator(".join-qr,.outline-bar")).toHaveCount(0);
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-S0.png") }); }
-  // Who I am (an empty slide for now) still has no QR and no outline bar.
+  // Who I am still has no QR and no outline bar.
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="ME"]')).toBeVisible();
   await expect(page.locator(".join-qr,.outline-bar,.app-hud")).toHaveCount(0);
+  {
+    // ME (Santiago, October 30): "SantiagoDevRel" over one row of logos (no "Worked for" title), and the X,
+    // LinkedIn and Telegram icons open his profiles in a new tab: a click at each icon's center reaches its
+    // link. The whole column stays left of the photos (x 860) and above y 1000.
+    const { BEFORE_ARKIV, HANDLE, ME_STEPS, PROFILES, profileLabel } = await import("../app/deck/scenes/me-tour.ts");
+    const me = page.locator('[data-screen="map"][data-scene="ME"]');
+    await expect(me.getByRole("heading", { level: 1, name: /^SantiagoDevRel\b/ })).toBeVisible();
+    await expect(me.getByText("Worked for", { exact: true })).toHaveCount(0);
+    const inColumn = (box, what) => assert.ok(box && box.x + box.width <= 860 && box.y + box.height <= 1000, `${what} stays in the left column: ${JSON.stringify(box)}`);
+    for (const logo of BEFORE_ARKIV) {
+      const image = me.getByRole("img", { name: logo.name, exact: true });
+      await expect(image).toBeVisible();
+      inColumn(await image.boundingBox(), logo.name);
+    }
+    await expect(me.getByText(HANDLE, { exact: true })).toBeVisible();
+    for (const profile of PROFILES) {
+      const link = me.locator(`a[href="${profile.href}"][target="_blank"][rel="noreferrer"]`);
+      await expect(link).toHaveAttribute("aria-label", profileLabel(profile));
+      const box = await link.boundingBox();
+      inColumn(box, profile.name);
+      await expect.poll(() => page.evaluate(([x, y]) => document.elementFromPoint(x, y)?.closest("a")?.getAttribute("href") ?? null, [box.x + box.width / 2, box.y + box.height / 2]), { message: `a click on the ${profile.name} icon reaches its link` }).toBe(profile.href);
+    }
+    const more = me.locator('[data-route-stop="more"]');
+    inColumn(await more.boundingBox(), "the 10+ stop");
+    await expect(more).toHaveAttribute("data-lit", "false");
+    if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-ME.png") }); }
+    // One → per photo, then the last → lights the route's "10+ countries" stop.
+    for (let i = 1; i < ME_STEPS; i++) await page.keyboard.press("ArrowRight");
+    await expect(page.getByRole("img", { name: `Step ${ME_STEPS} of ${ME_STEPS}` })).toBeVisible();
+    await expect(more).toHaveAttribute("data-lit", "true");
+  }
   // The index lists the talk's parts; from here on the outline bar across the top follows them.
   await commands(page, [go("IX")]);
   await expect(page.locator('[data-screen="map"][data-scene="IX"]')).toBeVisible();

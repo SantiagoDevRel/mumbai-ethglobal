@@ -9,7 +9,7 @@ import { B2_NOTES } from "./scenes/B2";
 import { B3_NOTES } from "./scenes/B3";
 import { B5_NOTES } from "./scenes/B5";
 import { D6_NOTES } from "./scenes/data/D6";
-import { TOUR } from "./scenes/me-tour";
+import { MORE, TOUR } from "./scenes/me-tour";
 import { NT_NOTES } from "./scenes/NT";
 import { ST_NOTES } from "./scenes/ST";
 import { T1_NOTES } from "./scenes/T1";
@@ -24,8 +24,9 @@ export const NOTES: Record<SceneId, string[]> = {
     "Start the session first (presenter controls, ?). → starts the timer.",
   ],
   ME: [
-    "I'm santiagodevrel, at Arkiv: the first DevRel to do a Web3 Africa tour. Before Arkiv I worked for L1s, ChainSafe, L2s like Lisk and web3.js.",
-    `Each → drops the next photo on the pile and lights its flag on the route: ${TOUR.map((stop) => stop.name).join(", ")}.`,
+    "I'm SantiagoDevRel, at Arkiv: the first DevRel to do a Web3 Africa tour. Before Arkiv: Cosmos, ChainSafe, web3.js and Lisk. I'm @santiagodevrel on X, LinkedIn and Telegram; each icon opens the profile in a new tab. On the right, my photos: one country per →.",
+    ...TOUR.slice(1).map((stop) => `${stop.name}: the next photo lands on the pile, and its flag lights up on the route.`),
+    `And more: ${MORE.badge} ${MORE.label} so far. The route's last stop lights up, and the pile gets its stamp.`,
   ],
   IX: [
     "Four parts, one per →. Why Arkiv. The five steps before your first write, and what Arkiv DB-Chain is not. Then you build your entity with me, live, from your phone. And the resources and prizes for this weekend. The bar at the top shows where we are.",
@@ -62,7 +63,7 @@ export const NOTES: Record<SceneId, string[]> = {
 /** What → reveals from each step, for every step but the last (the last → goes to the next scene). */
 export const REVEALS: Record<SceneId, string[]> = {
   S0: [],
-  ME: TOUR.slice(1).map((stop) => `photo · ${stop.name}`),
+  ME: [...TOUR.slice(1).map((stop) => `photo · ${stop.name}`), `${MORE.badge} ${MORE.label}: the route's last stop and the stamp on the pile`],
   IX: ["part 2 · Five steps", "part 3 · Build your entity", "part 4 · Resources and prizes"],
   W1: ["the three cards and \"One company decides for you.\""],
   W2: [],
