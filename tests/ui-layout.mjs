@@ -8,6 +8,7 @@ import { getAddress } from "viem";
 import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
 import { NO_EXPIRY_BLOCK } from "../shared/types.ts";
 import { NOTHING_TO_EXTEND } from "../shared/arkiv/adapter.ts";
+import { NOT_YOURS_TO_DELETE } from "../lib/data/stage-effects.ts";
 import { startApp } from "./local-app.mjs";
 import { encodes, qrModules, SCAN_URL } from "./scan-qr.mjs";
 
@@ -585,8 +586,9 @@ try {
   await expect(queryText).not.toContainText("country");
   await expect(liveLines).toHaveCount(2);
   await expect.poll(async () => (await stageState(page))?.camera.cue).toBe("globe");
-  // The entity card, on any live scene (October 29: the Own it and Expire it scenes are gone): every
-  // attribute the entity stores in one table, $owner and never $creator, and the actions.
+  // The entity card, on any live scene (October 29: the Own it and Expire it scenes are gone): the
+  // attributes the participant put in, then one "…" row for the ones the app adds (October 30),
+  // $owner and never $creator, and the actions Extend | Transfer | Delete | ↗.
   await commands(page, [go("L1")]);
   await expect(page.locator(".filter-bar,.query-panel")).toHaveCount(0);
   const entityCard = page.locator(".inspector-panel");
@@ -596,13 +598,24 @@ try {
   await expect(entityCard.locator(".inspector-columns")).toBeVisible();
   assert.equal(await entityCard.locator(".inspector-columns").evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(" ").length), 2);
   await expect(entityCard.locator(".stored-attributes thead th")).toHaveText(["name", "type", "value"]);
-  await expect(entityCard.locator(".stored-attributes tbody th")).toHaveText(["app", "kind", "session", "name", "color", "country", "category", "lat", "lng"]);
+  await expect(entityCard.locator(".stored-attributes tbody th")).toHaveText(["name", "color", "country"]);
+  const moreAttributes = entityCard.locator(".stored-attributes tfoot").getByRole("button", { name: "Show the attributes the app adds" });
+  await expect(moreAttributes).toHaveText("…");
   await expect(entityCard.locator('[data-field="$creator"]')).toHaveCount(0);
   await expect(entityCard).not.toContainText("$creator");
   await expect(entityCard.locator(".badge-highlight,.owner-note")).toHaveCount(0);
   await expect(entityCard.locator('[data-field="$expiresAt"] small')).toHaveText("can be extended");
-  await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Extend", exact: true })).toBeEnabled();
-  await expect(entityCard.locator(".explorer-link")).toHaveAttribute("href", /\/entity\/0x[0-9a-f]+$/i);
+  // One row, in this order: Extend | Transfer | Delete | ↗ (the data explorer, in a new tab). No "Hide".
+  const actionRow = entityCard.locator(".inspector-actions");
+  assert.deepEqual(await actionRow.locator(":scope > *").evaluateAll((items) => items.map((item) => item.getAttribute("aria-label") ?? item.textContent.trim())), ["Extend", "Transfer", "Delete", "Open in the data explorer"]);
+  await expect(actionRow.getByRole("button", { name: "Extend", exact: true })).toBeEnabled();
+  await expect(actionRow.getByRole("button", { name: "Transfer", exact: true })).toBeEnabled();
+  await expect(actionRow.getByRole("button", { name: "Delete", exact: true })).toBeEnabled();
+  const explorerLink = actionRow.getByRole("link", { name: "Open in the data explorer", exact: true });
+  await expect(explorerLink).toHaveAttribute("href", /\/entity\/0x[0-9a-f]+$/i);
+  await expect(explorerLink).toHaveAttribute("target", "_blank");
+  await expect(explorerLink).toHaveAttribute("rel", "noreferrer");
+  await expect(entityCard.getByRole("button", { name: /Hide/ })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Make it a business/ })).toHaveCount(0);
   // Nothing in the card scrolls and nothing spills out of it.
   const fits = () => entityCard.evaluate((element) => {
@@ -620,7 +633,7 @@ try {
   }
   // Transfer: "0x" then Space fills in a fresh checksummed wallet, so nobody pastes one on stage. Mock
   // data applies the transfer at once; the read-back $owner is marked and the card says what it means.
-  await entityCard.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
+  await actionRow.getByRole("button", { name: "Transfer", exact: true }).click();
   const transferForm = entityCard.locator(".transfer-form");
   await expect(transferForm).toBeVisible();
   const transfer = transferForm.getByRole("button", { name: "Transfer ownership", exact: true });
@@ -640,12 +653,21 @@ try {
   await expect(entityCard.locator(".badge-highlight")).toHaveAttribute("data-field", "$owner", { timeout: 10000 });
   await expect(entityCard.locator('[data-field="$owner"] dd')).toHaveAttribute("title", newOwner);
   await expect(entityCard.locator(".owner-note")).toHaveText("Only this wallet can now update, transfer or delete it.");
-  await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true })).toBeDisabled();
+  await expect(actionRow.getByRole("button", { name: "Transfer", exact: true })).toBeDisabled();
+  // Only the new owner can delete it now: Delete is off and says why.
+  await expect(actionRow.getByRole("button", { name: "Delete", exact: true })).toBeDisabled();
+  await expect(actionRow.getByRole("button", { name: "Delete", exact: true })).toHaveAttribute("title", NOT_YOURS_TO_DELETE);
   // These dots allow permissionless extension: a new owner doesn't stop anyone extending them.
-  await expect(entityCard.locator(".inspector-actions").getByRole("button", { name: "Extend", exact: true })).toBeEnabled();
+  await expect(actionRow.getByRole("button", { name: "Extend", exact: true })).toBeEnabled();
   assert.deepEqual(await fits(), FITS, "The marked $owner and its note still fit.");
   if (capture) await entityCard.screenshot({ path: path.join(capture, "1920-L1-entity-card-transferred.png"), timeout: 60000 });
-  evidence.push({ surface: "entity-card", scene: "L1", storedRows: 9, creatorShown: false, randomWalletChecksummed: true, transferMarksOwner: true, extendAfterTransfer: true });
+  // The "…" row shows the attributes the app adds, in the order the writer fills them in.
+  await moreAttributes.click();
+  await expect(entityCard.locator(".stored-attributes tbody th")).toHaveText(["app", "kind", "session", "name", "color", "country", "category", "lat", "lng"]);
+  await expect(entityCard.locator(".stored-attributes tfoot")).toHaveCount(0);
+  assert.deepEqual(await fits(), FITS, "Every stored attribute still fits.");
+  if (capture) await entityCard.screenshot({ path: path.join(capture, "1920-L1-entity-card-every-attribute.png"), timeout: 60000 });
+  evidence.push({ surface: "entity-card", scene: "L1", storedRows: 3, moreRowShowsAll: 9, actions: ["Extend", "Transfer", "Delete", "explorer"], creatorShown: false, randomWalletChecksummed: true, transferMarksOwner: true, deleteOffWhenAnotherOwner: true, extendAfterTransfer: true });
   // A click on the globe away from any dot closes the entity card.
   await page.mouse.click(200, 250);
   await expect(entityCard).toHaveCount(0);
@@ -830,9 +852,29 @@ try {
   await commands(page, [{ type: "select", keys: [endlessKey], mode: "set" }, { type: "extend", scope: "selected" }]);
   await expect(page.locator(".presenter-notice")).toHaveText(NOTHING_TO_EXTEND);
   if (capture) await entityCard.screenshot({ path: path.join(capture, "1920-L1-entity-card-no-expiration.png"), timeout: 60000 });
-  await entityCard.getByRole("button", { name: "Close inspector" }).click();
+  // Delete (October 30): the workshop wallet owns it, so Delete works with or without an expiration.
+  // Mock data deletes at once: the card closes, the dot leaves on the next query and the log says
+  // "deleted", never "expired".
+  const deleteButton = entityCard.locator(".inspector-actions").getByRole("button", { name: "Delete", exact: true });
+  await expect(deleteButton).toBeEnabled();
+  const deletedName = (await entityCard.locator(".panel-heading h2").textContent()).trim();
+  await deleteButton.click();
   await expect(entityCard).toHaveCount(0);
-  evidence.push({ surface: "entity-card", scene: "L1", noExpiry: true, extendDisabled: true, extendSelectedSkipsIt: true });
+  const deletedRow = page.locator('.event-log li[data-event="deleted"]');
+  await expect(deletedRow).toHaveCount(1, { timeout: 10000 });
+  await expect(deletedRow.locator("b")).toContainText(`× ${deletedName}`);
+  await expect(deletedRow.locator("span")).toHaveText(/^deleted at block #\d+$/);
+  // The newest row is on top and in view: the snapping list must not re-snap it out of sight.
+  await expect(page.locator(".event-log li").first()).toHaveAttribute("data-event", "deleted");
+  await expect.poll(() => page.locator(".event-log ol").evaluate((list) => list.scrollTop), { timeout: 5000 }).toBe(0);
+  await expect(deletedRow).toBeInViewport({ ratio: 1 });
+  if (capture) await page.locator(".event-log").screenshot({ path: path.join(capture, "1920-L1-event-log-deleted.png"), timeout: 60000 });
+  // Its row still opens the card, and the latest query no longer has it: the dot is gone.
+  await deletedRow.locator("button").click();
+  await expect(entityCard).toContainText("Select a dot on the map.");
+  await commands(page, [{ type: "inspect", key: null }]);
+  await expect(entityCard).toHaveCount(0);
+  evidence.push({ surface: "entity-card", scene: "L1", noExpiry: true, extendDisabled: true, extendSelectedSkipsIt: true, deleteClosesCard: true, deletedNotExpired: true, dotGone: true });
   // A presenter notice must not stay on stage for the rest of the talk.
   await commands(page, [{ type: "select", keys: [], mode: "set" }, { type: "extend", scope: "selected" }]);
   await expect(page.locator(".presenter-notice")).toHaveText("Select an entity first.");

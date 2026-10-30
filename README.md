@@ -40,12 +40,15 @@ the left of the map, one at a time; + AND name adds one more clause, and × or E
 
 On L3 the filter bar along the top filters by name (starts with), country (the camera flies there) and
 color; it counts the results and the query panel marks each filter line as you type. Text is stored in
-lower case. Click a dot on L1 or L3 to open its entity card: every stored attribute in one table,
-Extend, Data explorer (the entity on the DB-Chain explorer), and Transfer ownership, which asks for the
-new owner's wallet address and signs with Rabby. Type 0x then Space to fill in a random wallet. Rabby
-must use the writer wallet (the account named MUMBAI): only the current owner can transfer. An entity
-with no expiration shows `$expiresAt` = 2**64 − 1, has no countdown and nothing to extend. A click on
-the globe away from any dot closes the card. Dots in one country are spread apart, and each dot is a cafe,
+lower case. Click a dot on L1 or L3 to open its entity card: the attributes the phone put in (name,
+color, country), then a … row that shows the ones the app adds; `$key`, `$owner` and `$expiresAt`
+beside them; and one row of actions: Extend | Transfer | Delete | ↗ (the entity in the data explorer,
+in a new tab). Transfer asks for the new owner's wallet address; Transfer and Delete each sign one
+transaction with Rabby. Type 0x then Space to fill in a random wallet. Rabby must use the writer wallet
+(the account named MUMBAI): only the current owner can transfer or delete, so both are off once another
+wallet owns the entity. A deleted dot leaves the map on the next query and the log says "deleted". An
+entity with no expiration shows `$expiresAt` = 2**64 − 1, has no countdown and nothing to extend:
+Extend is off and sends nothing. A click on the globe away from any dot closes the card. Dots in one country are spread apart, and each dot is a cafe,
 restaurant, bookstore or parking, picked by the writer.
 
 Phones can write only while the **Writing ON | OFF** switch (bottom left, beside ?) is ON. ON starts a

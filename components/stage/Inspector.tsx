@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 import { decodeCoord, shortKey } from "../../shared/encoding";
 import { hasNoExpiry, type BlockInfo, type LiveEntity, type RawAttribute } from "../../shared/types";
 import { stage } from "../../lib/stage/store";
 import { remainingSeconds } from "../../lib/data/entity-state";
 import { randomAddress } from "../../lib/data/random-address";
 import { businessPresentation, isOpen, mumbaiMinutes } from "../../lib/data/view-model";
+import { NOT_YOURS_TO_DELETE } from "../../lib/data/stage-effects";
 import { explorerUrl, getProfile, WRITER_ADDRESS } from "../../shared/arkiv/profiles";
 import type { Hex } from "../../shared/types";
 
@@ -23,6 +25,9 @@ function timeLeft(seconds: number): string {
 
 /** The order the phone form and the writer fill them in; anything else follows as stored. */
 const ATTRIBUTE_ORDER = ["app", "kind", "session", "name", "color", "country", "category", "lat", "lng"];
+/** What a participant puts in on the phone. One "…" row stands for the attributes the app adds
+ * (app, kind, session, category, lat, lng) and shows them on a click. */
+const THEIR_ATTRIBUTES = ["name", "color", "country"];
 const rank = (attribute: RawAttribute) => {
   const index = ATTRIBUTE_ORDER.indexOf(attribute.name);
   return index < 0 ? ATTRIBUTE_ORDER.length : index;
@@ -35,15 +40,19 @@ function degrees(attribute: RawAttribute): number | null {
 }
 
 /** The entity card. It shows `$owner`, never `$creator` (the talk names one wallet per entity,
- * October 28), and every attribute the entity stores in one table that fits without scrolling
- * (Santiago, October 29). After a transfer the read-back `$owner` is a wallet other than ours: the
- * card marks it. Extend stays for any entity with an expiration (these dots allow permissionless
- * extension); an entity with no expiration has nothing to extend. */
+ * October 28), and the attributes the participant put in, then one "…" row for the ones the app
+ * adds, so nobody is confused (October 30). After a transfer the read-back `$owner` is a wallet
+ * other than ours: the card marks it. The actions: Extend | Transfer | Delete | ↗ (the data
+ * explorer). Extend stays for any entity with an expiration (these dots allow permissionless
+ * extension); an entity with no expiration has nothing to extend, so Extend is off and sends
+ * nothing. Transfer and Delete need the owner's signature: off once another wallet owns it. */
 export function Inspector({ entity, block, businessMode, reviews, showReviews = false }: { entity: LiveEntity | null; block: BlockInfo | null; businessMode: boolean; reviews: LiveEntity[]; showReviews?: boolean }) {
   const [now, setNow] = useState(0);
   const [newOwner, setNewOwner] = useState("");
-  // Transfer ownership opens a wallet field in place of the action row (the card keeps its height).
+  // Transfer opens a wallet field in place of the action row (the card keeps its height).
   const [transferKey, setTransferKey] = useState<string | null>(null);
+  // The entity whose "…" row was clicked: its card lists every stored attribute.
+  const [everyKey, setEveryKey] = useState<string | null>(null);
   useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
   if (!entity) return <section className="inspector-panel panel pointer-events-auto"><h2>Inside one entity</h2><p>Select a dot on the map.</p></section>;
   const seconds = remainingSeconds(entity, block, now);
@@ -59,6 +68,7 @@ export function Inspector({ entity, block, businessMode, reviews, showReviews = 
     { name: "$expiresAt", value: `${entity.expiresAtBlock}`, badge: endless ? "no expiration" : "can be extended" },
   ];
   const stored = [...entity.raw].sort((a, b) => rank(a) - rank(b));
+  const shown = everyKey === entity.key ? stored : stored.filter((attribute) => THEIR_ATTRIBUTES.includes(attribute.name));
   const transfer = (owner: string) => {
     if (!ADDRESS.test(owner.trim())) return;
     stage.dispatch({ type: "transferTo", key: entity.key, newOwner: owner.trim() as Hex });
@@ -68,10 +78,10 @@ export function Inspector({ entity, block, businessMode, reviews, showReviews = 
   return <section data-reviews={businessMode && showReviews} className={`inspector-panel panel pointer-events-auto${businessMode ? " business-inspector" : ""}`}><div className="panel-heading"><h2><i className="inspected-color" style={{ background: "color" in entity.attrs ? entity.attrs.color ?? "#fe7446" : "#fe7446" }} />{business.name}</h2><button aria-label="Close inspector" onClick={() => stage.dispatch({ type: "inspect", key: null })}>×</button></div>
     {seconds < 60 && <p className="extend-suggestion">Less than 60 s left. Extend it before we look.</p>}
     {!businessMode && <div className="inspector-columns">
-      <div className="stored-attributes"><h3>Stored attributes</h3><table><thead><tr><th scope="col">name</th><th scope="col">type</th><th scope="col">value</th></tr></thead><tbody>{stored.map((attribute) => {
+      <div className="stored-attributes"><h3>Stored attributes</h3><table><thead><tr><th scope="col">name</th><th scope="col">type</th><th scope="col">value</th></tr></thead><tbody>{shown.map((attribute) => {
         const decoded = degrees(attribute);
         return <tr key={attribute.name}><th scope="row">{attribute.name}</th><td>{attribute.type}</td><td title={decoded === null ? attribute.stored : `${attribute.stored} = ${decoded}°`}>{attribute.stored}{decoded !== null && <small> · {decoded.toFixed(2)}°</small>}</td></tr>;
-      })}</tbody></table></div>
+      })}</tbody>{shown.length < stored.length && <tfoot><tr className="more-attributes"><td colSpan={3}><button type="button" aria-label="Show the attributes the app adds" title="Show the attributes the app adds" onClick={() => setEveryKey(entity.key)}>…</button></td></tr></tfoot>}</table></div>
       <div><h3>Arkiv fields</h3><dl>{fields.map((field) => <div key={field.name} data-field={field.name} className={field.name === "$owner" && transferred ? "badge-highlight" : ""}><dt>{field.name}</dt><dd title={field.value}>{field.name === "$expiresAt" ? <>block {field.value}<span className="field-countdown">{endless ? "2**64 − 1 · no expiration" : timeLeft(seconds)}</span></> : shortKey(field.value)}<small>{field.badge}</small></dd></div>)}</dl>
         {transferred && <p className="owner-note">Only this wallet can now update, transfer or delete it.</p>}</div>
     </div>}
@@ -83,10 +93,11 @@ export function Inspector({ entity, block, businessMode, reviews, showReviews = 
       <button type="submit" disabled={!ADDRESS.test(newOwner.trim())}>Transfer ownership</button>
       <button type="button" className="transfer-cancel" aria-label="Cancel transfer" onClick={() => { setTransferKey(null); setNewOwner(""); }}>×</button>
     </form> : <div className="inspector-actions">
-      <button disabled={endless} title={endless ? "No expiration: there is nothing to extend." : undefined} onClick={() => { stage.dispatch({ type: "select", keys: [entity.key], mode: "set" }); stage.dispatch({ type: "extend", scope: "selected" }); }}>Extend</button>
-      <button disabled={!ours} title={ours ? undefined : "Another wallet owns it now: only that wallet can transfer it."} onClick={() => setTransferKey(entity.key)}>Transfer ownership</button>
-      {link && <a className="explorer-link" href={link} target="_blank" rel="noreferrer">Data explorer ↗</a>}
-      <button onClick={() => { stage.dispatch({ type: "select", keys: [entity.key], mode: "set" }); stage.dispatch({ type: "hideSelected" }); }}>Hide · local</button>
+      {/* No expiration: Extend is off, and the guard keeps a stray click from reaching the wallet. */}
+      <button disabled={endless} title={endless ? "No expiration: there is nothing to extend." : undefined} onClick={() => { if (endless) return; stage.dispatch({ type: "select", keys: [entity.key], mode: "set" }); stage.dispatch({ type: "extend", scope: "selected" }); }}>Extend</button>
+      <button disabled={!ours} title={ours ? undefined : "Another wallet owns it now: only that wallet can transfer it."} onClick={() => setTransferKey(entity.key)}>Transfer</button>
+      <button className="delete-action" disabled={!ours} title={ours ? undefined : NOT_YOURS_TO_DELETE} onClick={() => { if (ours) stage.dispatch({ type: "deleteEntity", key: entity.key }); }}>Delete</button>
+      {link && <a className="explorer-link" href={link} target="_blank" rel="noreferrer" aria-label="Open in the data explorer" title="Open in the data explorer"><ArrowUpRight size={26} strokeWidth={2.4} aria-hidden /></a>}
     </div>}
   </section>;
 }

@@ -283,9 +283,9 @@ async function sceneWork(id, step) {
     await wave; if (waveError) throw waveError; assert.equal(report.phones.length, 21);
     const status = await presenter("status"); assert.equal(status.written, 21); assert.equal(status.failed, 0);
   });
-  // The entity card: $owner (never $creator) and every stored attribute, in lower case as written.
-  // "0x" then Space fills the transfer form with a fresh checksummed wallet; it is cancelled, so
-  // nothing is sent and the owner stays ours.
+  // The entity card: $owner (never $creator) and the attributes the phone put in, in lower case as
+  // written. "0x" then Space fills the transfer form with a fresh checksummed wallet; it is cancelled,
+  // so nothing is sent and the owner stays ours.
   if (id === "L1") await op("entity card and transfer form, nothing sent", async () => {
     await inspect(phoneKey);
     const card = stage.locator(".inspector-panel");
@@ -295,7 +295,7 @@ async function sceneWork(id, step) {
     const stored = Object.fromEntries(await card.locator(".stored-attributes tbody tr").evaluateAll((rows) => rows.map((row) => [row.querySelector("th").textContent, row.querySelectorAll("td")[1].textContent])));
     assert.deepEqual({ name: stored.name, color: stored.color, country: stored.country }, { name: "rehearsal phone", color: GREEN, country: "in" });
     const before = await entity(phoneKey), sends = report.transactions.length;
-    await card.locator(".inspector-actions").getByRole("button", { name: "Transfer ownership", exact: true }).click();
+    await card.locator(".inspector-actions").getByRole("button", { name: "Transfer", exact: true }).click();
     const field = card.getByLabel("New owner wallet");
     await field.fill("0x"); await field.press("Space");
     await expect(field).toHaveValue(/^0x[0-9a-fA-F]{40}$/);

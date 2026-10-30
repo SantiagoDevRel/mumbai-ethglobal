@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { LiveData } from "../../lib/data/useLiveData";
 import type { BlockInfo, LiveEntity, QueryDescription } from "../../shared/types";
 import { stage, type StageState } from "../../lib/stage/store";
@@ -41,6 +41,24 @@ export function LiveStatus({ data }: { data: LiveData }) {
   </div>;
 }
 
+/** The room's log, newest first. The list snaps row by row, and Chrome re-snaps to the row that was
+ * on top, so a new row (an arrival or a delete) would land hidden above it. While the presenter has
+ * not scrolled down, the newest row stays in view. */
+function EventLog({ data, block }: { data: LiveData; block: BlockInfo | null }) {
+  const list = useRef<HTMLOListElement>(null);
+  const pinned = useRef(true);
+  const newest = data.events[0]?.id;
+  useLayoutEffect(() => {
+    const element = list.current;
+    if (!pinned.current || !element) return;
+    element.scrollTop = 0;
+    // A re-snap may still land on the next frame; this row was pinned, so it goes back on top.
+    const frame = requestAnimationFrame(() => { element.scrollTop = 0; });
+    return () => cancelAnimationFrame(frame);
+  }, [newest]);
+  return <aside className="event-log panel pointer-events-auto"><h2>On the map <span className="live-dot" /></h2><ol ref={list} onScroll={(event) => { pinned.current = event.currentTarget.scrollTop < 38; }}>{data.events.map((event) => <li key={event.id} data-event={event.type} data-current={event.block === data.run?.block}><button onClick={() => stage.dispatch({ type: "inspect", key: event.key })}><i className="event-color" style={{ color: event.color ?? "#fe7446" }} /><div><b>{event.type === "created" ? "+" : event.type === "expired" ? "−" : event.type === "deleted" ? "×" : "↗"} {event.name}{event.country && ` · ${event.country}`}{event.type === "created" && (event.noExpiry ? " · no expiration" : block && ` · ${lifetimeLabel(Number(event.lifetimeBlocks) * block.blockTimeMs / 1000)}`)}</b><span>{event.type === "expired" || event.type === "deleted" ? event.detail : `block #${event.block}`}</span></div></button></li>)}</ol>{!data.events.length && <p>Waiting for the room…</p>}</aside>;
+}
+
 /** `described`: the query for the filters on screen right now, so the panel follows typing at once.
  * The close (L9) keeps the map quiet: only a data error shows there. */
 export function StageHud({ data, block, state, entities, appSteps, reviews, described }: { data: LiveData; block: BlockInfo | null; state: StageState; entities: LiveEntity[]; appSteps: string[]; reviews: LiveEntity[]; described?: QueryDescription | null }) {
@@ -63,7 +81,7 @@ export function StageHud({ data, block, state, entities, appSteps, reviews, desc
   return <>
     <div className={`stage-counter panel${ownerView && state.transferred ? " counter-transferred" : ""}`}><div><strong key={`${ownerView}:${count}`}>{count}</strong><small>{ownerView ? count === 1 ? "owner" : "owners" : data.error ? `${noun} in last query` : filtered ? `matching ${noun}` : `live ${noun}`}</small></div><p>{ownerView ? "Demo view · app-side ownership" : "Counted from the query results"}</p></div>
     {error}
-    {!state.panels.inspector && state.map !== "owner" && scene.id !== "L3" && <aside className="event-log panel pointer-events-auto"><h2>On the map <span className="live-dot" /></h2><ol>{data.events.map((event) => <li key={event.id} data-event={event.type} data-current={event.block === data.run?.block}><button onClick={() => stage.dispatch({ type: "inspect", key: event.key })}><i className="event-color" style={{ color: event.color ?? "#fe7446" }} /><div><b>{event.type === "created" ? "+" : event.type === "expired" ? "−" : "↗"} {event.name}{event.country && ` · ${event.country}`}{event.type === "created" && (event.noExpiry ? " · no expiration" : block && ` · ${lifetimeLabel(Number(event.lifetimeBlocks) * block.blockTimeMs / 1000)}`)}</b><span>{event.type === "expired" ? event.detail : `block #${event.block}`}</span></div></button></li>)}</ol>{!data.events.length && <p>Waiting for the room…</p>}</aside>}
+    {!state.panels.inspector && state.map !== "owner" && scene.id !== "L3" && <EventLog data={data} block={block} />}
     {state.panels.filters && <Filters state={state} results={entities.length} />}
     {state.panels.inspector && <Inspector entity={data.run?.entities.find((entity) => entity.key === state.inspected) ?? null} block={block} businessMode={state.map === "business"} reviews={reviews} />}
     {state.panels.query && <section className="query-panel panel pointer-events-auto" aria-label="Query that ran">

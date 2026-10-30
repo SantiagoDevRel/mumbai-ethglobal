@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createMockAdapter } from "./mock.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
-import { NO_EXPIRY_BLOCK, type DotAttrs } from "../types.ts";
+import { NO_EXPIRY_BLOCK, type DotAttrs, type Hex } from "../types.ts";
 
 test("mock mode starts with dots that have no expiration, in lower case like every write", async () => {
   const mock = createMockAdapter();
@@ -43,5 +43,26 @@ test("mock writes and Lifetime Extension treat no expiration like the SDK adapte
     // "Expiring soon" never lists an entity with no expiration.
     const soon = await mock.query({ kinds: ["dot"], session: "TEST", expiringWithinSec: 3600 });
     assert.deepEqual(soon.entities.map((entity) => entity.key), [timed]);
+  } finally { mock.stop(); }
+});
+
+test("mock Delete: only the owner deletes a live entity, and the next query no longer has it", async () => {
+  const mock = createMockAdapter();
+  try {
+    const dot = { session: "TEST", name: "asha", color: "#fe7446", country: "in", lat: 19, lng: 72.8, lifetimeSec: 300 };
+    const { keys: [mine, endless, given] } = await mock.createDots([dot, { ...dot, name: "ada", noExpiry: true }, { ...dot, name: "omar" }]);
+    const keys = async () => (await mock.query({ kinds: ["dot"], session: "TEST" })).entities.map((entity) => entity.key).sort();
+    const notSent = (message: string) => (error: unknown) => error instanceof WriteNotSentError && error.message === message;
+    // Transferred away: only the new owner could delete it, so the workshop wallet sends nothing.
+    await mock.changeOwner(given!, `0x${"2".repeat(40)}` as Hex);
+    await assert.rejects(mock.deleteEntity(given!), notSent("Only its owner can delete it."));
+    const deleted = await mock.deleteEntity(mine!);
+    assert.deepEqual(deleted.keys, [mine]);
+    assert.match(deleted.txHash, /^0x[0-9a-f]{64}$/);
+    assert.equal(typeof deleted.block, "bigint");
+    // No expiration does not stop a delete.
+    await mock.deleteEntity(endless!);
+    assert.deepEqual(await keys(), [given]);
+    await assert.rejects(mock.deleteEntity(mine!), notSent("No live entity has that key."));
   } finally { mock.stop(); }
 });
