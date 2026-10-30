@@ -37,8 +37,9 @@ import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { EASE, REVEAL_TIME, Slide, T } from "../ui";
 
-/** Both views share one box on the stage, under the headline. */
-const BOX = { left: 96, top: 336, width: 1728, height: 700 };
+/** Both views share one box on the stage, under the headline. It ends at y 1000, clear of the logo at
+ * the bottom center (FOOT_LOGO in ../ui). */
+const BOX = { left: 96, top: 336, width: 1728, height: 664 };
 
 /** One of the two views. Both stay mounted (the live block keeps reading); the → crossfades them. */
 function View({ shown, children }: { shown: boolean; children: ReactNode }) {
@@ -154,10 +155,10 @@ function Network() {
         </span>
         <LivePill lit={false} />
       </div>
-      <p className={`absolute left-[32px] top-[352px] text-[22px] leading-none ${CAPS}`} style={{ color: T.t50 }}>Previous testnets</p>
-      <ul className="absolute left-[32px] top-[390px] flex w-[560px] flex-col gap-2">
+      <p className={`absolute left-[32px] top-[344px] text-[22px] leading-none ${CAPS}`} style={{ color: T.t50 }}>Previous testnets</p>
+      <ul className="absolute left-[32px] top-[378px] flex w-[560px] flex-col gap-1.5">
         {PREVIOUS.map(({ name, off }) => (
-          <li key={name} className="flex h-[34px] items-center gap-4">
+          <li key={name} className="flex h-[32px] items-center gap-4">
             <span className="block h-[14px] w-[14px] rounded-full border-2" style={{ borderColor: T.t28 }} aria-hidden />
             <span className="text-[28px] leading-none" style={{ color: T.t42 }}>{name}</span>
             {off ? (
@@ -191,7 +192,7 @@ function Network() {
 
       {/* The leaflet's footer: what runs each column's state, and the gas tokens. */}
       {FOOTER.map((row, i) => (
-        <div key={row[0]} className="absolute left-0 flex h-[64px] w-full border-t" style={{ top: 572 + i * 64, borderColor: T.t14 }}>
+        <div key={row[0]} className="absolute left-0 flex h-[64px] w-full border-t" style={{ top: BOX.height - (FOOTER.length - i) * 64, borderColor: T.t14 }}>
           {COLUMNS.map((column, j) => (
             <p
               key={column.x}

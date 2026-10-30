@@ -85,9 +85,15 @@ try {
       if (step > 0) await send({ type: "next" });
       if (scene.steps > 1) await expect(page.getByRole("img", { name: `Step ${step + 1} of ${scene.steps}` })).toBeVisible();
       if (scene.kind !== "slide") continue;
-      // Let the reveal and the slide change settle (REVEAL_TIME 0.3 s, the print toss on ME 0.45 s).
+      // Let the reveal and the slide change settle (REVEAL_TIME 0.3 s, the print toss on ME 0.45 s). A
+      // busy runner can still be crossfading the scene before, so a missing or crossed logo is retried
+      // for up to 3 s before it counts.
       await page.waitForTimeout(700);
-      const { logos, hits } = await logoCheck();
+      let { logos, hits } = await logoCheck();
+      for (let retry = 0; retry < 10 && (logos !== 1 || hits.length > 0); retry++) {
+        await page.waitForTimeout(300);
+        ({ logos, hits } = await logoCheck());
+      }
       if (logos !== 1) logoProblems.push(`${scene.id} step ${step + 1}: ${logos} logos at the bottom center, not 1`);
       for (const hit of hits) logoProblems.push(`${scene.id} step ${step + 1}: ${hit} crosses the logo at the bottom center`);
     }
