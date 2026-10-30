@@ -1,15 +1,46 @@
-import { i32, key as entityKey, u64, type AttributeInputs } from "@arkiv-network/sdk/attr";
-import { ExpirationTime } from "@arkiv-network/sdk/utils";
-import { eq, gte, lte, or, startsWith } from "@arkiv-network/sdk/query";
-import type { Entity } from "@arkiv-network/sdk/types";
+import { defineSchema, ExpirationTime, i32, key as entityKey, MAX_EXPIRES_AT, str, u64, type Attributes, type CreateEntityValues, type PatchEntityValues } from "@arkiv-network/sdk";
+import { asc, eq, gt, gte, lte, or, startsWith } from "@arkiv-network/sdk/query";
 import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
-import { createSdkClients } from "./clients-0.8.ts";
+import { createSdkClients } from "./clients-1.0.ts";
 import { decodeCoord, decodeRating, encodeCoord, encodeRating } from "../encoding.ts";
 import { countryName } from "../geo/country-name.ts";
 import { APP_ID, hasNoExpiry, type BlockInfo, type ChainFilters, type EntityAttrs, type Hex, type LiveEntity, type QueryDescription, type WriteResult } from "../types.ts";
 
-export const LIVE_SELECTION = { key: true, owner: true, creator: true, createdAt: true, updatedAt: true, expiresAt: true, attributes: true } as const;
+export const LIVE_SELECTION = { $key: true, $owner: true, $creator: true, $createdAt: true, $updatedAt: true, $expiresAt: true, $attributes: true } as const;
+
+/** One query page: the most an `arkiv_query` returns. */
+const PAGE = 100;
+
+// The workshop's two entity shapes. Every column a query filters on is indexed: Arkiv filters only on
+// indexed columns. The schemas are unnamed, so they add no tag and the queries filter on `app` and
+// `kind` alone. A dot and a business share PLACE: "Make it a business" patches a dot in place.
+export const PLACE = defineSchema({
+  app: str().indexed(),
+  kind: str().indexed(),
+  name: str().indexed(),
+  lat: i32().indexed(),
+  lng: i32().indexed(),
+  session: str().indexed().optional(),
+  color: str().indexed().optional(),
+  country: str().indexed().optional(),
+  category: str().indexed().optional(),
+  rating: i32().indexed().optional(),
+  opens: i32().optional(),
+  closes: i32().optional(),
+  city: str().optional(),
+  photo: str().optional(),
+  // Seeded businesses only (scripts/seed-rabdi.mjs): which seed row an entity is, to skip it on a rerun.
+  seed_id: str().indexed().optional(),
+});
+export const REVIEW = defineSchema({
+  app: str().indexed(),
+  kind: str().indexed(),
+  business: entityKey().indexed(),
+  stars: i32(),
+  text: str(),
+  seed_id: str().indexed().optional(),
+});
 
 function isUserRejection(error: unknown): boolean {
   let cause = error;
@@ -20,21 +51,29 @@ function isUserRejection(error: unknown): boolean {
   return false;
 }
 
-export function encodedFields(fields: Record<string, unknown>): AttributeInputs {
-  const result: Record<string, AttributeInputs[string]> = {};
+/** UI values as column values: coordinates in millionths, ratings in tenths, keys as keys. */
+export function encodedFields(fields: Record<string, unknown>): Record<string, string | number> {
+  const result: Record<string, string | number> = {};
   for (const [name, value] of Object.entries(fields)) {
-    // How long an entity lives is the create's `expires`, never an attribute.
+    // How long an entity lives is the create's `expiration`, never an attribute.
     if (value === undefined || name === "lifetimeSec" || name === "noExpiry") continue;
     if (name === "photo" && (typeof value !== "string" || !/^(?:0x)?[a-f0-9]{64}$/i.test(value))) throw new Error("Photo must be a plain Swarm reference.");
-    if (name === "lat" || name === "lng") result[name] = i32(encodeCoord(value as number));
-    else if (name === "rating") result[name] = i32(encodeRating(value as number));
-    else if (name === "business") result[name] = entityKey(value as Hex);
-    else if (typeof value === "number") result[name] = i32(value);
-    else if (typeof value === "string") result[name] = value;
+    if (name === "lat" || name === "lng") result[name] = encodeCoord(value as number);
+    else if (name === "rating") result[name] = encodeRating(value as number);
+    else if (typeof value === "number" || typeof value === "string") result[name] = value;
     else throw new Error(`Invalid attribute ${name}.`);
   }
   return result;
 }
+
+/** A lifetime in whole blocks of the SDK's 2 s, rounded up, so any number of seconds is accepted. */
+export function lifetime(seconds: number) {
+  if (!Number.isFinite(seconds) || seconds <= 0) throw new Error("Invalid lifetime.");
+  return ExpirationTime.fromBlocks(Math.ceil(seconds / 2));
+}
+
+/** "No expiration": the deadline is the largest block a u64 holds, `$expiresAt` = 2**64 - 1. */
+export const NO_EXPIRATION = ExpirationTime.atBlock(MAX_EXPIRES_AT);
 
 /** On-screen text (L7) of `extend` below, for `addSeconds`. Change the two together. */
 export function describeExtend(addSeconds: number): { code: string } {
@@ -45,10 +84,10 @@ export function describeExtend(addSeconds: number): { code: string } {
     `const entities = await Promise.all(`,
     `  keys.map((key) => reader.getEntity(key)))`,
     `// No expiration ($expiresAt = 2n ** 64n - 1n): nothing to extend`,
-    `const expiring = entities.filter((entity) => entity.expiresAt !== 2n ** 64n - 1n)`,
+    `const expiring = entities.filter((entity) => entity.$expiresAt !== 2n ** 64n - 1n)`,
     `await writer.executeBatch({ extensions: expiring.map((entity) => ({`,
-    `  entityKey: entity.key,`,
-    `  expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks),`,
+    `  entityKey: entity.$key,`,
+    `  expiration: ExpirationTime.atBlock(entity.$expiresAt + extraBlocks),`,
     `})) })`,
   ].join("\n") };
 }
@@ -58,37 +97,40 @@ export function describeExtend(addSeconds: number): { code: string } {
  * would not fit (the SDK refuses it at send). When that leaves nothing, nothing is signed or sent. */
 export function extensionsFor(entities: readonly { key: Hex; expiresAt: bigint }[], extraBlocks: bigint) {
   const extensions = entities.filter(entity => !hasNoExpiry(entity.expiresAt))
-    .map(entity => ({ entityKey: entity.key, expires: ExpirationTime.atBlock(entity.expiresAt + extraBlocks) }));
+    .map(entity => ({ entityKey: entity.key, expiration: ExpirationTime.atBlock(entity.expiresAt + extraBlocks) }));
   if (!extensions.length) throw new WriteNotSentError(NOTHING_TO_EXTEND);
   return extensions;
 }
 
-/** "No expiration" is `ExpirationTime.permanent()`: `$expiresAt` becomes NO_EXPIRY_BLOCK, 2**64 - 1.
+/** "No expiration" is the u64 maximum deadline: `$expiresAt` becomes NO_EXPIRY_BLOCK, 2**64 - 1.
  * The country is stored by its full name ("india"), not the code the writer placed it with. */
 export function dotToCreate(dot: DotCreate) {
+  const fields = encodedFields(dot as unknown as Record<string, unknown>);
   return {
-    attributes: { app: APP_ID, kind: "dot", ...encodedFields(dot as unknown as Record<string, unknown>), country: countryName(dot.country) },
-    payload: new Uint8Array(), contentType: "application/octet-stream",
+    schema: PLACE,
+    values: { ...fields, app: APP_ID, kind: "dot", country: countryName(dot.country) } as unknown as CreateEntityValues<typeof PLACE>,
     flags: { permissionlessExtension: true },
-    expires: dot.noExpiry ? ExpirationTime.permanent() : ExpirationTime.fromSeconds(dot.lifetimeSec),
+    expiration: dot.noExpiry ? NO_EXPIRATION : lifetime(dot.lifetimeSec),
   };
 }
 
-export function decodeLiveEntity<T extends EntityAttrs = EntityAttrs>(entity: Pick<Entity, "key" | "owner" | "creator" | "createdAt" | "updatedAt" | "expiresAt" | "attributes">): LiveEntity<T> {
-  if (!entity.key || !entity.owner || !entity.creator || entity.createdAt === undefined || entity.expiresAt === undefined || !entity.attributes) throw new Error("Incomplete entity projection.");
+type EntityRow = { $key?: Hex; $owner?: Hex; $creator?: Hex; $createdAt?: bigint; $updatedAt?: bigint; $expiresAt?: bigint; $attributes?: Attributes };
+
+export function decodeLiveEntity<T extends EntityAttrs = EntityAttrs>(entity: EntityRow): LiveEntity<T> {
+  if (!entity.$key || !entity.$owner || !entity.$creator || entity.$createdAt === undefined || entity.$expiresAt === undefined || !entity.$attributes) throw new Error("Incomplete entity projection.");
   const attrs: Record<string, unknown> = {};
-  const raw = Object.entries(entity.attributes).map(([name, value]) => {
+  const raw = Object.entries(entity.$attributes).map(([name, value]: [string, Attributes[string]]) => {
     attrs[name] = name === "lat" || name === "lng" ? decodeCoord(Number(value.value))
       : name === "rating" ? decodeRating(Number(value.value)) : value.value;
     return { name, type: value.type, stored: String(value.value) };
   });
   if (attrs.app !== APP_ID || !["dot", "business", "review"].includes(String(attrs.kind))) throw new Error("Entity is outside the workshop model.");
   delete attrs.app;
-  return { key: entity.key, owner: entity.owner, creator: entity.creator, createdAtBlock: entity.createdAt,
-    updatedAtBlock: entity.updatedAt, expiresAtBlock: entity.expiresAt, attrs: attrs as unknown as T, raw };
+  return { key: entity.$key, owner: entity.$owner, creator: entity.$creator, createdAtBlock: entity.$createdAt,
+    updatedAtBlock: entity.$updatedAt, expiresAtBlock: entity.$expiresAt, attrs: attrs as unknown as T, raw };
 }
 
-/** Live SDK implementation shared by workerd, Node and the browser. */
+/** Live SDK implementation shared by Node and the browser. */
 export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
   const { reader, writer, checkNetwork } = createSdkClients(options);
   let head: BlockInfo | undefined;
@@ -103,18 +145,19 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
     return head;
   }
 
+  // The filters, as expressions and as the text the Code panel shows.
   function build(filters: ChainFilters) {
-    const builder = reader.select(LIVE_SELECTION).createdBy(options.creator).where(eq("app", APP_ID));
-    const code = ["reader.select({ key: true, owner: true, creator: true, createdAt: true, updatedAt: true, expiresAt: true, attributes: true })",
+    const expressions: Parameters<ReturnType<typeof reader.select>["where"]>[0][] = [eq("app", APP_ID)];
+    const code = ["reader.select({ $key: true, $owner: true, $creator: true, $createdAt: true, $updatedAt: true, $expiresAt: true, $attributes: true })",
       `  .createdBy(${JSON.stringify(options.creator)})`, `  .where(eq("app", ${JSON.stringify(APP_ID)}))`];
-    function where(expression: Parameters<typeof builder.where>[0], text: string) {
-      builder.where(expression);
+    function where(expression: (typeof expressions)[number], text: string) {
+      expressions.push(expression);
       code.push(`  .where(${text})`);
     }
     if (filters.kinds.length) {
-      const expressions = filters.kinds.map(kind => eq("kind", kind));
+      const kinds = filters.kinds.map(kind => eq("kind", kind));
       const texts = filters.kinds.map(kind => `eq("kind", ${JSON.stringify(kind)})`);
-      where(expressions.length === 1 ? expressions[0]! : or(expressions), texts.length === 1 ? texts[0]! : `or(${texts.join(", ")})`);
+      where(kinds.length === 1 ? kinds[0]! : or(kinds), texts.length === 1 ? texts[0]! : `or(${texts.join(", ")})`);
     } else {
       where(eq("kind", "__none__"), 'eq("kind", "__none__")');
     }
@@ -125,7 +168,6 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       where(eq(name, value), `eq(${JSON.stringify(name)}, ${JSON.stringify(value)})`);
     }
     if (filters.namePrefix) where(startsWith("name", filters.namePrefix), `startsWith("name", ${JSON.stringify(filters.namePrefix)})`);
-    if (filters.owner) { builder.ownedBy(filters.owner); code.push(`  .ownedBy(${JSON.stringify(filters.owner)})`); }
     if (filters.business) where(eq("business", entityKey(filters.business)), `eq("business", key(${JSON.stringify(filters.business)}))`);
     if (filters.minRating !== undefined) where(gte("rating", i32(encodeRating(filters.minRating))), `gte("rating", i32(${encodeRating(filters.minRating)}))`);
     if (filters.viewport) {
@@ -146,9 +188,16 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       const deadline = head.number + BigInt(Math.ceil(filters.expiringWithinSec * 1000 / head.blockTimeMs));
       where(lte("$expiresAt", u64(deadline)), `lte("$expiresAt", u64(${deadline}n))`);
     }
-    builder.limit(200);
-    code.push("  .limit(200)", "  .fetch();", "// Collect every page: page = await page.next().");
-    return { builder, description: { code: `let page = await ${code.join("\n")}`, query: builder.toString(), appSide: [] } satisfies QueryDescription };
+    if (filters.owner) code.push(`  .ownedBy(${JSON.stringify(filters.owner)})`);
+    code.push('  .orderBy(asc("$key"))', `  .limit(${PAGE})`, "  .fetch();", '// Next page: the same query with gt("$key", key(lastKey)).');
+    // Every page is the same query, ordered by $key, continuing after the last key read.
+    const page = (after?: Hex) => {
+      const builder = reader.select(LIVE_SELECTION).createdBy(options.creator).where(...expressions).orderBy(asc("$key")).limit(PAGE);
+      if (filters.owner) builder.ownedBy(filters.owner);
+      if (after) builder.where(gt("$key", entityKey(after)));
+      return builder;
+    };
+    return { page, description: { code: `const page = await ${code.join("\n")}`, query: page().toString(), appSide: [] } satisfies QueryDescription };
   }
 
   function requireWriter() {
@@ -184,9 +233,9 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
   const create = (kind: "business" | "review", items: (BusinessCreate | ReviewCreate)[]) => serializeWrite(async () => {
     if (!items.length) throw new Error("No entities to create.");
     const result = await requireWriter().executeBatch({ creates: items.map(item => ({
-      attributes: { app: APP_ID, kind, ...encodedFields(item as unknown as Record<string, unknown>) },
-      payload: new Uint8Array(), contentType: "application/octet-stream",
-      flags: { permissionlessExtension: true }, expires: ExpirationTime.fromSeconds(item.lifetimeSec),
+      schema: (kind === "review" ? REVIEW : PLACE) as typeof PLACE,
+      values: { ...encodedFields(item as unknown as Record<string, unknown>), app: APP_ID, kind } as unknown as CreateEntityValues<typeof PLACE>,
+      flags: { permissionlessExtension: true }, expiration: lifetime(item.lifetimeSec),
     })) });
     return finish(result.txHash, result.createdEntities);
   });
@@ -198,17 +247,18 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       const started = performance.now();
       await checkNetwork();
       if (filters.expiringWithinSec !== undefined) await getBlock();
-      const { builder, description } = build(filters);
-      let page = await builder.fetch();
-      const block = page.blockNumber;
+      const { page, description } = build(filters);
       const entities: LiveEntity<T>[] = [];
+      let block = 0n;
       let pages = 0;
+      let after: Hex | undefined;
       for (;;) {
-        if (page.blockNumber !== block) throw new Error("Query snapshot changed between pages.");
+        const result = await page(after).fetch();
         pages++;
-        entities.push(...page.entities.map(entity => decodeLiveEntity<T>(entity)));
-        if (!page.hasNextPage()) break;
-        page = await page.next();
+        if (result.blockNumber > block) block = result.blockNumber;
+        entities.push(...result.entities.map(entity => decodeLiveEntity<T>(entity as EntityRow)));
+        if (result.entities.length < PAGE) break;
+        after = (result.entities.at(-1) as EntityRow).$key;
       }
       return { entities, description, block, rows: entities.length, pages, latencyMs: performance.now() - started, ranAt: Date.now() };
     },
@@ -223,12 +273,13 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       if (!keys.length || !Number.isFinite(addSeconds) || addSeconds <= 0 || new Set(keys).size !== keys.length) throw new Error("Invalid Lifetime Extension.");
       const block = await getBlock();
       const extraBlocks = BigInt(Math.ceil(addSeconds * 1000 / block.blockTimeMs));
-      const extensions = extensionsFor(await Promise.all(keys.map(key => reader.getEntity(key))), extraBlocks);
+      const current = await Promise.all(keys.map(async key => ({ key, expiresAt: (await reader.getEntity(key)).$expiresAt })));
+      const extensions = extensionsFor(current, extraBlocks);
       const result = await requireWriter().executeBatch({ extensions });
       return finish(result.txHash, extensions.map(extension => extension.entityKey));
     }),
     patch: (key: Hex, fields: PatchFields, _current: EntityAttrs) => serializeWrite(async () => {
-      const result = await requireWriter().patchEntity({ entityKey: key, set: encodedFields(fields as Record<string, unknown>) });
+      const result = await requireWriter().patchEntity(PLACE, key, { set: encodedFields(fields as Record<string, unknown>) as unknown as PatchEntityValues<typeof PLACE> });
       return finish(result.txHash, [key]);
     }),
     changeOwner: (key, newOwner) => serializeWrite(async () => {

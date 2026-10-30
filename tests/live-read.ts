@@ -1,6 +1,6 @@
 // Explicit opt-in public-RPC smoke check; no wallet or writer credential is used.
 import assert from "node:assert/strict";
-import { createArkivAdapter } from "../shared/arkiv/sdk-0.8.ts";
+import { createArkivAdapter } from "../shared/arkiv/sdk-1.0.ts";
 import { getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 
 const profile = getProfile(process.env.NEXT_PUBLIC_ARKIV_PROFILE);

@@ -16,7 +16,7 @@ permissions:
 
 env:
   NEXT_PUBLIC_WRITER_URL: same-origin
-  NEXT_PUBLIC_ARKIV_PROFILE: tiramisu
+  NEXT_PUBLIC_ARKIV_PROFILE: rabdi
   NEXT_TELEMETRY_DISABLED: "1"
 
 jobs:

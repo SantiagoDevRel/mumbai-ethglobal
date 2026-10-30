@@ -1,4 +1,4 @@
-// Explicitly authorized, real-time Tiramisu rehearsal against the deployed app (APP_ORIGIN; a protected
+// Explicitly authorized, real-time Rabdi rehearsal against the deployed app (APP_ORIGIN; a protected
 // preview also needs VERCEL_OIDC_TOKEN). No credentials enter the client bundle.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -10,8 +10,8 @@ import { privateKeyToAccount } from "viem/accounts";
 import { SCENES, TALK_LENGTH_SEC } from "../shared/scenes.ts";
 import { hasNoExpiry } from "../shared/types.ts";
 import { getProfile, WRITER_ADDRESS, explorerUrl } from "../shared/arkiv/profiles.ts";
-import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
-import { createArkivAdapter } from "../shared/arkiv/sdk-0.8.ts";
+import { createSdkClients, keyedUrl } from "../shared/arkiv/clients-1.0.ts";
+import { createArkivAdapter } from "../shared/arkiv/sdk-1.0.ts";
 
 const ORIGIN = (process.env.APP_ORIGIN ?? "https://mumbai-ethglobal.vercel.app").replace(/\/$/, "");
 const WRITER = ORIGIN;
@@ -26,7 +26,7 @@ const flag = (name) => process.argv[process.argv.indexOf(name) + 1];
 const preflight = process.argv.includes("--preflight");
 for (const name of ["WORKSHOP_WRITER_PRIVATE_KEY", "RPC", "ACCESS_KEY", "WORKSHOP_PRESENTER_TOKEN"]) assert.ok(process.env[name], `${name} must be supplied in the Node environment.`);
 const profile = getProfile(process.env.ARKIV_PROFILE);
-assert.equal(profile.id, "tiramisu");
+assert.equal(profile.id, "rabdi");
 assert.equal(privateKeyToAccount(process.env.WORKSHOP_WRITER_PRIVATE_KEY).address.toLowerCase(), WRITER_ADDRESS.toLowerCase());
 assert.ok(preflight || (process.argv.includes("--report") && process.argv.includes("--journal")), "Provide new --report and private --journal paths, or --preflight.");
 const reportFile = preflight ? null : await open(flag("--report"), "wx", 0o644);
@@ -73,7 +73,7 @@ async function presenter(route, body) {
   return result;
 }
 async function rpc(method, params = []) {
-  const response = await fetch(process.env.RPC, { method: "POST", headers: { "content-type": "application/json", "X-API-KEY": process.env.ACCESS_KEY }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }), signal: AbortSignal.timeout(20000) });
+  const response = await fetch(keyedUrl(process.env.RPC, process.env.ACCESS_KEY), { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }), signal: AbortSignal.timeout(20000) });
   assert.ok(response.ok, `RPC ${method}: HTTP ${response.status}`);
   const result = await response.json();
   assert.ok(!result.error, `RPC ${method}: ${result.error?.code}`);
@@ -181,7 +181,7 @@ async function signedAction(name, trigger, verify) {
     return item;
   });
 }
-async function entity(key) { return clients.reader.getEntity(key); }
+async function entity(key) { const row = await clients.reader.getEntity(key); return { createdAt: row.$createdAt, expiresAt: row.$expiresAt }; }
 // The writer stores text in lower case, so the card shows the typed "Rehearsal phone" as "rehearsal phone".
 async function inspect(key) {
   await command({ type: "inspect", key });

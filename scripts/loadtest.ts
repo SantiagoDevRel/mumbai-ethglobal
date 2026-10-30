@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { open } from "node:fs/promises";
 import { decodeEventLog } from "viem";
-import { ENTITY_EVENTS_ABI } from "@arkiv-network/sdk/entity";
-import { createArkivAdapter } from "../shared/arkiv/sdk-0.8.ts";
-import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
+import { ENTITY_EVENTS_ABI } from "@arkiv-network/sdk";
+import { createArkivAdapter } from "../shared/arkiv/sdk-1.0.ts";
+import { createSdkClients } from "../shared/arkiv/clients-1.0.ts";
 import { getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import type { Hex } from "../shared/types.ts";
 import { delay, presenterRequest, writerRequest } from "./writer-http.ts";
@@ -15,7 +15,8 @@ const MINIMUM_BALANCE = 8n * 10n ** 18n;
 const reportIndex = process.argv.indexOf("--report");
 const reportFile = reportIndex >= 0 ? await open(process.argv[reportIndex + 1]!, "wx", 0o600) : undefined;
 const profile = getProfile(process.env.ARKIV_PROFILE);
-const { reader } = createSdkClients({ profile, creator: WRITER_ADDRESS, read: { kind: "public" } });
+// The writer's own keyed read proxy: Rabdi's RPC answers 429 without an access key.
+const { reader } = createSdkClients({ profile, creator: WRITER_ADDRESS, read: { kind: "proxy", url: `${writerUrl}/api/rpc`, presenterToken: process.env.WORKSHOP_PRESENTER_TOKEN } });
 const observer = createArkivAdapter({ profile, creator: WRITER_ADDRESS, read: { kind: "proxy", url: `${writerUrl}/api/rpc`, presenterToken: process.env.WORKSHOP_PRESENTER_TOKEN } });
 interface Phone { index: number; submittedAt?: number; acceptedAt?: number; confirmedAt?: number; visibleAt?: number; ticket?: string; entityKey?: Hex; txHash?: Hex; block?: string; error?: string }
 const phones: Phone[] = Array.from({ length: 200 }, (_, index) => ({ index }));

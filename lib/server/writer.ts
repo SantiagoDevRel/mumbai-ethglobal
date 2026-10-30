@@ -11,10 +11,10 @@
 // written tickets share one session read per two seconds across all instances.
 
 import { decodeEventLog, keccak256, parseTransaction, recoverTransactionAddress, type TransactionSerialized } from "viem";
-import { ENTITY_EVENTS_ABI } from "@arkiv-network/sdk/entity";
-import { eq } from "@arkiv-network/sdk/query";
-import { createSdkClients, keyQuotaExhausted, postKeyed, type RpcObserver } from "../../shared/arkiv/clients-0.8";
-import { dotToCreate } from "../../shared/arkiv/sdk-0.8";
+import { ENTITY_EVENTS_ABI, key as entityKey } from "@arkiv-network/sdk";
+import { asc, eq, gt } from "@arkiv-network/sdk/query";
+import { createSdkClients, keyQuotaExhausted, postKeyed, type RpcObserver } from "../../shared/arkiv/clients-1.0";
+import { dotToCreate } from "../../shared/arkiv/sdk-1.0";
 import { getProfile, NetworkNotConfiguredError } from "../../shared/arkiv/profiles";
 import type { DotCreate } from "../../shared/arkiv/adapter";
 import { APP_ID, DOT_CATEGORIES, MAX_ENTITIES_PER_SESSION, type Hex } from "../../shared/types";
@@ -125,13 +125,12 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
   const snapshots = new Map<string, { snapshot: SessionSnapshot; checkedAt: number }>();
   // Concurrent ticket polls on one instance wait for the same snapshot lookup.
   const pendingSnapshots = new Map<string, Promise<SessionSnapshot>>();
-  const rpcMetrics = { calls: 0, byMethod: {} as Record<string, number>, http429: 0, rpc429: 0, errors: 0, ticketQueries: 0, viaPublic: 0 };
+  const rpcMetrics = { calls: 0, byMethod: {} as Record<string, number>, http429: 0, rpc429: 0, errors: 0, ticketQueries: 0 };
   const observeRpc: RpcObserver = event => {
     if (event.phase === "request") { rpcMetrics.calls++; rpcMetrics.byMethod[event.method] = (rpcMetrics.byMethod[event.method] ?? 0) + 1; }
     if (event.phase === "response" && event.httpStatus === 429) rpcMetrics.http429++;
     if (event.phase === "response" && event.rpcCode === 429) rpcMetrics.rpc429++;
     if (event.phase === "error") rpcMetrics.errors++;
-    if (event.phase === "response" && event.viaPublic) rpcMetrics.viaPublic++;
   };
 
   async function readMeta(): Promise<Meta> {
@@ -380,21 +379,25 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
   async function fetchSession(session: string) {
     const { reader } = await network();
     rpcMetrics.ticketQueries++;
-    let pages = 1;
-    // The query supplies its canonical block: no per-phone block-number RPC. Page size is 200.
+    let pages = 0;
+    // The query supplies its block: no per-phone block-number RPC. Pages hold 100 rows, ordered by
+    // $key; each next page continues after the last key read.
     // One session only: entities with no expiration from earlier sessions never enter this read.
-    let page = await reader.select({ key: true, expiresAt: true }).createdBy(writerAddress)
-      .where(eq("app", APP_ID), eq("session", session)).limit(200).fetch();
-    const block = page.blockNumber;
+    let block = 0n;
+    let after: Hex | undefined;
     const entities: { key: string; expiresAt: bigint }[] = [];
     for (;;) {
-      if (page.blockNumber !== block) throw new Error("Session snapshot changed between pages.");
-      entities.push(...page.entities);
-      if (!page.hasNextPage()) break;
-      if (entities.length >= MAX_ENTITIES_PER_SESSION) throw new Error("Session exceeds its admission limit.");
-      rpcMetrics.ticketQueries++;
+      if (pages) rpcMetrics.ticketQueries++;
       pages++;
-      page = await page.next();
+      const query = reader.select({ $key: true, $expiresAt: true }).createdBy(writerAddress)
+        .where(eq("app", APP_ID), eq("session", session)).orderBy(asc("$key")).limit(100);
+      if (after) query.where(gt("$key", entityKey(after)));
+      const page = await query.fetch();
+      if (page.blockNumber > block) block = page.blockNumber;
+      entities.push(...page.entities.map(entity => ({ key: entity.$key, expiresAt: entity.$expiresAt })));
+      if (page.entities.length < 100) break;
+      if (entities.length >= MAX_ENTITIES_PER_SESSION) throw new Error("Session exceeds its admission limit.");
+      after = page.entities.at(-1)!.$key;
     }
     return { block, entities, pages };
   }
@@ -492,7 +495,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     const deviceId = `device:${session}:${hash}`;
     // A phone may keep several entities live (up to MAX_ENTITIES_PER_DEVICE per session).
     const [device] = await db.query<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1`, [deviceId]);
-    // "No expiration" travels with the ticket to dotToCreate, which writes ExpirationTime.permanent().
+    // "No expiration" travels with the ticket to dotToCreate, which writes the u64 maximum deadline (2**64 - 1).
     const dot: DotCreate = { session, name: data.name, color: data.color, country: data.country, category, lifetimeSec: data.lifetimeSec, ...(data.noExpiry ? { noExpiry: true } : {}), ...point };
     const position = await db.transaction(async q => {
       const meta = await lockMeta(q);
@@ -565,16 +568,16 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       }
       try {
         observeRpc({ method: call.method, phase: "request" });
-        const { response, viaPublic } = await postKeyed(env.RPC!, env.ACCESS_KEY!, getProfile(env.ARKIV_PROFILE).rpcHttp,
+        const { response } = await postKeyed(env.RPC!, env.ACCESS_KEY!,
           JSON.stringify({ jsonrpc: "2.0", id: call.id ?? null, method: call.method, params: call.params ?? [] }), AbortSignal.timeout(15_000));
         if (!response.ok) {
-          observeRpc({ method: call.method, phase: "response", httpStatus: response.status, viaPublic });
+          observeRpc({ method: call.method, phase: "response", httpStatus: response.status });
           // For the runtime log: the upstream's reason and limit headers (never the key or the request).
-          console.error("rpc read rejected:", call.method, response.status, viaPublic ? "public" : "keyed", response.headers.get("ratelimit"), (await response.text()).slice(0, 200));
+          console.error("rpc read rejected:", call.method, response.status, response.headers.get("ratelimit"), (await response.text()).slice(0, 200));
           throw new Error("RPC rejected.");
         }
         const body = await response.json() as { result?: unknown; error?: { code: number } };
-        observeRpc({ method: call.method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code, viaPublic });
+        observeRpc({ method: call.method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code });
         responses.push(body.error ? { jsonrpc: "2.0", id: call.id ?? null, error: { code: body.error.code, message: "RPC read failed." } } : { jsonrpc: "2.0", id: call.id ?? null, result: body.result });
       } catch { observeRpc({ method: call.method, phase: "error" }); responses.push({ jsonrpc: "2.0", id: call.id ?? null, error: { code: -32000, message: "RPC read unavailable." } }); }
     }

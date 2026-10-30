@@ -1,6 +1,6 @@
 // The only Arkiv interface the app and the writer use (WORKSHOP.md 6.3).
-// `sdk-0.8.ts` implements it today (chain chat); `mock.ts` implements it in memory so the UI
-// works from hour 1. A future `sdk-udc.ts` implements it for user-defined columns.
+// `sdk-1.0.ts` implements it on Rabdi; `mock.ts` implements it in memory so the UI
+// works from hour 1.
 
 import type {
   BlockInfo,

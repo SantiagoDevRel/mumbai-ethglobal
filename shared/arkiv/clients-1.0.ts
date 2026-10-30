@@ -9,29 +9,30 @@ export interface SendJournal {
   beforeSend(raw: Hex, hash: Hex): Promise<void>;
 }
 
-export type RpcObserver = (event: { method: string; phase: "request" | "response" | "error"; httpStatus?: number; rpcCode?: number; viaPublic?: boolean }) => void;
+export type RpcObserver = (event: { method: string; phase: "request" | "response" | "error"; httpStatus?: number; rpcCode?: number }) => void;
 
-// The access key has a monthly quota. Once it is used up, every keyed call answers 429
-// QUOTA_EXCEEDED until the quota resets, so the server retries on the profile's public RPC and
-// stays there for ten minutes before trying the key again. A plain burst limit (429 without
-// QUOTA_EXCEEDED) is not retried: the public RPC's own limit is lower.
+// Rabdi takes the access key as the last segment of the RPC URL's path; without a key the RPC answers
+// 429 almost at once, so there is no keyless fallback. The key has a monthly quota: once it is used up,
+// every call answers 429 QUOTA_EXCEEDED until the quota resets. The server remembers that for ten
+// minutes so the presenter's status can say so; it never retries without the key.
 const KEY_RETRY_MS = 10 * 60_000;
 let keyRetryAt = 0;
-/** True while keyed calls go to the public RPC because the key's quota is used up. */
+/** True for ten minutes after a keyed call answered that the key's quota is used up. */
 export function keyQuotaExhausted(): boolean { return Date.now() < keyRetryAt; }
 async function quotaExhausted(response: Response): Promise<boolean> {
   if (response.headers.get("arkiv-quota-used-percent") === "100") return true;
   try { return (await response.json() as { error?: unknown }).error === "QUOTA_EXCEEDED"; } catch { return false; }
 }
-/** POSTs one JSON-RPC body with the access key, or on the public RPC while the key's quota is used up. */
-export async function postKeyed(url: string, accessKey: string, publicUrl: string, body: string, signal: AbortSignal): Promise<{ response: Response; viaPublic: boolean }> {
-  const init = (headers: Record<string, string>): RequestInit => ({ method: "POST", headers: { "content-type": "application/json", ...headers }, body, signal });
-  if (!keyQuotaExhausted()) {
-    const response = await fetch(url, init({ "X-API-KEY": accessKey }));
-    if (response.status !== 429 || !await quotaExhausted(response.clone())) return { response, viaPublic: false };
-    keyRetryAt = Date.now() + KEY_RETRY_MS;
-  }
-  return { response: await fetch(publicUrl, init({})), viaPublic: true };
+/** The keyed RPC URL: the base URL with the access key as its last path segment. */
+export function keyedUrl(url: string, accessKey: string): string {
+  if (!accessKey) throw new NetworkNotConfiguredError("the access key is missing");
+  return `${url.replace(/\/+$/, "")}/${encodeURIComponent(accessKey)}`;
+}
+/** POSTs one JSON-RPC body to the keyed RPC URL. */
+export async function postKeyed(url: string, accessKey: string, body: string, signal: AbortSignal): Promise<{ response: Response }> {
+  const response = await fetch(keyedUrl(url, accessKey), { method: "POST", headers: { "content-type": "application/json" }, body, signal });
+  if (response.status === 429 && await quotaExhausted(response.clone())) keyRetryAt = Date.now() + KEY_RETRY_MS;
+  return { response };
 }
 
 export function createSdkClients(options: AdapterOptions, journal?: SendJournal, observe?: RpcObserver) {
@@ -43,7 +44,7 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal,
   const chain = defineChain({
     id: profile.chainId,
     name: profile.name,
-    nativeCurrency: { name: "GLM", symbol: "GLM", decimals: 18 },
+    nativeCurrency: { name: "Golem", symbol: "tGLM", decimals: 18 },
     rpcUrls: { default: { http: [profile.rpcHttp] } },
   });
   const url = read.kind === "public" ? profile.rpcHttp : read.kind === "relay" ? "" : read.url;
@@ -64,15 +65,15 @@ export function createSdkClients(options: AdapterOptions, journal?: SendJournal,
       try {
       const payload = JSON.stringify({ jsonrpc: "2.0", id: nextId++, method, params: params ?? [] });
       const signal = AbortSignal.timeout(20_000);
-      const { response, viaPublic } = read.kind === "keyed"
-        ? await postKeyed(url, read.accessKey, profile.rpcHttp, payload, signal)
-        : { response: await fetch(url, { method: "POST", headers, body: payload, signal }), viaPublic: false };
+      const { response } = read.kind === "keyed"
+        ? await postKeyed(url, read.accessKey, payload, signal)
+        : { response: await fetch(url, { method: "POST", headers, body: payload, signal }) };
       if (!response.ok) {
-        observe?.({ method, phase: "response", httpStatus: response.status, viaPublic });
+        observe?.({ method, phase: "response", httpStatus: response.status });
         throw new Error(`RPC request rejected (${response.status}).`);
       }
       const body = await response.json() as { result?: unknown; error?: { code: number; message: string; data?: unknown } };
-      observe?.({ method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code, viaPublic });
+      observe?.({ method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code });
       if (body.error) {
         const error = new Error(body.error.message) as Error & { code: number; data?: unknown };
         error.code = body.error.code;

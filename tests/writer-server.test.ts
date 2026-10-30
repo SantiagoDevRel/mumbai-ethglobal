@@ -6,10 +6,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac, randomBytes } from "node:crypto";
 import { privateKeyToAccount } from "viem/accounts";
-import { ExpirationTime } from "@arkiv-network/sdk/utils";
+import { ExpirationTime } from "@arkiv-network/sdk";
 import { createDb } from "../lib/server/db.ts";
 import { createWriter } from "../lib/server/writer.ts";
-import { dotToCreate } from "../shared/arkiv/sdk-0.8.ts";
+import { dotToCreate, NO_EXPIRATION } from "../shared/arkiv/sdk-1.0.ts";
 import type { DotCreate } from "../shared/arkiv/adapter.ts";
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -18,6 +18,8 @@ const testAddress = privateKeyToAccount(testKey).address;
 const presenter = "test-presenter-credential";
 const password = "test-presenter-password";
 const RPC = "https://rpc.example/";
+// The access key travels as the RPC URL's last path segment.
+const KEYED = `${RPC}test-rpc-credential`;
 const auth = { authorization: `Bearer ${presenter}`, "content-type": "application/json" };
 type Rpc = { method: string; params?: unknown[]; id?: unknown };
 
@@ -27,20 +29,20 @@ let balance = "0x8ac7230489e80000";
 const calls: Rpc[] = [];
 globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-  if (url.startsWith("https://rpc.tiramisu")) throw new Error("The writer must not fall back to the public RPC in tests.");
-  if (url !== RPC) return realFetch(input, init);
-  assert.equal(new Headers(init?.headers).get("X-API-KEY"), "test-rpc-credential");
+  if (url.startsWith("https://rpc.rabdi")) throw new Error("The writer must not call the public RPC in tests.");
+  if (url === RPC) throw new Error("The writer must send the access key in the RPC URL.");
+  if (url !== KEYED) return realFetch(input, init);
   const call = JSON.parse(String(init?.body)) as Rpc;
   calls.push(call);
   const override = await onRpc?.(call);
   if (override !== undefined) return Response.json({ jsonrpc: "2.0", id: call.id, result: override });
-  const values: Record<string, unknown> = { eth_chainId: "0x7614d1", arkiv_getBlockTiming: { current_block: 100, current_block_time: Date.now() / 1000, duration: 2 },
+  const values: Record<string, unknown> = { eth_chainId: "0x76edaf", arkiv_getBlockTiming: { current_block: 100, current_block_time: Date.now() / 1000, duration: 2 },
     eth_getBalance: balance, eth_blockNumber: "0x64", eth_getTransactionCount: "0x0", eth_getBlockByNumber: null };
   if (!(call.method in values)) throw new Error(`Unexpected RPC method ${call.method}`);
   return Response.json({ jsonrpc: "2.0", id: call.id, result: values[call.method] });
 };
 
-async function fixture({ profile = "tiramisu", instances = 1 }: { profile?: string; instances?: number } = {}) {
+async function fixture({ profile = "rabdi", instances = 1 }: { profile?: string; instances?: number } = {}) {
   calls.length = 0; onRpc = undefined; balance = "0x8ac7230489e80000";
   const schema = `wtest_${randomBytes(6).toString("hex")}`;
   const db = createDb(DATABASE_URL!, schema);
@@ -165,7 +167,7 @@ test("the presenter password returns a signed login that expires, and failed att
   } finally { await dispose(); }
 });
 
-test("200 written tickets on two instances share one keyed query per refresh and observe extension then expiration", opts, async () => {
+test("200 written tickets on two instances share one keyed read per refresh and observe extension then expiration", opts, async () => {
   const { db, call, dispose } = await fixture({ instances: 2 });
   const ids = Array.from({ length: 200 }, () => crypto.randomUUID());
   const keys = ids.map((_, index) => `0x${(index + 1).toString(16).padStart(64, "0")}`);
@@ -174,7 +176,11 @@ test("200 written tickets on two instances share one keyed query per refresh and
     if (rpc.method === "arkiv_query") {
       assert.match(String(rpc.params![0]), /session = str\('ROOM'\)/);
       assert.match(String(rpc.params![0]), /\$creator = addr\(/);
-      return { blockNumber: `0x${block.toString(16)}`, data: live ? keys.map(key => ({ key, expiresAt: `0x${expiresAt.toString(16)}` })) : [] };
+      // Pages of 100 ordered by $key; the next page continues after the last key read.
+      const after = String(rpc.params![0]).match(/\$key > key\((0x[0-9a-f]{64})\)/i)?.[1];
+      const limit = Number((rpc.params![1] as { limit?: string }).limit ?? "0x64");
+      const rows = live ? keys.filter(key => !after || BigInt(key) > BigInt(after)).slice(0, limit) : [];
+      return { blockNumber: `0x${block.toString(16)}`, data: rows.map(key => ({ key, expiresAt: `0x${expiresAt.toString(16)}` })) };
     }
     return undefined;
   };
@@ -183,12 +189,13 @@ test("200 written tickets on two instances share one keyed query per refresh and
       await db.query(`insert into ${db.t("tickets")} (id, session, device, status, dot, lat, lng, entity_key, block, expires_at_block, accepted_at)
         values ($1, 'ROOM', 'private-device', 'written', '{"session":"ROOM"}', 0, 0, $2, '99', '150', 0)`, [id, keys[index]]);
     }
-    // At most one chain read per two-second window across both instances, however long the wave takes.
+    // At most one chain read (three pages of up to 100 for 200 entities) per two-second window across
+    // both instances, however long the wave takes.
     let budget = 0;
     const wave = async () => {
       const started = Date.now();
       const responses = await Promise.all(ids.map((id, index) => call(`/api/ticket/${id}`, undefined, {}, index % 2)));
-      budget += 1 + Math.floor((Date.now() - started) / 2_000);
+      budget += 3 * (1 + Math.floor((Date.now() - started) / 2_000));
       assert.ok(queries() <= budget, `${queries()} chain reads for a read budget of ${budget}`);
       return responses;
     };
@@ -227,8 +234,8 @@ test("the proxy forwards allowlisted reads with the key and blocks writes", opts
   } finally { await dispose(); }
 });
 
-test("a placeholder network fails closed", opts, async () => {
-  const { call, dispose } = await fixture({ profile: "udc" });
+test("an unknown network fails closed", opts, async () => {
+  const { call, dispose } = await fixture({ profile: "unknown" });
   try {
     const started = await call("/api/presenter/session/start", {});
     assert.equal((await call("/api/presenter/doors", { open: true })).data.error, "network_not_configured");
@@ -321,8 +328,8 @@ test("two instances never send at once, and hold stops a batch that was not admi
   } finally { release(); await dispose(); }
 });
 
-// Santiago, October 29: text is stored in lower case, and "No expiration" reaches the create as
-// ExpirationTime.permanent().
+// Santiago, October 29: text is stored in lower case, and "No expiration" reaches the create as the
+// u64 maximum deadline.
 test("the writer stores lower-case text and keeps No expiration for the create", opts, async () => {
   const { db, call, dispose } = await fixture();
   try {
@@ -336,8 +343,8 @@ test("the writer stores lower-case text and keeps No expiration for the create",
     assert.equal((await call("/api/submit", { name: "ravi", color: "#fe7446", country: "IND", lifetimeSec: 300 }, phone("lower-case-phone-device-3"))).data.error, "invalid");
     const rows = await db.query<{ dot: DotCreate }>(`select dot from ${db.t("tickets")} where session = $1 order by seq`, [code]);
     assert.deepEqual(rows.map(({ dot }) => [dot.name, dot.color, dot.country, dot.noExpiry]), [["asha rao", "#fe7446", "in", true], ["ravi", "#fe7446", "in", undefined]]);
-    assert.deepEqual(dotToCreate(rows[0]!.dot).expires, ExpirationTime.permanent());
-    assert.deepEqual(dotToCreate(rows[1]!.dot).expires, ExpirationTime.fromSeconds(300));
+    assert.deepEqual(dotToCreate(rows[0]!.dot).expiration, NO_EXPIRATION);
+    assert.deepEqual(dotToCreate(rows[1]!.dot).expiration, ExpirationTime.fromSeconds(300));
     // Placement read the lower-case code: both dots are in India.
     for (const { data } of [forever, timed]) assert.ok(data.lat > 6 && data.lat < 36 && data.lng > 68 && data.lng < 98, JSON.stringify(data));
     assert.equal(calls.some(rpc => rpc.method.startsWith("eth_send")), false);

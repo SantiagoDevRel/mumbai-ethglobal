@@ -205,6 +205,7 @@ export const RPC_READ_ALLOWLIST = [
   "eth_getTransactionByHash",
   "eth_getLogs",
   "arkiv_query",
+  "arkiv_getEntity",
   "arkiv_getEntityCount",
   "arkiv_getBlockTiming",
 ] as const;

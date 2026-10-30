@@ -1,43 +1,46 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { ExpirationTime } from "@arkiv-network/sdk/utils";
-import { createArkivAdapter, dotToCreate, encodedFields, extensionsFor } from "../shared/arkiv/sdk-0.8.ts";
+import { ExpirationTime } from "@arkiv-network/sdk";
+import { createArkivAdapter, dotToCreate, encodedFields, extensionsFor, lifetime, NO_EXPIRATION } from "../shared/arkiv/sdk-1.0.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "../shared/arkiv/adapter.ts";
-import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
+import { createSdkClients, keyedUrl } from "../shared/arkiv/clients-1.0.ts";
 import { getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { APP_ID, NO_EXPIRY_BLOCK, type Hex } from "../shared/types.ts";
 
-test("adapter walks every immutable page and describes the exact query sent", async () => {
+test("adapter walks every page by $key and describes the exact query sent", async () => {
   const original = globalThis.fetch;
-  const queries: { query: string; cursor?: string }[] = [];
-  const key = (digit: string) => `0x${digit.repeat(64)}` as Hex;
-  const row = (digit: string) => ({ key: key(digit), owner: WRITER_ADDRESS, creator: WRITER_ADDRESS,
+  const queries: { query: string; limit?: string }[] = [];
+  const key = (n: number) => `0x${n.toString(16).padStart(64, "0")}` as Hex;
+  const row = (n: number) => ({ key: key(n), owner: WRITER_ADDRESS, creator: WRITER_ADDRESS,
     createdAt: "0x60", updatedAt: "0x60", expiresAt: "0x80",
     attributes: [ { name: "app", type: "str", value: APP_ID }, { name: "kind", type: "str", value: "dot" },
       { name: "session", type: "str", value: "TEST" }, { name: "name", type: "str", value: "Asha" },
-      { name: "color", type: "str", value: "#fe7446" }, { name: "country", type: "str", value: "CO" },
+      { name: "color", type: "str", value: "#fe7446" }, { name: "country", type: "str", value: "colombia" },
       { name: "lat", type: "i32", value: -4_500_000 }, { name: "lng", type: "i32", value: -74_000_000 } ] });
   globalThis.fetch = async (_input, options) => {
-    const body = JSON.parse(String(options?.body)) as { id: number; method: string; params: [string, { cursor?: string }] };
+    const body = JSON.parse(String(options?.body)) as { id: number; method: string; params: [string, { limit?: string }] };
     let result: unknown;
-    if (body.method === "eth_chainId") result = "0x7614d1";
+    if (body.method === "eth_chainId") result = "0x76edaf";
     else {
       assert.equal(body.method, "arkiv_query");
-      queries.push({ query: body.params[0], cursor: body.params[1].cursor });
-      result = body.params[1].cursor ? { blockNumber: "0x64", data: [row("2")] } : { blockNumber: "0x64", data: [row("1")], cursor: "next-page" };
+      queries.push({ query: body.params[0], limit: body.params[1].limit });
+      // A full first page of 100 rows, then one more row after the last key.
+      result = queries.length === 1 ? { blockNumber: "0x64", data: Array.from({ length: 100 }, (_, n) => row(n + 1)) } : { blockNumber: "0x65", data: [row(101)] };
     }
     return Response.json({ jsonrpc: "2.0", id: body.id, result });
   };
   try {
-    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS, read: { kind: "public" } });
+    const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS, read: { kind: "public" } });
     const filters = { kinds: ["dot" as const], session: "TEST", viewport: { minLat: -10, maxLat: 20, minLng: -90, maxLng: -50 } };
     const description = adapter.describe(filters);
     const result = await adapter.query(filters);
     assert.equal(result.pages, 2);
-    assert.equal(result.rows, 2);
-    assert.equal(result.block, 100n);
-    assert.deepEqual(queries.map(item => item.query), [description.query, description.query]);
-    assert.equal(queries[1]!.cursor, "next-page");
+    assert.equal(result.rows, 101);
+    assert.equal(result.block, 101n);
+    assert.equal(queries[0]!.query, description.query);
+    assert.ok(queries[1]!.query.includes(key(100).slice(2)), "the next page continues after the last key read");
+    assert.match(description.query, /ORDER BY/i);
+    assert.equal(queries[0]!.limit, "0x64");
     assert.deepEqual(result.description, description);
     assert.equal(result.entities[0]!.attrs.kind === "dot" && result.entities[0]!.attrs.lat, -4.5);
     assert.deepEqual(result.entities[0]!.raw.find(attribute => attribute.name === "lng"), { name: "lng", type: "i32", stored: "-74000000" });
@@ -46,13 +49,22 @@ test("adapter walks every immutable page and describes the exact query sent", as
   } finally { globalThis.fetch = original; }
 });
 
-test("write encoding preserves signed coordinates, empty payload and extension permission", () => {
+test("the access key is the RPC URL's last path segment", () => {
+  assert.equal(keyedUrl("https://rpc.rabdi.db-chain.testnet.arkiv.network/", "a/b"), "https://rpc.rabdi.db-chain.testnet.arkiv.network/a%2Fb");
+  assert.throws(() => keyedUrl("https://rpc.example", ""), /access key/);
+});
+
+test("write encoding preserves signed coordinates, schema columns and extension permission", () => {
   const create = dotToCreate({ session: "TEST", name: "Asha", country: "CO", color: "#fe7446", lat: -4.5, lng: -74, lifetimeSec: 20 });
-  assert.equal(create.payload.length, 0);
+  assert.deepEqual(Object.keys(create).sort(), ["expiration", "flags", "schema", "values"]);
   assert.equal(create.flags.permissionlessExtension, true);
-  assert.deepEqual((create.attributes as Record<string, unknown>).lat, { type: "i32", value: -4_500_000 });
-  assert.equal((create.attributes as Record<string, unknown>).country, "colombia");
-  assert.deepEqual(encodedFields({ rating: 4.5 }).rating, { type: "i32", value: 45 });
+  const values = create.values as Record<string, unknown>;
+  assert.equal(values.lat, -4_500_000);
+  assert.equal(values.country, "colombia");
+  assert.equal(values.kind, "dot");
+  const columns = create.schema.columns as Record<string, { isIndexed: boolean } | undefined>;
+  for (const name of ["app", "kind", "name", "session", "color", "country", "lat", "lng"]) assert.equal(columns[name]?.isIndexed, true, `${name} is filterable`);
+  assert.equal(encodedFields({ rating: 4.5 }).rating, 45);
   assert.throws(() => encodedFields({ photo: "a".repeat(128) }), /plain Swarm reference/);
 });
 
@@ -60,7 +72,7 @@ test("raw-send journal failure prevents forwarding; lost responses are never tra
   const original = globalThis.fetch;
   let forwards = 0;
   globalThis.fetch = async () => { forwards++; throw new Error("Lost provider response."); };
-  const options = { profile: getProfile("tiramisu"), creator: WRITER_ADDRESS, read: { kind: "keyed" as const, url: "https://rpc.example", accessKey: "test-rpc-credential" } };
+  const options = { profile: getProfile("rabdi"), creator: WRITER_ADDRESS, read: { kind: "keyed" as const, url: "https://rpc.example", accessKey: "test-rpc-credential" } };
   try {
     const stopped = createSdkClients(options, { async beforeSend() { throw new Error("Checkpoint unavailable."); } });
     const request = stopped.reader.transport.request as (call: { method: string; params: string[] }) => Promise<unknown>;
@@ -82,10 +94,10 @@ test("an explicit wallet rejection permits the next explicit user action", async
   let prompts = 0;
   globalThis.fetch = async (_input, options) => {
     const body = JSON.parse(String(options?.body)) as { id: number };
-    return Response.json({ jsonrpc: "2.0", id: body.id, result: "0x7614d1" });
+    return Response.json({ jsonrpc: "2.0", id: body.id, result: "0x76edaf" });
   };
   try {
-    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS, read: { kind: "public" }, wallet: {
+    const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS, read: { kind: "public" }, wallet: {
       kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { prompts++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } },
     } });
     const dots = [{ session: "TEST", name: "Asha", country: "IN", color: "#fe7446", lat: 20, lng: 75, lifetimeSec: 20 }];
@@ -100,22 +112,24 @@ test("the stage relay reads without any fetch: no browser touches the public RPC
   globalThis.fetch = async () => { throw new Error("A relay read must not fetch."); };
   const calls: string[] = [];
   try {
-    const { reader } = createSdkClients({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
-      read: { kind: "relay", send: async (method) => { calls.push(method); return method === "eth_chainId" ? "0x7614d1" : "0x10"; } } });
+    const { reader } = createSdkClients({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS,
+      read: { kind: "relay", send: async (method) => { calls.push(method); return method === "eth_chainId" ? "0x76edaf" : "0x10"; } } });
     assert.equal(await reader.getBlockNumber(), 16n);
     assert.deepEqual(calls, ["eth_blockNumber"]);
   } finally { globalThis.fetch = original; }
 });
 
 // "No expiration" on the phone (Santiago, October 29) is the largest deadline a u64 holds.
-test("no expiration writes ExpirationTime.permanent(), and neither lifetime choice is an attribute", () => {
+test("no expiration writes the u64 maximum deadline, and neither lifetime choice is an attribute", () => {
   const dot = { session: "TEST", name: "asha", country: "in", color: "#fe7446", lat: 19.1, lng: 72.9, lifetimeSec: 900 };
   const forever = dotToCreate({ ...dot, noExpiry: true });
-  assert.deepEqual(forever.expires, ExpirationTime.permanent());
-  assert.equal(forever.expires.expiresAt, NO_EXPIRY_BLOCK);
-  for (const timed of [dotToCreate(dot), dotToCreate({ ...dot, noExpiry: false })]) assert.deepEqual(timed.expires, ExpirationTime.fromSeconds(900));
+  assert.deepEqual(forever.expiration, NO_EXPIRATION);
+  assert.equal(forever.expiration.expiresAt, NO_EXPIRY_BLOCK);
+  for (const timed of [dotToCreate(dot), dotToCreate({ ...dot, noExpiry: false })]) assert.deepEqual(timed.expiration, ExpirationTime.fromSeconds(900));
+  // Any number of seconds becomes whole 2 s blocks, rounded up.
+  assert.deepEqual(lifetime(901), ExpirationTime.fromBlocks(451));
   for (const create of [forever, dotToCreate(dot)]) {
-    const attributes = create.attributes as Record<string, unknown>;
+    const attributes = create.values as Record<string, unknown>;
     assert.equal("noExpiry" in attributes, false);
     assert.equal("lifetimeSec" in attributes, false);
     // Stored by its full name (Santiago, October 30), not the code the writer placed it with.
@@ -127,7 +141,7 @@ test("Lifetime Extension skips entities with no expiration and refuses when none
   const timed = `0x${"1".repeat(64)}` as Hex, endless = `0x${"2".repeat(64)}` as Hex;
   // atBlock(NO_EXPIRY_BLOCK + n) would not fit the u64 deadline: the entity with no expiration stays as it is.
   assert.deepEqual(extensionsFor([{ key: timed, expiresAt: 128n }, { key: endless, expiresAt: NO_EXPIRY_BLOCK }], 600n),
-    [{ entityKey: timed, expires: ExpirationTime.atBlock(728n) }]);
+    [{ entityKey: timed, expiration: ExpirationTime.atBlock(728n) }]);
   assert.throws(() => extensionsFor([{ key: endless, expiresAt: NO_EXPIRY_BLOCK }], 600n), (error: unknown) => error instanceof WriteNotSentError && error.message === NOTHING_TO_EXTEND);
 });
 
@@ -141,14 +155,14 @@ test("extending only entities with no expiration signs nothing and leaves the ne
     expiresAt: key === endless ? "0xffffffffffffffff" : "0x80",
     attributes: [{ name: "app", type: "str", value: APP_ID }, { name: "kind", type: "str", value: "dot" }] });
   const answers: Record<string, (params: unknown) => unknown> = {
-    eth_chainId: () => "0x7614d1",
+    eth_chainId: () => "0x76edaf",
     eth_getBlockByNumber: () => ({ number: "0x64", timestamp: "0x6720f000", hash: `0x${"5".repeat(64)}` }),
     arkiv_getBlockTiming: () => ({ current_block: 100, current_block_time: 1_730_000_000, duration: 2 }),
-    // getEntity is one keyed query: answer with the entity whose key it names.
-    arkiv_query: (params) => ({ blockNumber: "0x64", data: [row(String((params as [string])[0]).match(/0x[0-9a-f]{64}/i)![0].toLowerCase() as Hex)] }),
+    // getEntity is one arkiv_getEntity call: answer with the entity whose key it names.
+    arkiv_getEntity: (params) => row(String((params as [string])[0]).toLowerCase() as Hex),
   };
   try {
-    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
+    const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS,
       read: { kind: "relay", send: async (method, params) => { methods.push(method); const answer = answers[method]; if (!answer) throw new Error(`Unexpected RPC method ${method}`); return answer(params); } },
       wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { walletCalls++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } } } });
     // Refused before signing, so no uncertainty barrier: the second try gets the same refusal.
@@ -156,7 +170,7 @@ test("extending only entities with no expiration signs nothing and leaves the ne
       await assert.rejects(adapter.extend([endless], 20 * 60), (error: unknown) => error instanceof WriteNotSentError && error.message === NOTHING_TO_EXTEND);
     }
     assert.equal(walletCalls, 0);
-    assert.ok(methods.includes("arkiv_query"));
+    assert.ok(methods.includes("arkiv_getEntity"));
     assert.equal(methods.some(method => method.startsWith("eth_send")), false);
     // With an entity that expires in the set, the extension goes on to the wallet.
     await assert.rejects(adapter.extend([timed, endless], 20 * 60));
@@ -175,15 +189,15 @@ test("Delete sends one deleteEntity from the workshop wallet and returns its rec
     from: WRITER_ADDRESS.toLowerCase(), to: sent[0]?.to ?? null, contractAddress: null, cumulativeGasUsed: "0x5208", gasUsed: "0x5208",
     effectiveGasPrice: "0x1", logs: [], logsBloom: `0x${"0".repeat(512)}`, status: "0x1", type: "0x2" });
   try {
-    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
+    const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS,
       read: { kind: "relay", send: async (method) => {
-        if (method === "eth_chainId") return "0x7614d1";
+        if (method === "eth_chainId") return "0x76edaf";
         if (method === "eth_getTransactionReceipt") return receipt();
         throw new Error(`Unexpected RPC method ${method}`);
       } },
       wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async ({ method, params }: { method: string; params?: unknown[] }) => {
         walletMethods.push(method);
-        if (method === "eth_chainId") return "0x7614d1";
+        if (method === "eth_chainId") return "0x76edaf";
         if (method === "eth_sendTransaction") { sent.push((params as [{ from?: string; to?: string; data?: string }])[0]); return hash; }
         if (method === "eth_blockNumber") return "0x64";
         if (method === "eth_getTransactionReceipt") return receipt();
@@ -202,8 +216,8 @@ test("a delete rejected in the wallet leaves the next delete free", async () => 
   globalThis.fetch = async () => { throw new Error("A relay read must not fetch."); };
   let prompts = 0;
   try {
-    const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS,
-      read: { kind: "relay", send: async (method) => { if (method === "eth_chainId") return "0x7614d1"; throw new Error(`Unexpected RPC method ${method}`); } },
+    const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS,
+      read: { kind: "relay", send: async (method) => { if (method === "eth_chainId") return "0x76edaf"; throw new Error(`Unexpected RPC method ${method}`); } },
       wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { prompts++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } } } });
     const key = `0x${"7".repeat(64)}` as Hex;
     // A rejection sent nothing, so there is nothing to reconcile: the second delete asks the wallet again.

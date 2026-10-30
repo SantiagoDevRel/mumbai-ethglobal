@@ -13,7 +13,8 @@ let writer: ReturnType<typeof createWriter> | undefined;
 function instance() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured.");
   writer ??= createWriter({
-    db: createDb(process.env.DATABASE_URL),
+    // One schema per network: the queue, sessions and proofs of an earlier network stay where they were.
+    db: createDb(process.env.DATABASE_URL, "writer_rabdi"),
     env: process.env as Record<string, string | undefined> as WriterEnv,
     writerAddress: WRITER_ADDRESS,
     defer: task => after(task),

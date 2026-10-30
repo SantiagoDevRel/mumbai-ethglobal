@@ -118,7 +118,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
       } catch (error) {
         if (!stopped) setData((old) => ({ ...old, error: readError(error) }));
       }
-      // Tiramisu makes a block every 2 s; polling faster only spent the access key's quota.
+      // Rabdi makes a block every 2 s; polling faster only spends the access key's quota.
       if (!stopped) timer = setTimeout(tick, 2000);
     };
     void tick();

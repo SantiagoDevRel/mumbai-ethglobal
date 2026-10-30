@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createArkivAdapter } from "../shared/arkiv/sdk-0.8.ts";
+import { createArkivAdapter } from "../shared/arkiv/sdk-1.0.ts";
 import { getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { queryLayout, type QueryLine } from "../lib/data/query-layout.ts";
 import { describeFilters } from "../shared/arkiv/mock.ts";
@@ -11,7 +11,7 @@ const texts = (lines: QueryLine[]) => lines.map((line) => line.text);
 const marked = (lines: QueryLine[]) => lines.filter((line) => line.live).map((line) => line.text);
 
 test("the SDK's own description: one predicate per line, the scope first, the presenter's filters marked", () => {
-  const adapter = createArkivAdapter({ profile: getProfile("tiramisu"), creator: WRITER_ADDRESS, read: { kind: "public" } });
+  const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS, read: { kind: "public" } });
   const description = adapter.describe({ kinds: ["dot"], session: "MOCK", namePrefix: "pri", color: "#fe7446", country: "in", owner: OTHER_OWNER, viewport: { minLat: 6, maxLat: 36, minLng: 68, maxLng: 98 } });
   for (const kind of ["code", "query"] as const) {
     const text = description[kind];

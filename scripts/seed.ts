@@ -3,10 +3,9 @@ import { hostname } from "node:os";
 import { mkdir, open, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { decodeEventLog, keccak256, parseTransaction } from "viem";
-import { ENTITY_EVENTS_ABI } from "@arkiv-network/sdk/entity";
-import { ExpirationTime } from "@arkiv-network/sdk/utils";
-import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
-import { encodedFields } from "../shared/arkiv/sdk-0.8.ts";
+import { ENTITY_EVENTS_ABI, type CreateEntityValues } from "@arkiv-network/sdk";
+import { createSdkClients } from "../shared/arkiv/clients-1.0.ts";
+import { encodedFields, lifetime, PLACE, REVIEW } from "../shared/arkiv/sdk-1.0.ts";
 import { explorerUrl, getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { SEED_BUSINESSES } from "../shared/data/seed-businesses.ts";
 import { APP_ID, type Hex } from "../shared/types.ts";
@@ -107,9 +106,10 @@ async function main() {
           // SDK estimation remains enabled; no fixed gas limit bypasses preflight.
           try {
             await writer!.executeBatch({ creates: batchRows.map(row => ({
-              attributes: { ...encodedFields(row.attrs), app: APP_ID, kind: row.kind, seed_day: DAY, seed_id: row.id },
-              payload: new Uint8Array(), contentType: "application/octet-stream", flags: { permissionlessExtension: true },
-              expires: ExpirationTime.fromHours(12), salt: BigInt(`0x${digest({ day: DAY, id: row.id }).slice(0, 32)}`),
+              schema: (row.kind === "review" ? REVIEW : PLACE) as typeof PLACE,
+              values: { ...encodedFields(row.attrs), app: APP_ID, kind: row.kind, seed_id: `${DAY}:${row.id}` } as unknown as CreateEntityValues<typeof PLACE>,
+              flags: { permissionlessExtension: true },
+              expiration: lifetime(12 * 60 * 60), salt: BigInt(`0x${digest({ day: DAY, id: row.id }).slice(0, 32)}`),
             })) }, { nonce: batch.nonce });
           } catch (error) { if (!batch.txHash) throw error; }
         }
@@ -128,9 +128,9 @@ async function main() {
         for (let position = 0; position < keys.length; position++) {
           const entity = await reader.getEntity(keys[position]!);
           const row = batchRows[position]!;
-          if (entity.creator.toLowerCase() !== WRITER_ADDRESS.toLowerCase() || entity.attributes.seed_id?.value !== row.id || entity.attributes.seed_day?.value !== DAY || entity.attributes.app?.value !== APP_ID || entity.payload.length !== 0 || !entity.creationFlags.permissionlessExtension) throw new Error("Seed entity readback differs from the frozen plan.");
-          if (row.kind === "review" && entity.attributes.business?.value !== row.attrs.business) throw new Error("Review points to a different business.");
-          state.keys[row.id] = entity.key;
+          if (entity.$creator.toLowerCase() !== WRITER_ADDRESS.toLowerCase() || entity.$attributes.seed_id?.value !== `${DAY}:${row.id}` || entity.$attributes.app?.value !== APP_ID || !entity.$creationFlags.permissionlessExtension) throw new Error("Seed entity readback differs from the frozen plan.");
+          if (row.kind === "review" && String(entity.$attributes.business?.value).toLowerCase() !== String(row.attrs.business).toLowerCase()) throw new Error("Review points to a different business.");
+          state.keys[row.id] = entity.$key;
         }
         batch.keys = keys; batch.block = String(receipt.blockNumber); batch.gasUsed = String(receipt.gasUsed); batch.status = "written";
         await save();

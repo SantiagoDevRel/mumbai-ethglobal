@@ -1,16 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { createSdkClients } from "../shared/arkiv/clients-0.8.ts";
-import { createArkivAdapter } from "../shared/arkiv/sdk-0.8.ts";
+import { createSdkClients } from "../shared/arkiv/clients-1.0.ts";
+import { createArkivAdapter } from "../shared/arkiv/sdk-1.0.ts";
 import { explorerUrl, getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
+import { key } from "@arkiv-network/sdk";
 import { eq } from "@arkiv-network/sdk/query";
-import { key } from "@arkiv-network/sdk/attr";
 import { APP_ID, type Hex } from "../shared/types.ts";
 import { delay, presenterRequest, writerRequest } from "./writer-http.ts";
 
 // One real create, followed all the way from HTTP admission to disappearance at its expiry block.
 const profile = getProfile(process.env.ARKIV_PROFILE);
-// The public RPC gives each IP a small anonymous query budget; use the key when the operator has it.
-const read = process.env.RPC && process.env.ACCESS_KEY ? { kind: "keyed" as const, url: process.env.RPC, accessKey: process.env.ACCESS_KEY } : { kind: "public" as const };
+// Every read needs the access key (the RPC answers 429 without one).
+if (!process.env.ACCESS_KEY) throw new Error("Set ACCESS_KEY.");
+const read = { kind: "keyed" as const, url: process.env.RPC ?? profile.rpcHttp, accessKey: process.env.ACCESS_KEY };
 const { reader } = createSdkClients({ profile, creator: WRITER_ADDRESS, read });
 const adapter = createArkivAdapter({ profile, creator: WRITER_ADDRESS, read });
 const { code } = await presenterRequest<{ code: string }>("session/start", {});
@@ -29,7 +30,7 @@ try {
   }
   if (!ticket?.entityKey || !ticket.txHash || !ticket.expiresAtBlock) throw new Error("Writer did not confirm the smoke entity before the deadline.");
   const entity = await reader.getEntity(ticket.entityKey);
-  if (!entity.creationFlags.permissionlessExtension || entity.payload.length !== 0) throw new Error("Entity creation policy did not round-trip.");
+  if (!entity.$creationFlags.permissionlessExtension || entity.$attributes.country?.value !== "colombia") throw new Error("Entity creation policy did not round-trip.");
   const queried = await adapter.query({ kinds: ["dot"], session: code, viewport: { minLat: -90, maxLat: 90, minLng: -180, maxLng: 180 } });
   const dot = queried.entities.find(item => item.key === ticket!.entityKey);
   if (!dot || dot.attrs.kind !== "dot" || dot.attrs.lat !== accepted.lat || dot.attrs.lng !== accepted.lng) throw new Error("Writer placement differs from the public query.");
@@ -41,7 +42,7 @@ try {
   const expiryDeadline = Date.now() + 360_000;
   while (Date.now() < expiryDeadline) {
     const block = await reader.getBlockNumber();
-    const result = await reader.select({ key: true }).createdBy(WRITER_ADDRESS).where(eq("app", APP_ID), eq("$key", key(ticket.entityKey))).atBlock(block).fetch();
+    const result = await reader.select({ $key: true }).createdBy(WRITER_ADDRESS).where(eq("app", APP_ID), eq("$key", key(ticket.entityKey))).fetch();
     if (!result.entities.length) { firstMissingBlock = block; break; }
     lastPresentBlock = block;
     await delay(1_000);

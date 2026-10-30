@@ -16,33 +16,20 @@ export interface NetworkProfile {
   ready: boolean;
 }
 
-export type ProfileId = "tiramisu" | "udc";
+export type ProfileId = "rabdi";
 
 export const PROFILES: Record<ProfileId, NetworkProfile> = {
-  tiramisu: {
-    id: "tiramisu",
-    name: "Tiramisu",
-    chainId: 7738577,
-    rpcHttp: "https://rpc.tiramisu.db-chain.testnet.arkiv.network",
-    rpcWs: "wss://rpc.tiramisu.db-chain.testnet.arkiv.network",
-    // Verified 2026-10-24: the explorer serves /tx/<hash>, /entity/<key> and /address/<address>.
-    explorer: "https://tiramisu.explorer.arkiv.network",
+  rabdi: {
+    id: "rabdi",
+    name: "Rabdi",
+    chainId: 7794095,
+    // The access key goes in the URL path (`${rpcHttp}/${accessKey}`); without one the RPC answers 429.
+    rpcHttp: "https://rpc.rabdi.db-chain.testnet.arkiv.network",
+    rpcWs: "wss://rpc.rabdi.db-chain.testnet.arkiv.network",
+    explorer: "https://rabdi.explorer.arkiv.network",
     faucet: "https://hub.arkiv.network/faucet",
-    sdk: { package: "@arkiv-network/sdk", version: "0.8.1" },
+    sdk: { package: "@arkiv-network/sdk", version: "1.0.0" },
     ready: true,
-  },
-  // Placeholder for the user-defined columns chain. Fill in only when it is live and its SDK
-  // is released on npm; until then selecting it stops the writer ("Network not configured").
-  udc: {
-    id: "udc",
-    name: "",
-    chainId: 0,
-    rpcHttp: "",
-    rpcWs: "",
-    explorer: null,
-    faucet: "",
-    sdk: { package: "@arkiv-network/sdk", version: "" },
-    ready: false,
   },
 };
 
@@ -53,7 +40,7 @@ export function explorerUrl(profile: NetworkProfile, target: ExplorerTarget, id:
   return profile.explorer ? `${profile.explorer}/${target}/${id}` : null;
 }
 
-export const DEFAULT_PROFILE: ProfileId = "tiramisu";
+export const DEFAULT_PROFILE: ProfileId = "rabdi";
 
 export class NetworkNotConfiguredError extends Error {
   constructor(reason: string) {

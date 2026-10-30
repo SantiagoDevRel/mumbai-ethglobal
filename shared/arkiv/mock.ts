@@ -45,7 +45,7 @@ function rawOf(attrs: EntityAttrs): RawAttribute[] {
   return out;
 }
 
-/** Describes a read the way the SDK 0.8 adapter does: the builder calls, and the query text in the
+/** Describes a read the way the SDK adapter does: the builder calls, and the query text in the
  * SDK's own form (`name = str('…')` joined by AND), so mock and live projections read the same. */
 export function describeFilters(filters: ChainFilters, creator: Hex): QueryDescription {
   const where: string[] = [`eq("app", "${APP_ID}")`];
@@ -81,7 +81,7 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
   spawnRandom(): void;
   stop(): void;
 } {
-  const profile = getProfile("tiramisu");
+  const profile = getProfile("rabdi");
   const blockTimeMs = opts.blockTimeMs ?? 2000;
   const genesis = Date.now();
   const store = new Map<Hex, LiveEntity>();

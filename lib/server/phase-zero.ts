@@ -2,10 +2,10 @@
 // request. Same behavior as the Worker's phase zero; the proof lives in the writer's kv table.
 // The caller holds the writer lease, so no batch can use the nonce meanwhile.
 
-import { ExpirationTime } from "@arkiv-network/sdk/utils";
-import { i32 } from "@arkiv-network/sdk/attr";
+import { i32 } from "@arkiv-network/sdk";
 import { eq, gte, lte } from "@arkiv-network/sdk/query";
-import { createSdkClients } from "../../shared/arkiv/clients-0.8";
+import { createSdkClients } from "../../shared/arkiv/clients-1.0";
+import { lifetime, PLACE } from "../../shared/arkiv/sdk-1.0";
 import { getProfile, NetworkNotConfiguredError } from "../../shared/arkiv/profiles";
 import { APP_ID, type Hex } from "../../shared/types";
 import type { Db } from "./db";
@@ -48,9 +48,9 @@ export async function runPhaseZero(db: Db, env: WriterEnv, writerAddress: Hex): 
         if (receipt.status === "reverted") proof.status = "failed";
         else {
           // The SDK may have lost its response. Read the exact transaction's created entity.
-          const rows = await reader.select("*").createdBy(writerAddress).where(eq("app", APP_ID), eq("session", "phase-zero")).fetch();
-          const entity = rows.entities.find(e => e.createdAt === receipt.blockNumber);
-          if (entity) { proof.entityKey = entity.key; proof.expiresAtBlock = String(entity.expiresAt); proof.status = "written"; }
+          const rows = await reader.select("*").createdBy(writerAddress).where(eq("app", APP_ID), eq("session", "phase-zero")).limit(100).fetch();
+          const entity = rows.entities.find(e => e.$createdAt === receipt.blockNumber);
+          if (entity) { proof.entityKey = entity.$key; proof.expiresAtBlock = String(entity.$expiresAt); proof.status = "written"; }
           proof.block = String(receipt.blockNumber);
           proof.gasUsed = String(receipt.gasUsed);
         }
@@ -64,9 +64,9 @@ export async function runPhaseZero(db: Db, env: WriterEnv, writerAddress: Hex): 
   await save();
   try {
     const result = await writer!.executeBatch({ creates: [{
-      attributes: { app: APP_ID, kind: "dot", session: "phase-zero", name: "writer check", color: "#fe7446", country: "india", lat: i32(19_076_000), lng: i32(72_877_700) },
-      payload: new Uint8Array(), contentType: "application/octet-stream",
-      flags: { permissionlessExtension: true }, expires: ExpirationTime.fromSeconds(120),
+      schema: PLACE,
+      values: { app: APP_ID, kind: "dot", session: "phase-zero", name: "writer check", color: "#fe7446", country: "india", lat: 19_076_000, lng: 72_877_700 },
+      flags: { permissionlessExtension: true }, expiration: lifetime(120),
     }] }, { nonce: proof.nonce });
     proof.txHash = result.txHash;
     proof.entityKey = result.createdEntities[0];
@@ -79,9 +79,9 @@ export async function runPhaseZero(db: Db, env: WriterEnv, writerAddress: Hex): 
       gte("lng", i32(-180_000_000)), lte("lng", i32(180_000_000)),
     );
     proof.query = builder.toString();
-    const entity = (await builder.fetch()).entities.find(e => e.key === proof.entityKey);
-    if (!entity || entity.payload.length !== 0 || !entity.creationFlags.permissionlessExtension) throw new Error("Entity readback differs from the create.");
-    proof.expiresAtBlock = String(entity.expiresAt);
+    const entity = (await builder.limit(100).fetch()).entities.find(e => e.$key === proof.entityKey);
+    if (!entity || !entity.$creationFlags?.permissionlessExtension || entity.$attributes?.country?.value !== "india") throw new Error("Entity readback differs from the create.");
+    proof.expiresAtBlock = String(entity.$expiresAt);
     proof.balanceWei = String(await reader.getBalance({ address: writerAddress }));
     proof.status = "written";
   } catch {
