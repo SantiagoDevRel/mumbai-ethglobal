@@ -71,7 +71,7 @@ export const REVEALS: Record<SceneId, string[]> = {
   L3: [],
   B4: ["owner_phone, encrypted", "the arkiv-encryption skill and npm package"],
   B5: [],
-  T1: ["Docs"],
+  T1: ["Docs", "AI tools"],
   T2: [],
   PZ: ["Build on Arkiv from scratch", "Build on Arkiv, Continuity", "Node tooling", "the Arkiv + Swarm bonus add-on"],
   L9: [],

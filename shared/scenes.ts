@@ -94,8 +94,8 @@ export const SCENES: readonly SceneDef[] = [
   // country, color) and a country filter flies the camera to that country (lib/stage/choreography.ts).
   { id: "L3", title: "Query it, live", at: 575, kind: "live", steps: 1, qr: NO_QR, camera: "globe", map: "dots", section: "build" },
   { id: "B4", title: "Encrypt what's private", at: 705, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "B5", title: "Explore it with no code", at: 755, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
-  { id: "T1", title: "Hub and docs", at: 795, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
+  { id: "B5", title: "Explore it", at: 755, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
+  { id: "T1", title: "Hub, docs and AI tools", at: 795, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
   { id: "T2", title: "Your agent knows Arkiv", at: 840, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
   { id: "PZ", title: "Arkiv prizes at ETHGlobal Mumbai", at: 875, kind: "slide", steps: 5, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
   { id: "L9", title: "Close", at: 960, kind: "live", steps: 1, qr: NO_QR, camera: "globe", map: "dots", section: "tools" },
