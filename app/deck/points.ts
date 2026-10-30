@@ -12,7 +12,7 @@ export const POINTS: Record<SceneId, string[]> = {
   W2: ["Meme: you can't stop looking at web3 data", "Your web2 database is not happy about it"],
   W3: ["From web2 databases: structure, indexing, a query language", "From web3: ownership, tamper-evidence, a block explorer", "Its own: rules the data carries itself"],
   W4: ["The network: DB-Chains joined by Arkiv, bridged to Ethereum", "Live: Rabdi and Sorbet (Sourcify); Tiramisu now previous", "Your app: SDK or JSON-RPC; logic on EVM chains; files on Swarm"],
-  ST: ["Testnet (Rabdi): everything is free", "SDK · wallet · faucet · free reads · RPC access key"],
+  ST: ["Use Rabdi testnet: everything is free", "SDK · wallet · faucet · free reads · RPC access key", "Live: Add network, then Get balance; the tags are links"],
   NT: ["No smart contracts: keep logic in your app or another chain", "Not for big files: those go to Swarm", "Not private by default: encrypt what's private"],
   S7: ["Big QR, centered: everyone scans and fills the form", "Your form as one entity: expiring, or no expiration", "\"write!\": everyone taps Write together"],
   L1: ["Every dot is an entity the room just wrote", "One request per phone; our wallet signs"],

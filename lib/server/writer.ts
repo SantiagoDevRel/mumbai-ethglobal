@@ -24,9 +24,10 @@ import { admissionError, deviceToken, nameBlocked, placeDot } from "./policy";
 import { countdownTicket, type SessionSnapshot } from "./countdown";
 import { sameSecret, signPresenter, verifyPresenter } from "./presenter-token";
 import { runPhaseZero } from "./phase-zero";
+import { rabdiNetwork, type RabdiEnv } from "./rabdi";
 import type { Db, Query } from "./db";
 
-export interface WriterEnv {
+export interface WriterEnv extends RabdiEnv {
   ARKIV_PROFILE?: string;
   RPC?: string;
   ACCESS_KEY?: string;
@@ -652,6 +653,12 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
         scope: "ticketQueries counts every function instance; the other counters cover only the instance that answered." });
     }
     if (path === "/api/presenter/status" && request.method === "GET") return status();
+    // The Five steps slide's Add network: Rabdi's details from server-only env vars (lib/server/rabdi.ts).
+    if (path === WRITER_ROUTES.presenter.rabdi && request.method === "GET") {
+      const rabdi = rabdiNetwork(env);
+      if (!rabdi.ok) fail("network_not_configured", 503, rabdi.message);
+      return Response.json(rabdi.network);
+    }
     if (request.method !== "POST") fail("invalid", 404, "Route not found.");
     if (path === "/api/presenter/check") {
       const meta = await readMeta();
