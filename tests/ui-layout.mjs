@@ -136,7 +136,7 @@ try {
     const without = await t2.getByText("Without the plugin", { exact: true }).boundingBox();
     const withIt = await t2.getByText("With the plugin", { exact: true }).boundingBox();
     assert.ok(without.y + without.height <= withIt.y, "Without the plugin sits above With the plugin.");
-    for (const example of ["Your agent guesses old SDK calls.", "Your agent reads Arkiv's docs and skills."]) await expect(t2.getByText(example, { exact: true })).toBeVisible();
+    for (const example of ["Your agent has to guess how Arkiv works.", "Your agent builds with Arkiv's skills and docs."]) await expect(t2.getByText(example, { exact: true })).toBeVisible();
     await shoot("map-1920-T2.png");
     // PZ: medals instead of 1st and 2nd, the gold one for a single winner.
     await commands(page, [go("PZ")]);
@@ -332,7 +332,7 @@ try {
   const s7Card = page.locator("[data-entity-card]");
   await expect(s7Card.getByText("Your entity", { exact: true })).toBeVisible();
   await expect(s7Card.locator("[data-row] span:first-child")).toHaveText(["name", "color", "country", "expiration"]);
-  await expect(s7Card.locator("[data-row] span:last-child")).toHaveText(['"priya"', '"#fe7446"', '"in"', "15 min"]);
+  await expect(s7Card.locator("[data-row] span:last-child")).toHaveText(['"priya"', '"#fe7446"', '"india"', "15 min"]);
   await expect(page.getByText("YOUR FORM = ONE ENTITY")).toHaveCount(0);
   await expect(s7Card).not.toContainText("Entity Expiration");
   await expect.poll(() => page.evaluate(() => {
@@ -448,7 +448,7 @@ try {
   await expect(writeIt).toHaveAttribute("aria-expanded", "false");
   await expect(queryIt).toHaveAttribute("aria-expanded", "true");
   await expect(queryPopup).toContainText("category = str('cafe')");
-  await expect(queryPopup).toContainText('.where(eq("country", "in"))');
+  await expect(queryPopup).toContainText('.where(eq("country", "india"))');
   // + AND name slides one more clause into both forms, marked; the same button takes it out again.
   const nameClause = queryPopup.getByText("name = str('chai corner')");
   const nameWhere = queryPopup.getByText('.where(eq("name", "chai corner"))');
@@ -527,10 +527,10 @@ try {
   await expect(colorList).toHaveCount(0);
   await expect(colorField).toContainText("Orange");
   await expect(queryText).toContainText("AND color = str('#fe7446')");
-  // A country: its stored lower-case code, and the camera flies there.
+  // A country: its stored name in lower case, and the camera flies there.
   const countryField = filterBar.getByPlaceholder("Any country");
   await countryField.fill("India");
-  await expect(queryText).toContainText("AND country = str('in')");
+  await expect(queryText).toContainText("AND country = str('india')");
   await expect(queryLines).toHaveCount(6);
   await expect(liveLines).toHaveCount(3);
   await expect.poll(async () => (await stageState(page))?.camera.cue).toBe("country:in");
@@ -1076,9 +1076,11 @@ try {
       await slides.waitForTimeout(600);
       const after = await labels();
       const picture = await hug.boundingBox();
-      assert.equal(after.length, 3);
+      // The middle robot has no label on the meme, and ARKIV on the hug.
+      assert.deepEqual(before.map((label) => label.name), ["Web3 data", "Your web2 database"]);
+      assert.deepEqual(after.map((label) => label.name), ["Web3 data", "Your web2 database", "ARKIV"]);
       for (const [i, label] of after.entries()) {
-        assert.notEqual(Math.round(label.left), Math.round(before[i].left), `"${label.name}" moves to its robot on the hug`);
+        if (before[i]) assert.notEqual(Math.round(label.left), Math.round(before[i].left), `"${label.name}" moves to its robot on the hug`);
         assert.ok(label.left >= picture.x && label.right <= picture.x + picture.width && label.top >= picture.y, `"${label.name}" stays on the picture`);
         for (const other of after.slice(i + 1)) assert.ok(label.right <= other.left || other.right <= label.left || label.bottom <= other.top || other.bottom <= label.top, `"${label.name}" and "${other.name}" don't touch`);
       }

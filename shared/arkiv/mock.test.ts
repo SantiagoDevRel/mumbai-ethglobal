@@ -15,7 +15,9 @@ test("mock mode starts with dots that have no expiration, in lower case like eve
     assert.equal(entities.length, 22);
     for (const entity of entities) {
       assert.equal(entity.attrs.name, entity.attrs.name.toLowerCase());
-      assert.match(entity.attrs.country, /^[a-z]{2}$/);
+      // Countries are stored by their full name in lower case, like the SDK adapter writes them.
+      assert.match(entity.attrs.country, /^[a-z][a-z ]{3,}$/);
+      assert.equal(entity.raw.find((attribute) => attribute.name === "country")?.stored, entity.attrs.country);
       assert.match(entity.attrs.color, /^#[0-9a-f]{6}$/);
       assert.equal(entity.raw.some((attribute) => attribute.name === "noExpiry" || attribute.name === "lifetimeSec"), false);
     }

@@ -3,8 +3,9 @@
 // A1 · Plugin: your agent knows Arkiv (scene T2). One step: the two-panel "disappointed" meme with
 // the mascot (Santiago, October 29; its name never goes in alt text, see Mascot.tsx), about the Arkiv
 // AI plugin rather than MCP (October 30). Top, without the plugin: the mascot disappointed, with a
-// small tear, over a short example (your agent guesses old SDK calls). Bottom, with the plugin: the
-// mascot smiling (your agent reads Arkiv's docs and skills). Both pictures (public/deck/memes,
+// small tear, over a short example (your agent has to guess how Arkiv works). Bottom, with the plugin:
+// the mascot smiling (your agent builds with Arkiv's skills and docs). Santiago, October 30: no "old
+// SDK" wording, which sounds as if the SDK were out of date; the gap is what the agent knows. Both pictures (public/deck/memes,
 // 1536x1024, same framing) are cropped to a wide strip around the eyes, the tear and the mouth so the
 // panels stack like the original; the labels sit beside them, Stone for the bad one and Sand for the
 // good one, as in the deck's other memes. The line under the headline names the two agents the
@@ -81,14 +82,14 @@ export function A1(_props: SceneContentProps) {
       <Rise className="absolute left-[96px] top-[332px] grid h-[588px] w-[1728px] grid-cols-[620px_minmax(0,1fr)] grid-rows-2 gap-[4px] overflow-hidden rounded-[20px] bg-[var(--arkiv-ink)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
         <Panel
           label="Without the plugin"
-          example="Your agent guesses old SDK calls."
+          example="Your agent has to guess how Arkiv works."
           src="/deck/memes/arkiv-meme-plugin-sad.webp"
           alt="Arkiv mascot, disappointed, with a tear"
           good={false}
         />
         <Panel
           label="With the plugin"
-          example="Your agent reads Arkiv's docs and skills."
+          example="Your agent builds with Arkiv's skills and docs."
           src="/deck/memes/arkiv-meme-mcp-happy.webp"
           alt="Arkiv mascot, smiling"
           good
@@ -111,5 +112,5 @@ export function A1(_props: SceneContentProps) {
 }
 
 export const A1_NOTES: string[] = [
-  "Same question to your agent, twice. Without the plugin, it answers from old training data: old SDK calls, an old network, and it sounds sure. With the Arkiv AI plugin, in Claude Code or Codex, it reads Arkiv's docs and skills before it writes your code. Setting it up: the steps are on the Hub, under AI tools.",
+  "Same question to your agent, twice. Without the plugin, it only has what it learned in training, and Arkiv is new: it fills the gaps with guesses, and it sounds sure. With the Arkiv AI plugin, in Claude Code or Codex, it builds with Arkiv's own skills and docs: the SDK, the network and how queries work. Setting it up: the steps are on the Hub, under AI tools.",
 ];

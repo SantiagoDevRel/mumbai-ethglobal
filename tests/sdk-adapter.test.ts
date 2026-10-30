@@ -51,6 +51,7 @@ test("write encoding preserves signed coordinates, empty payload and extension p
   assert.equal(create.payload.length, 0);
   assert.equal(create.flags.permissionlessExtension, true);
   assert.deepEqual((create.attributes as Record<string, unknown>).lat, { type: "i32", value: -4_500_000 });
+  assert.equal((create.attributes as Record<string, unknown>).country, "colombia");
   assert.deepEqual(encodedFields({ rating: 4.5 }).rating, { type: "i32", value: 45 });
   assert.throws(() => encodedFields({ photo: "a".repeat(128) }), /plain Swarm reference/);
 });
@@ -117,7 +118,8 @@ test("no expiration writes ExpirationTime.permanent(), and neither lifetime choi
     const attributes = create.attributes as Record<string, unknown>;
     assert.equal("noExpiry" in attributes, false);
     assert.equal("lifetimeSec" in attributes, false);
-    assert.equal(attributes.country, "in");
+    // Stored by its full name (Santiago, October 30), not the code the writer placed it with.
+    assert.equal(attributes.country, "india");
   }
 });
 

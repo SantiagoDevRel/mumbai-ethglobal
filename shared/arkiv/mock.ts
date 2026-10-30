@@ -18,6 +18,7 @@ import type {
 } from "../types";
 import { APP_ID, DOT_CATEGORIES, hasNoExpiry, LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC, NO_EXPIRY_BLOCK } from "../types";
 import { DOT_PALETTE, encodeCoord, encodeRating } from "../encoding";
+import { countryName } from "../geo/country-name";
 
 export interface MockOptions {
   blockTimeMs?: number;
@@ -55,7 +56,8 @@ export function describeFilters(filters: ChainFilters, creator: Hex): QueryDescr
   }
   if (filters.session) { where.push(`eq("session", "${filters.session}")`); q.push(`session = str('${filters.session}')`); }
   if (filters.color) { where.push(`eq("color", "${filters.color}")`); q.push(`color = str('${filters.color}')`); }
-  if (filters.country) { where.push(`eq("country", "${filters.country}")`); q.push(`country = str('${filters.country}')`); }
+  // The filter holds the app's code; entities store the country's name ("india").
+  if (filters.country) { const country = countryName(filters.country); where.push(`eq("country", "${country}")`); q.push(`country = str('${country}')`); }
   if (filters.category) { where.push(`eq("category", "${filters.category}")`); q.push(`category = str('${filters.category}')`); }
   if (filters.namePrefix) { where.push(`startsWith("name", ${JSON.stringify(filters.namePrefix)})`); q.push(`name STARTSWITH str(${JSON.stringify(filters.namePrefix)})`); }
   if (filters.business) { where.push(`eq("business", key("${filters.business}"))`); q.push(`business = key(${filters.business})`); }
@@ -88,8 +90,10 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
 
   const write = (items: { attrs: EntityAttrs; lifetimeSec: number; noExpiry?: boolean }[]): WriteResult => {
     const block = currentBlock();
-    const keys = items.map(({ attrs, lifetimeSec, noExpiry }) => {
+    const keys = items.map(({ attrs: given, lifetimeSec, noExpiry }) => {
       const key = randomHex(32);
+      // Like dotToCreate: a dot stores its country by name ("in" → "india").
+      const attrs = given.kind === "dot" ? { ...given, country: countryName(given.country) } : given;
       store.set(key, {
         key,
         owner: WRITER_ADDRESS,
@@ -111,7 +115,7 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
     if (f.session && a.session !== f.session) return false;
     if (f.namePrefix && !String(a.name ?? "").startsWith(f.namePrefix)) return false;
     if (f.color && a.color !== f.color) return false;
-    if (f.country && a.country !== f.country) return false;
+    if (f.country && a.country !== countryName(f.country)) return false;
     if (f.owner && e.owner.toLowerCase() !== f.owner.toLowerCase()) return false;
     if (f.category && a.category !== f.category) return false;
     if (f.minRating !== undefined && (a.rating as number) < f.minRating) return false;

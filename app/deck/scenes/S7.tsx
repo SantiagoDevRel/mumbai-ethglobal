@@ -16,13 +16,14 @@ import { useStage } from "../../../lib/stage/store";
 import { LIFETIME_DEFAULT_SEC } from "../../../shared/types";
 import { FootLogo, Reveal, T, Wash } from "../ui";
 
-/** What a phone sends, read as an entity: the values are an example, saved in lower case. The
+/** What a phone sends, read as an entity: the values are an example, saved in lower case, the country
+ * by its full name (Santiago, October 30: "india", not "in"). The
  * expiration is not a string attribute, so it has no quotes: the writer turns the lifetime into the
  * entity's `$expiresAt`, its Entity Expiration. 15 min is the phone's default. */
 const ROWS: [name: string, value: string][] = [
   ["name", '"priya"'],
   ["color", '"#fe7446"'],
-  ["country", '"in"'],
+  ["country", '"india"'],
   ["expiration", `${LIFETIME_DEFAULT_SEC / 60} min`],
 ];
 

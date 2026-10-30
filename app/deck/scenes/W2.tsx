@@ -3,13 +3,15 @@
 // W2 · The meme (Santiago, October 29): the distracted-boyfriend format with Arkiv's block robots
 // (public/deck/memes/arkiv-meme-distracted.webp, 1536 x 1024), as big as fits under the outline bar
 // on a dark full-bleed wash. The labels sit right above each character, like the classic: "Web3
-// data" over the blue-and-orange robot walking by, "You" over the one turning to look, "Your web2
-// database" over the grey one holding its hand. No other copy. Two steps (Santiago, October 30):
+// data" over the blue-and-orange robot walking by, "Your web2 database" over the grey one holding its
+// hand; the one turning to look has no label (Santiago, October 30: it is the audience). No other
+// copy. Two steps (Santiago, October 30):
 //   0  the meme;
 //   1  → the same three robots in the same street (public/deck/memes/arkiv-meme-hug.webp, 1536 x
-//      1024): the one in the middle hugs both others and all three smile. The picture crossfades and
-//      each label glides to its robot's new spot. No caption: the presenter asks "What if you could
-//      keep the best of both?" and W3 answers.
+//      1024): the one in the middle hugs both others and all three smile. The picture crossfades,
+//      each label glides to its robot's new spot, and the middle robot gets its name, ARKIV, in Arkiv
+//      Orange. No caption: the presenter asks "What if you could keep the best of both?" and W3
+//      answers.
 // Both pictures are original illustrations made for this deck, in one set with its other memes,
 // generated from the same references with no third-party assets.
 
@@ -30,9 +32,10 @@ const BOX = { left: 285, top: 88, width: 1350, height: 900 };
  * move in and up, clear of the faces. */
 const LABELS: { lines: string[]; meme: { x: number; y: number }; hug: { x: number; y: number } }[] = [
   { lines: ["Web3 data"], meme: { x: 292, y: 148 }, hug: { x: 460, y: 140 } },
-  { lines: ["You"], meme: { x: 852, y: 172 }, hug: { x: 800, y: 128 } },
   { lines: ["Your web2", "database"], meme: { x: 1310, y: 220 }, hug: { x: 1150, y: 190 } },
 ];
+/** The middle robot's name, only on the hug: it fades in where the others make room for it. */
+const ARKIV = { text: "ARKIV", x: 800, y: 128 };
 const SIZE = 78;
 const LEADING = 80;
 
@@ -105,6 +108,24 @@ export function W2({ step }: SceneContentProps) {
                 </text>
               </motion.g>
             ))}
+            {hug && (
+              <motion.g data-label={ARKIV.text} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: REVEAL_TIME, ease: EASE }}>
+                <text
+                  x={ARKIV.x}
+                  y={ARKIV.y}
+                  textAnchor="middle"
+                  fontSize={SIZE}
+                  fontWeight={700}
+                  fill="#FE7446"
+                  stroke="#111111"
+                  strokeWidth={14}
+                  strokeLinejoin="round"
+                  paintOrder="stroke"
+                >
+                  {ARKIV.text}
+                </text>
+              </motion.g>
+            )}
           </svg>
         </Rise>
       </div>
@@ -114,5 +135,5 @@ export function W2({ step }: SceneContentProps) {
 
 export const W2_NOTES: string[] = [
   "That's most of us: hand in hand with our web2 database, and we can't stop looking at web3 data.",
-  "What if you could keep the best of both?",
+  "What if you could keep the best of both? That's Arkiv, in the middle, hugging both.",
 ];

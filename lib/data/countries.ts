@@ -3,7 +3,8 @@
 import countries from "../../shared/geo/countries.json" with { type: "json" };
 import type { Bbox } from "../map/country-view";
 
-/** `code` is the lower-case ISO code the writer stores and the query filters on ("in"). */
+/** `code` is the lower-case ISO code the app keeps ("in"); entities store the full name ("india",
+ * shared/geo/country-name.ts). */
 export interface CountryOption { code: string; name: string }
 
 /** Every country, India first (the room is in Mumbai), then by name. */

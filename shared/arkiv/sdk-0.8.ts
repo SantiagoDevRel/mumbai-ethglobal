@@ -6,6 +6,7 @@ import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFiel
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
 import { createSdkClients } from "./clients-0.8.ts";
 import { decodeCoord, decodeRating, encodeCoord, encodeRating } from "../encoding.ts";
+import { countryName } from "../geo/country-name.ts";
 import { APP_ID, hasNoExpiry, type BlockInfo, type ChainFilters, type EntityAttrs, type Hex, type LiveEntity, type QueryDescription, type WriteResult } from "../types.ts";
 
 export const LIVE_SELECTION = { key: true, owner: true, creator: true, createdAt: true, updatedAt: true, expiresAt: true, attributes: true } as const;
@@ -62,10 +63,11 @@ export function extensionsFor(entities: readonly { key: Hex; expiresAt: bigint }
   return extensions;
 }
 
-/** "No expiration" is `ExpirationTime.permanent()`: `$expiresAt` becomes NO_EXPIRY_BLOCK, 2**64 - 1. */
+/** "No expiration" is `ExpirationTime.permanent()`: `$expiresAt` becomes NO_EXPIRY_BLOCK, 2**64 - 1.
+ * The country is stored by its full name ("india"), not the code the writer placed it with. */
 export function dotToCreate(dot: DotCreate) {
   return {
-    attributes: { app: APP_ID, kind: "dot", ...encodedFields(dot as unknown as Record<string, unknown>) },
+    attributes: { app: APP_ID, kind: "dot", ...encodedFields(dot as unknown as Record<string, unknown>), country: countryName(dot.country) },
     payload: new Uint8Array(), contentType: "application/octet-stream",
     flags: { permissionlessExtension: true },
     expires: dot.noExpiry ? ExpirationTime.permanent() : ExpirationTime.fromSeconds(dot.lifetimeSec),
@@ -117,7 +119,10 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       where(eq("kind", "__none__"), 'eq("kind", "__none__")');
     }
     for (const name of ["session", "color", "country", "category"] as const) {
-      if (filters[name] !== undefined) where(eq(name, filters[name]!), `eq(${JSON.stringify(name)}, ${JSON.stringify(filters[name])})`);
+      if (filters[name] === undefined) continue;
+      // A country filter holds the app's code; entities store the country's name.
+      const value = name === "country" ? countryName(filters[name]!) : filters[name]!;
+      where(eq(name, value), `eq(${JSON.stringify(name)}, ${JSON.stringify(value)})`);
     }
     if (filters.namePrefix) where(startsWith("name", filters.namePrefix), `startsWith("name", ${JSON.stringify(filters.namePrefix)})`);
     if (filters.owner) { builder.ownedBy(filters.owner); code.push(`  .ownedBy(${JSON.stringify(filters.owner)})`); }

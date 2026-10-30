@@ -4,7 +4,8 @@
 // Write it button on L1's map opens it in a popup (./live.tsx), so the room's dots stay on screen. The
 // call is the one the writer makes for every phone (shared/arkiv/sdk-0.8.ts `dotToCreate`), trimmed to
 // the form's fields plus the category the writer picks (Query it filters by it); the values are an
-// example, in lower case like everything the phones write. The presenter selects each part with the
+// example, in lower case like everything the phones write; the country is stored by its full name
+// (Santiago, October 30). The presenter selects each part with the
 // left button as he names it (Santiago, October 29), so nothing here blocks text selection.
 
 import { T, WELL } from "../ui";
@@ -21,7 +22,7 @@ const CODE: Line[] = [
   { text: "  attributes: {" },
   { text: '    name: "chai corner",' },
   { text: '    color: "#fe7446",' },
-  { text: '    country: "in",' },
+  { text: '    country: "india",' },
   { text: '    category: "cafe",' },
   { text: "  }," },
   { text: "  payload: new Uint8Array(),", quiet: true },

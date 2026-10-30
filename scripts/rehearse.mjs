@@ -293,7 +293,7 @@ async function sceneWork(id, step) {
     await expect(card).not.toContainText("$creator");
     await expect(card.locator(".badge-highlight, .owner-note")).toHaveCount(0);
     const stored = Object.fromEntries(await card.locator(".stored-attributes tbody tr").evaluateAll((rows) => rows.map((row) => [row.querySelector("th").textContent, row.querySelectorAll("td")[1].textContent])));
-    assert.deepEqual({ name: stored.name, color: stored.color, country: stored.country }, { name: "rehearsal phone", color: GREEN, country: "in" });
+    assert.deepEqual({ name: stored.name, color: stored.color, country: stored.country }, { name: "rehearsal phone", color: GREEN, country: "india" });
     const before = await entity(phoneKey), sends = report.transactions.length;
     await card.locator(".inspector-actions").getByRole("button", { name: "Transfer", exact: true }).click();
     const field = card.getByLabel("New owner wallet");
@@ -330,10 +330,10 @@ async function sceneWork(id, step) {
       await pickColor("Orange");
       await expect(live.filter({ hasText: `color = str('${ORANGE}')` })).toHaveCount(1, { timeout: 20000 });
       await bar.getByPlaceholder("Any country").fill("India");
-      await expect(live.filter({ hasText: "country = str('in')" })).toHaveCount(1, { timeout: 20000 });
+      await expect(live.filter({ hasText: "country = str('india')" })).toHaveCount(1, { timeout: 20000 });
       await expect.poll(cameraCue, { timeout: 10000 }).toBe("country:in");
       const run = await adapter.query({ kinds: ["dot"], session, namePrefix: "rehearsal", color: ORANGE, country: "in" });
-      assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.name.startsWith("rehearsal") && item.attrs.color === ORANGE && item.attrs.country === "in"));
+      assert.ok(run.entities.length > 0 && run.entities.every((item) => item.attrs.name.startsWith("rehearsal") && item.attrs.color === ORANGE && item.attrs.country === "india"));
       await expect(bar.locator(".filter-results strong")).toHaveText(String(run.entities.length), { timeout: 20000 });
       report.filterEvidence = { query: run.description.query, block: run.block.toString(), keys: run.entities.map((item) => item.key) };
       // Cleared by hand: the whole room again, and the camera back on the globe.

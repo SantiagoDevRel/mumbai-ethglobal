@@ -63,7 +63,7 @@ export function QueryCode() {
         <div className={`${WELL} cursor-text select-text py-2.5 font-mono`} style={WELL_STYLE}>
           <Row>category = str(&apos;cafe&apos;)</Row>
           <Row>
-            <O>AND</O> country = str(&apos;in&apos;)
+            <O>AND</O> country = str(&apos;india&apos;)
           </Row>
           <Row added shown={named}>
             <O>AND</O> name = str(&apos;chai corner&apos;)
@@ -78,7 +78,7 @@ export function QueryCode() {
             {"  "}.where(<O>eq</O>(&quot;category&quot;, &quot;cafe&quot;))
           </Row>
           <Row>
-            {"  "}.where(<O>eq</O>(&quot;country&quot;, &quot;in&quot;))
+            {"  "}.where(<O>eq</O>(&quot;country&quot;, &quot;india&quot;))
           </Row>
           <Row added shown={named}>
             {"  "}.where(<O>eq</O>(&quot;name&quot;, &quot;chai corner&quot;))

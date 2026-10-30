@@ -23,7 +23,7 @@ test("the SDK's own description: one predicate per line, the scope first, the pr
     // map view and the owner.
     const live = marked(lines);
     // The name prefix in whatever form the SDK prints it, as long as the line names the field and the prefix.
-    for (const pattern of [/\bname\b.*\bpri\b/, /#fe7446/, /country.*["']in["']/, /lat/, /lng/, kind === "code" ? /ownedBy/ : /\$owner/]) {
+    for (const pattern of [/\bname\b.*\bpri\b/, /#fe7446/, /country.*["']india["']/, /lat/, /lng/, kind === "code" ? /ownedBy/ : /\$owner/]) {
       assert.ok(live.some((line) => pattern.test(line)), `${kind}: ${pattern} in ${live.join(" | ")} (from ${text})`);
     }
     assert.ok(live.every((line) => !/\b(?:app|session)\b/.test(line)), "the scope is never marked");
@@ -37,13 +37,13 @@ test("the SDK's own description: one predicate per line, the scope first, the pr
 
 test("the mock describes reads in the SDK's AND form; the panel lists them one per line, without $creator", () => {
   const description = describeFilters({ kinds: ["dot"], session: "MOCK", color: "#fe7446", country: "in", namePrefix: "pri" }, WRITER_ADDRESS);
-  assert.equal(description.query, `app = str('${APP_ID}') AND kind = str('dot') AND session = str('MOCK') AND color = str('#fe7446') AND country = str('in') AND name STARTSWITH str("pri") AND $creator = addr(${WRITER_ADDRESS})`);
+  assert.equal(description.query, `app = str('${APP_ID}') AND kind = str('dot') AND session = str('MOCK') AND color = str('#fe7446') AND country = str('india') AND name STARTSWITH str("pri") AND $creator = addr(${WRITER_ADDRESS})`);
   assert.deepEqual(queryLayout(description.query, "query"), [
     { text: `app = str('${APP_ID}')`, live: false },
     { text: "AND kind = str('dot')", live: false },
     { text: "AND session = str('MOCK')", live: false },
     { text: "AND color = str('#fe7446')", live: true },
-    { text: "AND country = str('in')", live: true },
+    { text: "AND country = str('india')", live: true },
     { text: 'AND name STARTSWITH str("pri")', live: true },
   ]);
   assert.deepEqual(queryLayout(description.code, "code"), [
@@ -51,7 +51,7 @@ test("the mock describes reads in the SDK's AND form; the panel lists them one p
     { text: 'eq("kind", "dot")', live: false },
     { text: 'eq("session", "MOCK")', live: false },
     { text: 'eq("color", "#fe7446")', live: true },
-    { text: 'eq("country", "in")', live: true },
+    { text: 'eq("country", "india")', live: true },
     { text: 'startsWith("name", "pri")', live: true },
   ]);
 });
