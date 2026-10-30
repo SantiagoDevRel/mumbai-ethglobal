@@ -52,14 +52,16 @@ function isUserRejection(error: unknown): boolean {
 }
 
 /** UI values as column values: coordinates in millionths, ratings in tenths, keys as keys. */
-export function encodedFields(fields: Record<string, unknown>): Record<string, string | number> {
-  const result: Record<string, string | number> = {};
+export function encodedFields(fields: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
   for (const [name, value] of Object.entries(fields)) {
     // How long an entity lives is the create's `expiration`, never an attribute.
     if (value === undefined || name === "lifetimeSec" || name === "noExpiry") continue;
     if (name === "photo" && (typeof value !== "string" || !/^(?:0x)?[a-f0-9]{64}$/i.test(value))) throw new Error("Photo must be a plain Swarm reference.");
     if (name === "lat" || name === "lng") result[name] = encodeCoord(value as number);
     else if (name === "rating") result[name] = encodeRating(value as number);
+    // A review's business is a key column: a plain string is refused (SchemaMismatchError).
+    else if (name === "business" && typeof value === "string") result[name] = entityKey(value as Hex);
     else if (typeof value === "number" || typeof value === "string") result[name] = value;
     else throw new Error(`Invalid attribute ${name}.`);
   }

@@ -37,8 +37,9 @@ if (signer === "writer") assert.equal(address.toLowerCase(), WRITER_ADDRESS.toLo
 const profile = getProfile(process.env.ARKIV_PROFILE ?? "rabdi");
 assert.equal(profile.id, "rabdi");
 const DAY = new Date().toISOString().slice(0, 10);
-/** A seed entity that will not live at least this long counts as missing: a fresh one replaces it. */
-const MIN_LEFT_BLOCKS = 1800n; // one hour at 2 s a block
+/** A seed entity with less than half the requested lifetime left counts as missing: a fresh one
+ * replaces it (the old one simply expires). */
+const MIN_LEFT_BLOCKS = BigInt(hours * 1800) / 2n; // 1,800 blocks an hour at 2 s a block
 const BATCH = 20;
 
 const { reader, writer, checkNetwork } = createSdkClients({ profile, creator: address,
