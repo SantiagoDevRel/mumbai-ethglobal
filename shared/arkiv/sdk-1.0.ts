@@ -81,7 +81,7 @@ export function writeGas(operations: number): bigint {
 /** Explicit parameters for every write: the nonce at `latest` (Rabdi serves state at the chain head
  * only), the current gas price and writeGas. */
 export async function writeParams(
-  reader: { getTransactionCount(args: { address: Hex; blockTag: "latest" }): Promise<number>; getGasPrice(): Promise<bigint> },
+  reader: Pick<ReturnType<typeof createSdkClients>["reader"], "getTransactionCount" | "getGasPrice">,
   address: Hex, operations: number, nonce?: number,
 ): Promise<{ nonce: number; gas: bigint; gasPrice: bigint }> {
   const [latest, gasPrice] = await Promise.all([nonce ?? reader.getTransactionCount({ address, blockTag: "latest" }), reader.getGasPrice()]);
