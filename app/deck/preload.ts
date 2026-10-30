@@ -1,14 +1,18 @@
 "use client";
 
-// The deck's pictures (mascot art, the memes and the logos), fetched and decoded as soon as /map or
-// /slides opens, so no slide waits for its picture the first time it comes up (October 28: the first
-// pass through the deck stuttered on the slides with a mascot).
+// The deck's pictures (mascot art, the memes, the logos, and ME's photos and flags), fetched and
+// decoded as soon as /map or /slides opens, so no slide waits for its picture the first time it comes
+// up (October 28: the first pass through the deck stuttered on the slides with a mascot).
 
 import { useEffect } from "react";
 import { MASCOT_ART } from "./mascot-art";
+import { flagSrc, photoSrc, TOUR } from "./scenes/me-tour";
 
-/** Pictures the slides use besides the mascot art: the W2 and T2 memes and the W4 and NT logos. */
+/** Pictures the slides use besides the mascot art: ME's photos and flags, the W2 and T2 memes and the
+ * W4 and NT logos. */
 const DECK_PICTURES = [
+  ...TOUR.flatMap((stop) => [photoSrc(stop), flagSrc(stop)]),
+  "/brand/arkiv-orange.svg",
   "/deck/memes/arkiv-meme-distracted.webp",
   "/deck/memes/arkiv-meme-mcp-happy.webp",
   "/deck/memes/arkiv-meme-mcp-sad.webp",

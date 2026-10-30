@@ -24,7 +24,8 @@ expire (or stay, with no expiration).
 Change a contract only through the orchestrator. Every user-facing string is English.
 
 The talk runs on one screen, `/map` (outline v3, October 28, with Santiago's October 29 feedback): the
-title (S0), who I am (ME, an empty slide for now) and the index (IX, one part lit per →), then four parts
+title (S0), who I am (ME: santiagodevrel @ Arkiv and one photo per → from the countries the speaker has
+been to, each with its round flag; `app/deck/scenes/me-tour.ts`) and the index (IX, one part lit per →), then four parts
 that the outline bar across the top tracks. Why Arkiv (W1-W4), the five steps (ST) and what Arkiv
 DB-Chain is not (NT) are slides with no QR. The slides name Rabdi as the network builders use (W4 with
 Sorbet also live and Tiramisu among the previous testnets, ST); the app itself still writes and reads

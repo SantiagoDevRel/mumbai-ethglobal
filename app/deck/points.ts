@@ -6,7 +6,7 @@ import type { SceneId } from "../../shared/scenes";
 
 export const POINTS: Record<SceneId, string[]> = {
   S0: ["Arkiv, the Web3 database", "Subtitle: From zero to hero", "Write it. Query it. Own it. Expire it."],
-  ME: ["Who I am in 15 seconds", "Slide to come"],
+  ME: ["santiagodevrel @ Arkiv · first DevRel to do a Web3 Africa tour", "Worked for L1s, ChainSafe, L2s like Lisk, web3.js", "One photo per →, each pinned with its country's flag"],
   IX: ["The four parts, lit one → at a time", "Build your entity: phones out"],
   W1: ["Web2 is great: fast and familiar. But…", "Account frozen · Data changed · Rules changed", "One company decides for you"],
   W2: ["Meme: you can't stop looking at web3 data", "Your web2 database is not happy about it"],

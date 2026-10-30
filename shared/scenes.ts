@@ -76,8 +76,9 @@ const CORNER_QR = { label: "Join the map", placement: "corner" } as const;
 // steps, and L3 has no scripted filters: the presenter filters by hand.
 export const SCENES: readonly SceneDef[] = [
   { id: "S0", title: "Title", at: 0, kind: "slide", steps: 1, qr: NO_QR, camera: "globe-idle", map: "dots" },
-  // Who I am, in 15 seconds (Santiago, October 29): an empty slide for now.
-  { id: "ME", title: "Santiago", at: 5, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots" },
+  // Who I am (Santiago, October 30): santiagodevrel @ Arkiv and one photo per → from the countries he
+  // has been to, each with its flag (`TOUR` in app/deck/scenes/me-tour.ts; one step per photo).
+  { id: "ME", title: "Santiago", at: 5, kind: "slide", steps: 6, qr: NO_QR, camera: "keep", map: "dots" },
   // One → per part: part 1 lights first, then 2, 3 and 4 (Santiago, October 29).
   { id: "IX", title: "What we'll do", at: 20, kind: "slide", steps: 4, qr: NO_QR, camera: "keep", map: "dots" },
   { id: "W1", title: "Your data, their terms", at: 50, kind: "slide", steps: 2, qr: NO_QR, camera: "keep", map: "dots", section: "why" },
