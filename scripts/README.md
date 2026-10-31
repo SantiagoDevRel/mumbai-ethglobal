@@ -71,7 +71,7 @@ Scene starts follow `shared/scenes.ts` in real time. That contract has no reveal
 timestamps, so steps run in order at scene entry, 750 ms apart, awaiting each live
 operation. The S7 wave sends ten synthetic phones at +0 to +1 seconds, ten at
 +31 to +32 seconds and a real phone at +33 seconds. Each writes a 15-minute
-lifetime, never one with no expiration, so the room is still on the map at L3.
+lifetime, never the 6-month one, so the room is still on the map at L3.
 The two wallet transactions are L3's extensions (the selected entity, then all).
 The signer validates their destination and operation tags, rejects patches,
 ownership changes and deletion, requires the writer's idle hold, journals signed bytes before

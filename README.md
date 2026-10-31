@@ -6,7 +6,7 @@ The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026), in four 
 five steps before your first write (and what Arkiv is not), building your entity, and the resources and
 prizes for the weekend. An index after the title lists the parts, and a bar across the top shows where
 the talk is. In "Build your entity" everyone scans a QR code, picks a name, a color, a country and a
-lifetime (5 to 15 minutes, 15 by default, or Permanent, which sets `$expiresAt` to 2**64 − 1), and their
+lifetime (5 to 15 minutes, 15 by default, or 6 months, the longest Rabdi allows), and their
 Arkiv entity drops onto a live 3D globe, where it counts down and expires, or stays. Everything is stored
 in lower case. Each idea runs on the room's own entities: write it and query it (on the map, Write it and
 Query it open the code in a popup, and the panel under the map shows the query that ran: Code, the SDK
@@ -47,7 +47,7 @@ in a new tab). Transfer asks for the new owner's wallet address; Transfer and De
 transaction with Rabby. Type 0x then Space to fill in a random wallet. Rabby must use the writer wallet
 (the account named MUMBAI): only the current owner can transfer or delete, so both are off once another
 wallet owns the entity. A deleted dot leaves the map on the next query and the log says "deleted". An
-entity with no expiration shows `$expiresAt` = 2**64 − 1, has no countdown and nothing to extend:
+entity with the longest lifetime (6 months) has no countdown and nothing to extend:
 Extend is off and sends nothing. A click on the globe away from any dot closes the card. Dots in one country are spread apart, and each dot is a cafe,
 restaurant, bookstore or parking, picked by the writer.
 
@@ -67,7 +67,7 @@ phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + 
 - Every query is scoped by `$creator` (the writer) and the `app` attribute.
 - One sender at a time: a lease in Postgres lets only one function instance sign for the writer wallet, at most one batch per block.
 - Entities follow SDK 1.0 schemas (`PLACE` and `REVIEW` in `shared/arkiv/sdk-1.0.ts`): typed columns, indexed where the map filters, plus Arkiv's `$key`, `$owner`, `$creator` and `$expiresAt`.
-- "Permanent" (the phone's toggle; "no expiration" on the map) writes with `ExpirationTime.atBlock(MAX_EXPIRES_AT)`: `$expiresAt` is 2**64 − 1.
+- "6 months" (the phone's toggle) writes with `LONGEST_EXPIRATION`, 7,883,970 blocks: Rabdi reverts a lifetime beyond 7,884,000 blocks (`ExpiryBeyondMaxLifetime`), so a 2**64 − 1 deadline is impossible there.
 
 ## Run it
 
@@ -96,7 +96,7 @@ Each entity a phone writes is one request:
    the running session, sends it, and answers when the block is in (a few seconds; after 25 s it
    answers "on its way" and the dot still lands on the map).
 3. The phone shows the block, the explorer link and a countdown of the lifetime the person chose
-   (with Permanent: the word, `$expiresAt = 2**64 − 1` and no countdown). The countdown runs on the phone's
+   (with 6 months: no countdown). The countdown runs on the phone's
    own clock and fetches nothing, so it can't see a Lifetime Extension: at zero it says the entity has
    expired unless someone extended it.
 4. "Create new entity" brings the form back; a refresh does too. A phone can write up to

@@ -4,7 +4,7 @@ Edit instructions only in AGENTS.md; CLAUDE.md only imports this file.
 
 "From zero to hero with Arkiv, the Web3 database": a 20-minute live workshop. The room scans a QR,
 writes Arkiv entities from their phones, and watches them land on a 3D globe, where they count down and
-expire (or stay, with no expiration).
+expire (or stay for 6 months, the longest lifetime Rabdi allows).
 
 ## Layout
 
@@ -53,7 +53,7 @@ deck itself, so a changed slide shows there as it is; change its points with it.
 - Every entity has a name you can see (Santiago, October 29): `SubmitRequest` refuses a name that is empty, spaces or only invisible characters (`hasVisibleName` in `shared/writer-api.ts`), and the phone says why next to the field before it sends anything.
 - Everything a phone writes is lower case (Santiago, October 29): the phone lower-cases the name as you type, the writer lower-cases name and country again, and country codes are lower case (`in`). Filters match lower case.
 - An entity stores its country by full name in lower case (Santiago, October 30: `india`, not `in`). The phone, the writer's placement, the filters and the camera keep the code; `shared/geo/country-name.ts` turns it into the name where an entity is written (`dotToCreate`, the mock) and where a query filters on it. Entities written before then keep `in`.
-- "Permanent" (Santiago, October 29; named "No expiration" until October 30): the phone offers it under the lifetime slider; the writer writes with `ExpirationTime.permanent()`, so `$expiresAt` is 2**64 − 1. The phone never shows the word without that deadline (toggle, readout, written entity, list); the map side says "no expiration". The phone and the entity card show that value instead of a countdown, and extension skips these entities. Rehearsals never write one.
+- The longest lifetime, "6 months" (October 31; "Permanent", 2**64 − 1, on the previous testnet): the phone offers it under the lifetime slider. Rabdi caps a lifetime at 7,884,000 blocks and reverts a deadline beyond it (`ExpiryBeyondMaxLifetime`), so the writer writes `LONGEST_EXPIRATION`, 7,883,970 blocks (`shared/types.ts`, `shared/arkiv/sdk-1.0.ts`). The phone, the map and the entity card say "6 months" with no countdown, and extension skips these entities. Rehearsals never write one.
 - The entity card (Santiago, October 30): the attributes the phone put in (name, color, country), then a … row that shows the ones the app adds; `$key`, `$owner` and `$expiresAt` beside them. Actions: Extend | Transfer | Delete | ↗ (the data explorer, in a new tab); hiding a dot is the H key only. An entity with no expiration is never extended from the stage: Extend is off, and E, Shift+E and Extend all leave it out before Rabby opens. Delete is a real `deleteEntity`, signed in Rabby by the writer wallet like Transfer; both are off once another wallet owns the entity. A deleted dot leaves the map on the next query and the log says "deleted", never "expired". The handler is `lib/data/stage-effects.ts`; `tests/stage-effects.test.ts` proves what reaches the wallet.
 - One sender: only the holder of the Postgres lease signs with the writer wallet. Production and preview share the database on purpose, so they can never send at the same time.
 - Never claim on screen what didn't happen on-chain. App-side steps are labeled *app-side*.
