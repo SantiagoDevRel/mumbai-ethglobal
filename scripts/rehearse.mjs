@@ -259,15 +259,7 @@ async function phoneWave() {
       const item = { kind: "browser", name: "rehearsal phone", country: "in", color: GREEN, submittedAtMs, confirmedAtMs: now(), entityKey: phoneKey, block: included.createdAt.toString(), expiresAtBlock: included.expiresAt.toString() };
       report.phones.push(item);
       assert.equal(hasNoExpiry(BigInt(included.expiresAt)), false, "The real phone wrote an entity with no expiration.");
-      await expect(stage.locator(".event-log").getByRole("button", { name: /rehearsal phone/ }).first()).toBeVisible({ timeout: 20000 });
-      item.visibleAtMs = now(); item.submitToVisibleMs = now() - submittedAtMs;
-      // The dot is painted in its stored color: Green, #14f195.
-      await expect.poll(() => stage.locator(".globe-dots").evaluate((canvas) => {
-        const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
-        let count = 0; for (let i = 0; i < data.length; i += 4) if (data[i] === 20 && data[i + 1] === 241 && data[i + 2] === 149 && data[i + 3] > 100) count++;
-        return count;
-      }), { timeout: 15000 }).toBeGreaterThan(0);
-      item.paintedAtMs = now();
+      realPhoneItem = item;
     });
   })();
   // Attach immediately: a late rejection must not become an unhandled rejection while L1 begins.
@@ -276,12 +268,23 @@ async function phoneWave() {
     if (failed.length) throw new AggregateError(failed.map((result) => result.reason), "Phone wave failed.");
   });
 }
-let wave, waveError;
+let wave, waveError, realPhoneItem;
 async function sceneWork(id, step) {
-  if (id === "S7") { wave = phoneWave().catch((error) => { waveError = error; }); }
+  // S7 has two steps (the QR moves aside on the second): the wave starts once, on the first.
+  if (id === "S7" && step === 0) { wave = phoneWave().catch((error) => { waveError = error; }); }
   if (id === "L1") await op("all phones confirmed and rendered", async () => {
     await wave; if (waveError) throw waveError; assert.equal(report.phones.length, 21);
     const status = await presenter("status"); assert.equal(status.written, 21); assert.equal(status.failed, 0);
+    // S7 is a slide: the event log and the counter show from L1, the first live scene, on.
+    await expect(stage.locator(".event-log").getByRole("button", { name: /rehearsal phone/ }).first()).toBeVisible({ timeout: 20000 });
+    realPhoneItem.visibleAtMs = now(); realPhoneItem.submitToVisibleMs = now() - realPhoneItem.submittedAtMs;
+    // The dot is painted in its stored color: Green, #14f195.
+    await expect.poll(() => stage.locator(".globe-dots").evaluate((canvas) => {
+      const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+      let count = 0; for (let i = 0; i < data.length; i += 4) if (data[i] === 20 && data[i + 1] === 241 && data[i + 2] === 149 && data[i + 3] > 100) count++;
+      return count;
+    }), { timeout: 15000 }).toBeGreaterThan(0);
+    realPhoneItem.paintedAtMs = now();
   });
   // The entity card: $owner (never $creator) and the attributes the phone put in, in lower case as
   // written. "0x" then Space fills the transfer form with a fresh checksummed wallet; it is cancelled,
@@ -403,13 +406,13 @@ try {
     // The filter bar, as the presenter uses it at L3: a country by name (the camera flies there), then a color.
     const bar = stage.locator(".filter-bar");
     await bar.getByPlaceholder("Any country").fill("India");
-    await expect(stage.locator(".query-panel")).toContainText("country = str('in')", { timeout: 20000 });
+    await expect(stage.locator(".query-panel")).toContainText("country = str('india')", { timeout: 20000 });
     await expect.poll(cameraCue, { timeout: 10000 }).toBe("country:in");
     await bar.getByRole("combobox", { name: "Color" }).click();
     await bar.getByRole("listbox", { name: "Colors" }).getByRole("option", { name: "Green", exact: true }).click();
     await expect(stage.locator(".query-panel")).toContainText(`color = str('${GREEN}')`, { timeout: 20000 });
     assert.ok(proxyReads > 0); assert.equal(report.pageErrors.length, 0);
-    console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0, filters: ["in", GREEN] }));
+    console.log(JSON.stringify({ preflight: "passed", chainId: profile.chainId, proxyReads, wallet: WRITER_ADDRESS, sends: 0, filters: ["india", GREEN] }));
   }
   else {
     session = (await presenter("session/start", {})).code; report.session = session;
@@ -465,6 +468,9 @@ try {
 finally {
   clearInterval(monitor);
   if (wave) { await wave; if (waveError) { report.status = "failed"; report.waveError = safeMessage(waveError); process.exitCode = 1; } }
+  // Close the browser first: an open /map starts a new session whenever it finds none, so ending
+  // ours while the stage still polls would leave a fresh session with its doors open.
+  await browser?.close();
   if (session) {
     try {
       if ((await presenter("status")).session === session) {
@@ -480,7 +486,6 @@ finally {
     } catch (error) { report.cleanupError = safeMessage(error); report.status = "failed"; process.exitCode = 1; }
     try { await balance("final"); } catch (error) { report.balanceError = safeMessage(error); report.status = "failed"; process.exitCode = 1; }
   }
-  await browser?.close();
   for (const hash of receipts.keys()) {
     try { const receipt = await clients.reader.getTransactionReceipt({ hash }); receipts.set(hash, { hash, block: receipt.blockNumber.toString(), gasUsed: receipt.gasUsed.toString(), status: receipt.status }); }
     catch (error) { report.receiptError = safeMessage(error); report.status = "failed"; process.exitCode = 1; }
