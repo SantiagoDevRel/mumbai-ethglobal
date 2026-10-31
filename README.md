@@ -132,6 +132,10 @@ Arkiv testnet: everything written here is public.
 
 [MIT](./LICENSE)
 
+## Vocabulary checks
+
+`npm test` checks active source, seeds, generated text, every source-map string field and snapshots for entity bytes vocabulary and mutation-tests the guard's CLI. Only the three immutable retired October 26 Worker files listed with hashes in `scripts/vocabulary-exceptions.json` are exempt for rollback and historical evidence; other files under `writer/` remain guarded. Browser checks must cover the authenticated presenter views as well as the public phone page.
+
 ## Brand assets
 
 The MIT license covers the code. The Arkiv logos and brand assets in `public/brand/` belong to Golem Factory and are not covered by it.

@@ -1,0 +1,14 @@
+.env
+.env.*
+*.pem
+*.key
+.dev.vars
+node_modules
+.git
+.vercel
+.next
+coverage
+test-results
+playwright-report
+shots
+*.log
