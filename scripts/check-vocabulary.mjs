@@ -1,11 +1,13 @@
 import {readFile, readdir} from 'node:fs/promises';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 
 // Assemble the retired term so the guard's own source follows the vocabulary rule.
 const retired = new RegExp(['pay', 'load'].join(''), 'i');
-const omitted = new Set(['.git', 'node_modules', '.next', 'out', 'out-swarm', 'dist', 'coverage', 'test-results', 'playwright-report', 'practice-map']);
-const textFile = /\.(?:md|mdx|[cm]?[jt]sx?|jsonl?|ya?ml|html|txt|csv|snap|css|svg)$/i;
+const omitted = new Set(['.git', 'node_modules', '.next', 'out', 'out-swarm', 'dist', 'coverage', 'test-results', 'playwright-report']);
+const textFile = /\.(?:md|mdx|[cm]?[jt]sx?|jsonl?|map|ya?ml|html|txt|csv|snap|css|svg)$/i;
+const policy = JSON.parse(await readFile(new URL('./vocabulary-exceptions.json', import.meta.url), 'utf8'));
 
 export async function checkVocabulary(root) {
   const failures = [];
@@ -14,16 +16,35 @@ export async function checkVocabulary(root) {
     for (const entry of await readdir(path.join(root, relative), {withFileTypes: true})) {
       if (omitted.has(entry.name)) continue;
       const file = path.posix.join(relative, entry.name);
-      // AGENTS.md identifies writer/ as the retired October 26 Worker, kept for rollback.
-      if (file === 'writer' || /^\.env(?:\.|$)/.test(entry.name)) continue;
+      if (/^\.env(?:\.|$)/.test(entry.name)) continue;
       if (entry.isSymbolicLink()) throw new Error(`Vocabulary scan refuses symlinks: ${file}`);
       if (retired.test(file)) failures.push({file, line: 0, rule: 'resource-name'});
       if (entry.isDirectory()) await visit(file);
       else if (entry.isFile() && textFile.test(entry.name)) {
         files++;
-        const lines = (await readFile(path.join(root, file), 'utf8')).split(/\r?\n/);
+        const text = (await readFile(path.join(root, file), 'utf8')).replace(/\r\n/g, '\n');
+        const frozen = policy.frozen.find(entry => entry.file === file);
+        if (frozen) {
+          const sha256 = createHash('sha256').update(text).digest('hex');
+          if (sha256 !== frozen.sha256) failures.push({file, line: 1, rule: 'retired-evidence-changed'});
+          continue;
+        }
+        const lines = text.split('\n');
         for (let index = 0; index < lines.length; index++) {
           if (retired.test(lines[index])) failures.push({file, line: index + 1, rule: 'entity-vocabulary'});
+        }
+        if (/\.(?:json|map)$/.test(file)) {
+          try {
+            function inspect(value) {
+              if (typeof value === 'string' && retired.test(value)) failures.push({file, line: 1, rule: 'json-string'});
+              else if (Array.isArray(value)) value.forEach(inspect);
+              else if (value && typeof value === 'object') for (const [key, item] of Object.entries(value)) {
+                if (retired.test(key)) failures.push({file, line: 1, rule: 'json-field'});
+                inspect(item);
+              }
+            }
+            inspect(JSON.parse(text));
+          } catch { failures.push({file, line: 1, rule: 'invalid-json'}); }
         }
       }
     }

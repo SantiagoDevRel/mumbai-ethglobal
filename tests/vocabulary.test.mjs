@@ -25,6 +25,11 @@ test('vocabulary CLI rejects injected prose, code, generated data, snapshots and
       ['generated/entities.json', '{"column":"bytes"}', JSON.stringify({column: retired})],
       ['captures/current.snap', 'Bytes column', `Entity ${retired}`],
       [`references/sdk-${retired}.md`, null, '# Entity bytes'],
+      ...['names', 'sources', 'file', 'sourcesContent', 'x_extension'].map(field => ['generated/source.js.map', '{}', JSON.stringify({[field]: [retired]})]),
+      ['generated/escaped.js.map', '{}', '{"names":["' + String.fromCharCode(92) + 'u0070' + retired.slice(1) + '"]}'],
+      ['writer/new-component.ts', 'export const bytes = [];', `export const ${retired} = [];`],
+      ['practice-map/capture.json', '{}', JSON.stringify({label: retired})],
+      ['writer/src/phase-zero.ts', null, `const ${retired} = [];`],
     ];
     for (let index = 0; index < cases.length; index++) {
       const [file, clean, mutation] = cases[index];
