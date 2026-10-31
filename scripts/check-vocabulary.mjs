@@ -33,7 +33,7 @@ export async function checkVocabulary(root) {
         for (let index = 0; index < lines.length; index++) {
           if (retired.test(lines[index])) failures.push({file, line: index + 1, rule: 'entity-vocabulary'});
         }
-        if (/\.(?:json|map)$/.test(file)) {
+        if (/\.(?:json|map)$/i.test(file)) {
           try {
             function inspect(value) {
               if (typeof value === 'string' && retired.test(value)) failures.push({file, line: 1, rule: 'json-string'});
