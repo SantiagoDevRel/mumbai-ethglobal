@@ -713,9 +713,11 @@ try {
   await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
   await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible({ timeout: 20000 });
   await commands(page, [go("S7")]);
-  // The follower changes scene once the leader, still drawing the 1920 px globe in software WebGL,
-  // handles the command: as long as the other waits in this block.
-  await expect(slides.locator('[data-scene="S7"]')).toBeVisible({ timeout: 20000 }).catch(async (error) => {
+  // The follower changes scene once the leader, still drawing the 1920 px globe and the L9 finale in
+  // software WebGL, handles the command. 20 s missed on main 6ab993f (run 41113469333) and on Rabdi
+  // runs 41145918350 and 41156376122, where the follower was already on S7 when the diagnostic below
+  // ran: the same CPU starvation as the L9 capture above, so it gets the same 60 s.
+  await expect(slides.locator('[data-scene="S7"]')).toBeVisible({ timeout: 60000 }).catch(async (error) => {
     const scene = (target) => target.evaluate(() => [...document.querySelectorAll("[data-scene]")].map((element) => `${element.getAttribute("data-screen") ?? "?"}:${element.getAttribute("data-scene")}`).join(" "));
     console.error(JSON.stringify({ follower: await scene(slides).catch(String), leader: await scene(page).catch(String), state: await stageState(page).then((state) => state && { sceneIndex: state.sceneIndex, step: state.step }).catch(String), errors }));
     throw error;
