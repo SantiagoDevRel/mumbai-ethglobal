@@ -70,7 +70,8 @@ function Outline() {
         <header className="flex flex-col gap-10">
           <div className="flex items-center justify-between gap-4">
             <Image src="/brand/arkiv-white.svg" alt="Arkiv" width={104} height={24} priority />
-            <nav className="flex gap-2" aria-label="Presenter screens">
+            {/* On a phone the two links wrap onto two lines rather than overflow. */}
+            <nav className="flex min-w-0 flex-wrap justify-end gap-2" aria-label="Presenter screens">
               {["/workshop", "/workshop/slides"].map((href) => (
                 <Link key={href} href={href} className="rounded-full border border-[var(--t-28)] px-4 py-1.5 font-mono text-[14px] font-medium text-[var(--t-84)] transition-colors hover:border-[var(--t-56)] hover:text-[var(--arkiv-sand)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--arkiv-orange)]">
                   {href}
