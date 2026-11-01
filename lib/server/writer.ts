@@ -210,7 +210,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
   function kick() {
     if (Date.now() - lastKickAt < 1_000) return;
     lastKickAt = Date.now();
-    defer(() => runWriter().catch(error => console.error("writer run failed:", error instanceof Error ? error.message : String(error))));
+    defer(() => runWriter().catch(() => console.error("WRITER_RUN_FAILED")));
   }
   async function acquire(holder: string): Promise<boolean> {
     const now = Date.now();
@@ -301,7 +301,8 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       await saveMeta(q, locked);
     });
     try {
-      const result = await writer!.executeBatch({ creates: prepared.map(row => dotToCreate(row.dot)) }, await writeParams(reader, writerAddress, prepared.length, nonce));
+      const batch = { creates: prepared.map(row => dotToCreate(row.dot)) };
+      const result = await writer!.executeBatch(batch, await writeParams(reader, writerAddress, prepared.length, nonce, batch));
       journal = null;
       if ((await readMeta()).inFlight?.txHash !== result.txHash) throw new Error("Receipt hash differs from the signed batch.");
       await reconcile(holder);
@@ -523,7 +524,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     // The phone sends once and waits here for its block, so it never polls. This request starts a
     // sender itself (the lease keeps it to one) and starts another if the queue is left waiting.
     const runs: Promise<void>[] = [];
-    const start = () => runs.push(runWriter().catch(error => console.error("writer run failed:", error instanceof Error ? error.message : String(error))));
+    const start = () => runs.push(runWriter().catch(() => console.error("WRITER_RUN_FAILED")));
     start();
     defer(() => Promise.all(runs).then(() => undefined));
     const deadline = Date.now() + SUBMIT_WAIT_MS;
@@ -550,7 +551,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       return Response.json(countdownTicket(response, await sessionSnapshot(row.session)));
     } catch (error) {
       // The runtime log shows why phones see "Reconnecting…"; the phone gets fixed copy only.
-      console.error("ticket countdown unavailable:", error instanceof Error ? error.message : String(error));
+      console.error("TICKET_COUNTDOWN_UNAVAILABLE");
       return Response.json({ error: error instanceof NetworkNotConfiguredError ? "network_not_configured" : "internal",
         message: "The countdown is temporarily unavailable. Please retry." }, { status: 503, headers: { "retry-after": "2" } });
     }
@@ -573,13 +574,14 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
           JSON.stringify({ jsonrpc: "2.0", id: call.id ?? null, method: call.method, params: call.params ?? [] }), AbortSignal.timeout(15_000));
         if (!response.ok) {
           observeRpc({ method: call.method, phase: "response", httpStatus: response.status });
-          // For the runtime log: the upstream's reason and limit headers (never the key or the request).
-          console.error("rpc read rejected:", call.method, response.status, response.headers.get("ratelimit"), (await response.text()).slice(0, 200));
+          // Only allowlisted method and numeric status are safe diagnostic fields.
+          console.error("RPC_READ_REJECTED", { method: call.method, httpStatus: response.status });
           throw new Error("RPC rejected.");
         }
         const body = await response.json() as { result?: unknown; error?: { code: number } };
-        observeRpc({ method: call.method, phase: "response", httpStatus: response.status, rpcCode: body.error?.code });
-        responses.push(body.error ? { jsonrpc: "2.0", id: call.id ?? null, error: { code: body.error.code, message: "RPC read failed." } } : { jsonrpc: "2.0", id: call.id ?? null, result: body.result });
+        const rpcCode = typeof body.error?.code === "number" && Number.isSafeInteger(body.error.code) ? body.error.code : -32000;
+        observeRpc({ method: call.method, phase: "response", httpStatus: response.status, rpcCode: body.error ? rpcCode : undefined });
+        responses.push(body.error ? { jsonrpc: "2.0", id: call.id ?? null, error: { code: rpcCode, message: "RPC read failed." } } : { jsonrpc: "2.0", id: call.id ?? null, result: body.result });
       } catch { observeRpc({ method: call.method, phase: "error" }); responses.push({ jsonrpc: "2.0", id: call.id ?? null, error: { code: -32000, message: "RPC read unavailable." } }); }
     }
     return Response.json(Array.isArray(input) ? responses : responses[0]);
@@ -740,7 +742,7 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       if (crossOrigin && !extra.includes(origin)) fail("invalid", 403, "This origin is not allowed.");
       response = request.method === "OPTIONS" ? new Response(null, { status: 204 }) : await route(request, url.pathname.replace(/\/$/, ""));
     } catch (error) {
-      if (!(error instanceof ApiError) && !(error instanceof NetworkNotConfiguredError)) console.error("writer request failed:", url.pathname, error instanceof Error ? error.message : String(error));
+      if (!(error instanceof ApiError) && !(error instanceof NetworkNotConfiguredError)) console.error("WRITER_REQUEST_FAILED");
       const code = error instanceof ApiError ? error.code : error instanceof NetworkNotConfiguredError ? "network_not_configured" : "internal";
       const status = error instanceof ApiError ? error.status : error instanceof NetworkNotConfiguredError ? 503 : 500;
       response = Response.json({ error: code, message: error instanceof ApiError ? error.message : code === "network_not_configured" ? "Network not configured." : "The writer could not complete this request." }, { status });

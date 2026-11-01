@@ -53,3 +53,79 @@ test('vocabulary CLI rejects injected prose, code, generated data, snapshots and
     await rm(scratch, {recursive: true});
   }
 });
+
+test('content scan rejects schema.sql bypass with a clean control', async () => {
+  const {mkdtemp, writeFile, rm} = await import('node:fs/promises');
+  const {tmpdir} = await import('node:os');
+  const path = await import('node:path');
+  const {spawnSync} = await import('node:child_process');
+  const scratch = await mkdtemp(path.join(tmpdir(), 'surf2-vocabulary-'));
+  const term = ['pay', 'load'].join('');
+  try {
+    const target = path.join(scratch, 'schema.sql');
+    await writeFile(target, "SELECT 1;");
+    const run = () => spawnSync(process.execPath, [path.join(root, 'scripts/check-vocabulary.mjs'), scratch], {encoding:'utf8'});
+    assert.equal(run().status, 0, 'clean text must pass');
+    await writeFile(target, 'SELECT '+term);
+    const rejected = run();
+    assert.equal(rejected.status, 1, rejected.stdout + rejected.stderr);
+    assert.equal(JSON.parse(rejected.stdout).passed, false);
+  } finally { await rm(scratch, {recursive:true}); }
+});
+
+test('content scan rejects NOTICE bypass with a clean control', async () => {
+  const {mkdtemp, writeFile, rm} = await import('node:fs/promises');
+  const {tmpdir} = await import('node:os');
+  const path = await import('node:path');
+  const {spawnSync} = await import('node:child_process');
+  const scratch = await mkdtemp(path.join(tmpdir(), 'surf2-vocabulary-'));
+  const term = ['pay', 'load'].join('');
+  try {
+    const target = path.join(scratch, 'NOTICE');
+    await writeFile(target, "Entity bytes");
+    const run = () => spawnSync(process.execPath, [path.join(root, 'scripts/check-vocabulary.mjs'), scratch], {encoding:'utf8'});
+    assert.equal(run().status, 0, 'clean text must pass');
+    await writeFile(target, 'Entity '+term);
+    const rejected = run();
+    assert.equal(rejected.status, 1, rejected.stdout + rejected.stderr);
+    assert.equal(JSON.parse(rejected.stdout).passed, false);
+  } finally { await rm(scratch, {recursive:true}); }
+});
+
+test('content scan rejects events.jsonl bypass with a clean control', async () => {
+  const {mkdtemp, writeFile, rm} = await import('node:fs/promises');
+  const {tmpdir} = await import('node:os');
+  const path = await import('node:path');
+  const {spawnSync} = await import('node:child_process');
+  const scratch = await mkdtemp(path.join(tmpdir(), 'surf2-vocabulary-'));
+  const term = ['pay', 'load'].join('');
+  try {
+    const target = path.join(scratch, 'events.jsonl');
+    await writeFile(target, "{\"nested\":{\"name\":\"bytes\"}}");
+    const run = () => spawnSync(process.execPath, [path.join(root, 'scripts/check-vocabulary.mjs'), scratch], {encoding:'utf8'});
+    assert.equal(run().status, 0, 'clean text must pass');
+    await writeFile(target, '{"nested":{"name":"'+String.fromCharCode(92)+'u0070'+term.slice(1)+'"}}');
+    const rejected = run();
+    assert.equal(rejected.status, 1, rejected.stdout + rejected.stderr);
+    assert.equal(JSON.parse(rejected.stdout).passed, false);
+  } finally { await rm(scratch, {recursive:true}); }
+});
+
+test('content scan rejects NOTICE_JSONL bypass with a clean control', async () => {
+  const {mkdtemp, writeFile, rm} = await import('node:fs/promises');
+  const {tmpdir} = await import('node:os');
+  const path = await import('node:path');
+  const {spawnSync} = await import('node:child_process');
+  const scratch = await mkdtemp(path.join(tmpdir(), 'surf2-vocabulary-'));
+  const term = ['pay', 'load'].join('');
+  try {
+    const target = path.join(scratch, 'NOTICE_JSONL');
+    await writeFile(target, '{}\n' + "{\"nested\":{\"name\":\"bytes\"}}");
+    const run = () => spawnSync(process.execPath, [path.join(root, 'scripts/check-vocabulary.mjs'), scratch], {encoding:'utf8'});
+    assert.equal(run().status, 0, 'clean text must pass');
+    await writeFile(target, '{"nested":{"name":"'+String.fromCharCode(92)+'u0070'+term.slice(1)+'"}}');
+    const rejected = run();
+    assert.equal(rejected.status, 1, rejected.stdout + rejected.stderr);
+    assert.equal(JSON.parse(rejected.stdout).passed, false);
+  } finally { await rm(scratch, {recursive:true}); }
+});

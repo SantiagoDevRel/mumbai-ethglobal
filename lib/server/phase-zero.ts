@@ -63,11 +63,12 @@ export async function runPhaseZero(db: Db, env: WriterEnv, writerAddress: Hex): 
   proof.nonce = await reader.getTransactionCount({ address: writerAddress, blockTag: "latest" });
   await save();
   try {
-    const result = await writer!.executeBatch({ creates: [{
+    const batch = { creates: [{
       schema: PLACE,
       values: { app: APP_ID, kind: "dot", session: "phase-zero", name: "writer check", color: "#fe7446", country: "india", lat: 19_076_000, lng: 72_877_700 },
       flags: { permissionlessExtension: true }, expiration: lifetime(120),
-    }] }, await writeParams(reader, writerAddress, 1, proof.nonce));
+    }] };
+    const result = await writer!.executeBatch(batch, await writeParams(reader, writerAddress, 1, proof.nonce, batch));
     proof.txHash = result.txHash;
     proof.entityKey = result.createdEntities[0];
     const receipt = await reader.getTransactionReceipt({ hash: result.txHash });

@@ -6,7 +6,6 @@ import {fileURLToPath, pathToFileURL} from 'node:url';
 // Assemble the retired term so the guard's own source follows the vocabulary rule.
 const retired = new RegExp(['pay', 'load'].join(''), 'i');
 const omitted = new Set(['.git', 'node_modules', '.next', 'out', 'out-swarm', 'dist', 'coverage', 'test-results', 'playwright-report']);
-const textFile = /\.(?:md|mdx|[cm]?[jt]sx?|jsonl?|map|ya?ml|html|txt|csv|snap|css|svg)$/i;
 const policy = JSON.parse(await readFile(new URL('./vocabulary-exceptions.json', import.meta.url), 'utf8'));
 
 export async function checkVocabulary(root) {
@@ -20,9 +19,11 @@ export async function checkVocabulary(root) {
       if (entry.isSymbolicLink()) throw new Error(`Vocabulary scan refuses symlinks: ${file}`);
       if (retired.test(file)) failures.push({file, line: 0, rule: 'resource-name'});
       if (entry.isDirectory()) await visit(file);
-      else if (entry.isFile() && textFile.test(entry.name)) {
+      else if (entry.isFile()) {
         files++;
-        const text = (await readFile(path.join(root, file), 'utf8')).replace(/\r\n/g, '\n');
+        let text;
+        try { text = new TextDecoder('utf-8', {fatal:true}).decode(await readFile(path.join(root, file))); } catch { continue; }
+        text = text.replace(/\r\n/g, '\n');
         const frozen = policy.frozen.find(entry => entry.file === file);
         if (frozen) {
           const sha256 = createHash('sha256').update(text).digest('hex');
@@ -33,7 +34,7 @@ export async function checkVocabulary(root) {
         for (let index = 0; index < lines.length; index++) {
           if (retired.test(lines[index])) failures.push({file, line: index + 1, rule: 'entity-vocabulary'});
         }
-        if (/\.(?:json|map)$/i.test(file)) {
+        if (/\.(?:jsonl?|map)$/i.test(file) || /^[\s]*[\[{"]/.test(text)) {
           try {
             function inspect(value) {
               if (typeof value === 'string' && retired.test(value)) failures.push({file, line: 1, rule: 'json-string'});
@@ -43,8 +44,13 @@ export async function checkVocabulary(root) {
                 inspect(item);
               }
             }
-            inspect(JSON.parse(text));
-          } catch { failures.push({file, line: 1, rule: 'invalid-json'}); }
+            let value;
+            try { value = JSON.parse(text); } catch {
+              if (/\.(?:json|map)$/i.test(file)) throw new Error('Invalid JSON');
+              value = text.split('\n').filter(line => line.trim()).map(line => JSON.parse(line));
+            }
+            inspect(value);
+          } catch { if (/\.(?:jsonl?|map)$/i.test(file)) failures.push({file, line: 1, rule: 'invalid-json'}); }
         }
       }
     }
