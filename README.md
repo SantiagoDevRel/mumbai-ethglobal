@@ -134,6 +134,19 @@ Arkiv testnet: everything written here is public.
 
 ## Vocabulary checks
 
+The ten database-backed writer tests also need an isolated Postgres. On the DGX, reuse an
+existing `postgres:17-alpine` image with `--pull=never`, publish it only on loopback, and use a
+throwaway `surf2_test` database owned by `surf2`. After a TCP `select 1` succeeds, run:
+
+```sh
+DATABASE_URL=postgresql://surf2@127.0.0.1:55439/surf2_test node --import ./tests/local-postgres.mjs --import ./tests/ts-resolve.mjs --test --experimental-strip-types tests/writer-server.test.ts
+```
+
+The test-only adapter uses the installed Neon driver over local TCP. SQL, transactions and
+sender leases run in the real database. It rejects remote database URLs. Use an owned,
+time-bounded container with temporary storage and remove it after the test; never use a
+production database or pull production environment settings.
+
 `npm test` checks active source, seeds, generated text, every source-map string field and snapshots for entity bytes vocabulary and mutation-tests the guard's CLI. Only the three immutable retired October 26 Worker files listed with hashes in `scripts/vocabulary-exceptions.json` are exempt for rollback and historical evidence; other files under `writer/` remain guarded. Browser checks must cover the authenticated presenter views as well as the public phone page.
 
 ## Brand assets
