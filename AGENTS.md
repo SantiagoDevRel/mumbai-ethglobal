@@ -36,7 +36,7 @@ the explorer (B5). Resources and prizes: Hub, docs and AI tools (T1), the Arkiv 
 the close (L9, the finale). Only L1 shows the corner QR. One idea per scene, never twice; `$owner` only,
 no `$creator` on screen. Every reveal is one → (`steps` in `SCENES`): nothing moves on a timer, and live
 data changes in place (no flash, roll, spin or ticking clock). Two exceptions: the live dot beside Rabdi
-and Sorbet blinks (W4, `.live-dot` in `app/globals.css`, Santiago, November 1; still with reduced motion), and L9's finale, which
+and Sorbet blinks (W4, `.chain-live-dot` in `app/globals.css`, Santiago, November 1; it stays still with reduced motion), and L9's finale, which
 plays once on entry (`app/deck/scenes/finale`; a click on the bricks replays it, reduced motion shows the
 last frame). The stage shows no logo or status in the top left; the status lives in the "?" card. The
 query panel opens on L3 only, on the Query tab: the scope, then one predicate per line joined by AND, the

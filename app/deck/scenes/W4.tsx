@@ -110,11 +110,11 @@ function wire(node: { x: number; y: number; r: number }) {
 }
 
 /** A live DB-Chain: a blinking green dot and LIVE, with no pill (Santiago, November 1). The blink is
- * `.live-dot` in app/globals.css; with reduced motion the dot stays still. */
+ * `.chain-live-dot` in app/globals.css (the event log owns `.live-dot`); with reduced motion the dot stays still. */
 function Live() {
   return (
     <span className="flex shrink-0 items-center gap-3 font-mono text-[22px] font-semibold leading-none tracking-[0.08em] text-[var(--arkiv-sand)]">
-      <span className="live-dot block h-[16px] w-[16px] rounded-full" aria-hidden />
+      <span className="chain-live-dot block h-[16px] w-[16px] rounded-full" aria-hidden />
       LIVE
     </span>
   );

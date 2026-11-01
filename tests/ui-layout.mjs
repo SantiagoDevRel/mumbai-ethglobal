@@ -1126,7 +1126,9 @@ try {
       // Tiramisu is a previous testnet like the others, without OFF. Every live DB-Chain shows a live dot:
       // Rabdi and Sorbet on the network, and Rabdi again in the app view.
       await expect(slides.getByRole("listitem")).toHaveText([/^Tiramisu$/, /^Braga\s*OFF$/, /^Kaolin\s*OFF$/, /^Mendoza\s*OFF$/]);
-      await expect(slides.locator(".live-dot")).toHaveCount(3);
+      await expect(slides.locator(".chain-live-dot")).toHaveCount(3);
+      // Green, not the event log's orange `.live-dot`.
+      assert.deepEqual(await slides.locator(".chain-live-dot").evaluateAll((dots) => dots.map((dot) => getComputedStyle(dot).backgroundColor)), ["rgb(34, 197, 94)", "rgb(34, 197, 94)", "rgb(34, 197, 94)"]);
       if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-W4-network.png") });
       await commands(page, [{ type: "next" }]);
       await settled(slides.getByText("Keeps your Arkiv entities", { exact: true }));

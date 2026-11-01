@@ -29,7 +29,7 @@ keys work in either window and move both. The presenter card opens with the smal
 map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
 the QR slide.
 
-Every reveal is one →; nothing moves on a timer, except the blinking live dot beside Rabdi and Sorbet (W4, still with reduced motion) and the close (L9): on entry the mascot says the
+Every reveal is one →; nothing moves on a timer, except the blinking live dot beside Rabdi and Sorbet (W4; it stays still with reduced motion) and the close (L9): on entry the mascot says the
 four verbs and its cubes build THANK YOU in bricks, once (a click on the bricks plays it again; with
 reduced motion the last frame shows at once). The dots and the scene counter (n / N) at the bottom
 right show the steps of the current scene and where it is in the talk. Drag with the right mouse button, on a slide or on the map (panels and the QR card
