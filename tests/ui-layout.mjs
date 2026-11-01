@@ -1123,9 +1123,10 @@ try {
       await faded(previous);
       await commands(page, [{ type: "next" }]);
       await settled(previous);
-      // Tiramisu is a previous testnet like the others, without OFF; Rabdi and Sorbet show a live dot.
+      // Tiramisu is a previous testnet like the others, without OFF. Every live DB-Chain shows a live dot:
+      // Rabdi and Sorbet on the network, and Rabdi again in the app view.
       await expect(slides.getByRole("listitem")).toHaveText([/^Tiramisu$/, /^Braga\s*OFF$/, /^Kaolin\s*OFF$/, /^Mendoza\s*OFF$/]);
-      await expect(slides.locator(".live-dot")).toHaveCount(2);
+      await expect(slides.locator(".live-dot")).toHaveCount(3);
       if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-W4-network.png") });
       await commands(page, [{ type: "next" }]);
       await settled(slides.getByText("Keeps your Arkiv entities", { exact: true }));
@@ -1286,7 +1287,7 @@ try {
     const titles = new Set(SCENES.map((scene) => scene.title));
     for (const [index, frame] of FRAMES.entries()) {
       await expect(counter).toHaveText(`${index + 1} / ${FRAMES.length}`);
-      assert.ok(page.url().endsWith(`#${frame.id}`), `${frame.id} keeps its address`);
+      await expect.poll(() => new URL(page.url()).hash, { message: `${frame.id} keeps its address` }).toBe(`#${frame.id}`);
       const footer = (await page.locator("footer").innerText()).replace(/\s+/g, " ").trim();
       assert.match(footer, /^(Back )?\d+ \/ \d+( Next)?$/, `the footer on ${frame.id} shows only the number: "${footer}"`);
       assert.ok(![...titles].some((title) => footer.includes(title)), `the footer on ${frame.id} names no slide`);
