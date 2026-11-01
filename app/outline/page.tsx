@@ -10,16 +10,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsDownUp, ChevronsUpDown, Globe, Maximize2, Presentation, Smartphone, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { QrCard } from "../../components/stage/JoinQR";
 import { PresenterGate } from "../../components/stage/Presenter";
-import { STAGE_H, STAGE_W } from "../../components/stage/StageFrame";
 import { stage, useScene } from "../../lib/stage/store";
 import { SCENES, SECTIONS, type SceneDef, type SceneId } from "../../shared/scenes";
 import "../../components/stage/app-stage.css";
 import { POINTS } from "../deck/points";
 import { useDeckPreload } from "../deck/preload";
-import { deck } from "../deck/registry";
-import { LiveCard } from "../deck/scenes/LiveCard";
+import { lastStep, StagePreview, stepThrough, type StageAt } from "../deck/StagePicture";
 
 /** The opening (title, who I am, index) has no part of its own; the four parts are the outline bar's. */
 const PARTS = [
@@ -29,7 +26,6 @@ const PARTS = [
 type Part = (typeof PARTS)[number];
 
 const sceneNumber = (scene: SceneDef) => String(SCENES.indexOf(scene) + 1).padStart(2, "0");
-const lastStep = (scene: SceneDef) => scene.steps - 1;
 
 export default function OutlinePage() {
   return <PresenterGate><Outline /></PresenterGate>;
@@ -44,7 +40,7 @@ function useSceneOnScreen(): SceneId | null {
   return heard ? scene.id : null;
 }
 
-type Zoomed = { index: number; step: number };
+type Zoomed = StageAt;
 
 function Outline() {
   const now = useSceneOnScreen();
@@ -246,62 +242,11 @@ function SceneCard({ scene, now, onZoom }: { scene: SceneDef; now: boolean; onZo
   );
 }
 
-/** What /slides draws for a scene at a step: the slide, L9's closing lines, or the live card for
- * the other map scenes; S7 gets its big QR. */
-function StagePicture({ scene, step }: { scene: SceneDef; step: number }) {
-  const entry = deck[scene.id];
-  const Content = scene.kind === "slide" ? entry.Slide : scene.id === "L9" ? entry.Overlay : null;
-  return (
-    <>
-      {Content ? <Content scene={scene} step={step} /> : <LiveCard scene={scene} step={step} />}
-      {scene.qr.placement === "center" ? <QrCard center label={scene.qr.label} step={step} /> : null}
-    </>
-  );
-}
-
-/** A scene drawn in stage pixels and scaled to the box's width. `lazy`: drawn once the box comes
- * near the screen, so the outline opens without rendering every slide at once. */
-function StagePreview({ scene, step, lazy = false }: { scene: SceneDef; step: number; lazy?: boolean }) {
-  const box = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0);
-  const [near, setNear] = useState(!lazy);
-  useEffect(() => {
-    const element = box.current;
-    if (!element) return;
-    const resize = new ResizeObserver(([entry]) => setScale((entry?.contentRect.width ?? 0) / STAGE_W));
-    resize.observe(element);
-    const seen = near ? null : new IntersectionObserver(([entry]) => { if (entry?.isIntersecting) setNear(true); }, { rootMargin: "800px 0px" });
-    seen?.observe(element);
-    return () => { resize.disconnect(); seen?.disconnect(); };
-  }, [near]);
-  return (
-    <div ref={box} data-preview className="relative aspect-video w-full overflow-hidden bg-[var(--stage-bg)]">
-      {near && scale > 0 ? (
-        <div inert aria-hidden data-stage className="pointer-events-none absolute left-0 top-0 origin-top-left text-[var(--arkiv-sand)]" style={{ width: STAGE_W, height: STAGE_H, transform: `scale(${scale})` }}>
-          <StagePicture scene={scene} step={step} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-/** One → forward or ← back, through the reveals and then the scenes, like the talk itself. */
-function stepFrom({ index, step }: Zoomed, direction: 1 | -1): Zoomed | null {
-  const scene = SCENES[index]!;
-  if (direction === 1) {
-    if (step < lastStep(scene)) return { index, step: step + 1 };
-    return index < SCENES.length - 1 ? { index: index + 1, step: 0 } : null;
-  }
-  if (step > 0) return { index, step: step - 1 };
-  const before = SCENES[index - 1];
-  return before ? { index: index - 1, step: lastStep(before) } : null;
-}
-
 function Zoom({ at, onMove, onClose }: { at: Zoomed; onMove: (next: Zoomed) => void; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const scene = SCENES[at.index]!;
-  const forward = stepFrom(at, 1);
-  const back = stepFrom(at, -1);
+  const forward = stepThrough(SCENES, at, 1);
+  const back = stepThrough(SCENES, at, -1);
   // The dialog closes itself (Esc or the close button) and then unmounts; the page behind it holds
   // still meanwhile.
   useEffect(() => {

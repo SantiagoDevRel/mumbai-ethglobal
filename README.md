@@ -18,6 +18,7 @@ extends any entity. Expired dots leave the map.
 | `/map` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
 | `/slides` | Optional second window | The slides alone, in step with `/map`. Presenter password. |
 | `/outline` | Presenter | The talk at a glance: each part folds open or shut, and each scene shows its slide and a few short points (no script, no times). Click a slide to zoom in and step through its reveals. Marks the scene on screen when `/map` or `/slides` is open in the same browser. Presenter password. |
+| `/talk` | The room | The public copy of the slides to share: every slide without a QR, and the close with its links. ← → or a swipe step through the reveals; `/talk#W4` opens a slide. No password, no QR, no wallet buttons, no live scene; it follows nobody and asks the writer nothing, so viewers cost the writer no request. |
 | `/scan` | Phones | Your first entity: write an entity (up to ten per phone per session), then watch it on the projector |
 
 `/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.

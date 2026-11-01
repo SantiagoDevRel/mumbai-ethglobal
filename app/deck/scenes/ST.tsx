@@ -16,7 +16,8 @@
 // The wallet's RPC URL carries the presenter's access key, so the writer serves the network to a
 // presenter login from server-only env vars (GET /api/presenter/rabdi, lib/server/rabdi.ts). The
 // buttons act only on /map and /slides, and each window shows its own result. /outline draws this
-// slide inert, as a picture: a click there never reaches a wallet or the writer.
+// slide inert, as a picture: a click there never reaches a wallet or the writer. The public copy
+// (/talk) leaves both buttons out.
 // Logos: official files, colors unchanged, straight on the dark panel (no box), only to say which
 // wallets the button works with.
 //   metamask-fox.svg · metamask.com/assets, "The official MetaMask logos and symbol" (the fox):
@@ -26,12 +27,12 @@
 //     https://raw.githubusercontent.com/RabbyHub/logo/297c81228f53e1db863ee44e49faf68d96719951/symbol.svg
 
 import { ArrowUpRight, Coins, Plus } from "lucide-react";
-import { useSyncExternalStore, type MouseEvent } from "react";
+import { useContext, useSyncExternalStore, type MouseEvent } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { presenterRequest } from "../../../lib/data/presenter-auth";
 import { injectedWallet, rabdiController, type Status, type Wallet } from "../../../lib/data/rabdi-wallet";
 import { WRITER_ROUTES } from "../../../shared/writer-api";
-import { PANEL, Reveal, Slide, T } from "../ui";
+import { PANEL, PublicCopy, Reveal, Slide, T } from "../ui";
 
 type Live = "add" | "balance";
 /** A row points somewhere (a link) or does something live with the wallet (a button). */
@@ -115,6 +116,7 @@ function LiveAction({ live }: { live: Live }) {
 }
 
 export function ST({ step }: SceneContentProps) {
+  const publicCopy = useContext(PublicCopy);
   return (
     <Slide headline="Five steps to get started" under="Use Rabdi testnet" size={72}>
       <div role="list" className="absolute left-[96px] top-[330px] flex w-[1728px] flex-col gap-3.5">
@@ -132,7 +134,7 @@ export function ST({ step }: SceneContentProps) {
                   {item.link.text}
                   <ArrowUpRight size={26} strokeWidth={2.2} aria-hidden />
                 </a>
-              ) : item.live ? (
+              ) : item.live && !publicCopy ? (
                 <LiveAction live={item.live} />
               ) : null}
             </div>

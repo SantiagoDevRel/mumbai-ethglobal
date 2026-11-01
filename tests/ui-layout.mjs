@@ -9,6 +9,7 @@ import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
 import { LONGEST_LIFETIME_BLOCKS } from "../shared/types.ts";
 import { NOTHING_TO_EXTEND } from "../shared/arkiv/adapter.ts";
 import { NOT_YOURS_TO_DELETE } from "../lib/data/stage-effects.ts";
+import { TALK_SCENES } from "../app/talk/scenes.ts";
 import { startApp } from "./local-app.mjs";
 import { encodes, qrModules, SCAN_URL } from "./scan-qr.mjs";
 
@@ -1237,6 +1238,67 @@ try {
     await expect(linked.locator("#scene-W2")).toBeInViewport();
     await linked.close();
     evidence.push({ surface: "outline", parts: SECTIONS.length + 1, scenes: SCENES.length, startsFolded: true, linkOpensPart: true, marksSceneOnScreen: true, noTimesOrScript: true, folds: true, zoomSteps: true, noOverflow: [390, 768, 1440] });
+    await context.close();
+  }
+
+  // /talk (November 1): the public copy of the slides for the room. No password, every slide without
+  // a QR plus the close, one → per reveal; no QR, no wallet button, and not one request to the writer.
+  {
+    const { context, page } = await setup({ viewport: { width: 1440, height: 900 } }, { loggedIn: false });
+    const writerRequests = [];
+    context.on("request", (request) => { if (new URL(request.url()).pathname.startsWith("/api/")) writerRequests.push(new URL(request.url()).pathname); });
+    await context.addInitScript(() => {
+      window.__walletCalls = [];
+      window.ethereum = { isRabby: true, request: ({ method }) => { window.__walletCalls.push(method); return Promise.reject({ code: 4001, message: "/talk must not ask a wallet." }); } };
+    });
+    await page.goto(`${origin}/talk`, { waitUntil: "domcontentloaded" });
+    const counter = page.locator('footer [aria-live="polite"] span');
+    await expect(counter.first()).toHaveText(`1 / ${TALK_SCENES.length}`, { timeout: 20000 });
+    await expect(page.getByRole("heading", { name: "Presenter", exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("Password")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Back", exact: true })).toBeDisabled();
+    const shown = [];
+    for (const [index, scene] of TALK_SCENES.entries()) {
+      for (let step = 0; step < scene.steps; step++) {
+        await expect(counter.first()).toHaveText(`${index + 1} / ${TALK_SCENES.length}`);
+        await expect(counter.nth(1)).toHaveText(scene.title);
+        await expect(page.locator("[data-stage]")).toBeAttached();
+        await expect(page.locator(".join-qr, .qr-image, .outline-bar, .app-hud, .globe-shell")).toHaveCount(0);
+        if (scene.steps > 1) await expect(page.getByRole("button", { name: `Reveal ${step + 1} of ${scene.steps}`, exact: true })).toHaveAttribute("aria-pressed", "true");
+        if (scene.id === "ST" && step === scene.steps - 1) {
+          await expect(page.getByRole("button", { name: /Add network|Get balance/ })).toHaveCount(0);
+          await expect(page.locator('[data-stage] a[href="https://hub.arkiv.network/faucet"]')).toBeVisible();
+          if (capture) await page.screenshot({ path: path.join(capture, "talk-1440-ST.png") });
+        }
+        if (step === scene.steps - 1) shown.push(scene.id);
+        await page.keyboard.press("ArrowRight");
+      }
+    }
+    assert.deepEqual(shown, TALK_SCENES.map((scene) => scene.id));
+    // The close keeps its links working; → past it stays there.
+    await expect(counter.nth(1)).toHaveText(TALK_SCENES.at(-1).title);
+    await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
+    const hub = page.locator('[data-stage] a[href="https://hub.arkiv.network"]').first();
+    await expect(hub).toBeVisible();
+    assert.equal(await hub.evaluate((link) => link.closest("[inert]") === null && getComputedStyle(link).pointerEvents !== "none"), true, "The close's links can be clicked on /talk.");
+    assert.ok(page.url().endsWith(`#${TALK_SCENES.at(-1).id}`));
+    if (capture) await page.screenshot({ path: path.join(capture, "talk-1440-close.png") });
+    await page.keyboard.press("ArrowLeft");
+    await expect(counter.nth(1)).toHaveText(TALK_SCENES.at(-2).title);
+    await page.keyboard.press("Home");
+    await expect(counter.first()).toHaveText(`1 / ${TALK_SCENES.length}`);
+    // A link to a slide opens on it; on a phone nothing overflows.
+    const linked = await context.newPage();
+    linked.on("pageerror", (error) => errors.push(error.message));
+    await linked.setViewportSize({ width: 390, height: 844 });
+    await linked.goto(`${origin}/talk#W4`, { waitUntil: "domcontentloaded" });
+    await expect(linked.locator('footer [aria-live="polite"] span').nth(1)).toHaveText(SCENES[sceneIndex("W4")].title, { timeout: 20000 });
+    assert.equal(await linked.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "/talk at 390 px");
+    if (capture) await linked.screenshot({ path: path.join(capture, "talk-390-W4.png") });
+    await linked.close();
+    assert.deepEqual(writerRequests, [], "/talk never asks the writer.");
+    assert.deepEqual(await page.evaluate(() => window.__walletCalls), [], "/talk never asks a wallet.");
+    evidence.push({ surface: "talk", scenes: TALK_SCENES.length, noLogin: true, noQr: true, noWalletButtons: true, writerRequests: 0, linkOpensSlide: true });
     await context.close();
   }
 

@@ -8,7 +8,12 @@
 
 import Image from "next/image";
 import { motion, MotionConfig, type Transition } from "motion/react";
-import type { CSSProperties, ReactNode } from "react";
+import { createContext, type CSSProperties, type ReactNode } from "react";
+
+/** True on the public copy (/talk): a slide leaves out what only works for the presenter (ST's
+ * Add network and Get balance use the presenter's wallet and login), so a viewer's page never
+ * reaches a wallet or the writer. */
+export const PublicCopy = createContext(false);
 
 export const EASE: Transition["ease"] = [0.22, 1, 0.36, 1];
 /** Panel in/out (handoff 7): 240 ms in, 160 ms out. */
