@@ -93,8 +93,9 @@ test("an explicit wallet rejection permits the next explicit user action", async
   const original = globalThis.fetch;
   let prompts = 0;
   globalThis.fetch = async (_input, options) => {
-    const body = JSON.parse(String(options?.body)) as { id: number };
-    return Response.json({ jsonrpc: "2.0", id: body.id, result: "0x76edaf" });
+    const body = JSON.parse(String(options?.body)) as { id: number; method: string };
+    const result = body.method === "eth_getBlockByNumber" ? { gasLimit: "0x1c9c380" } : body.method === "eth_estimateGas" ? "0x30d40" : body.method === "eth_blockNumber" ? "0x64" : body.method === "eth_getTransactionCount" ? "0x0" : body.method === "eth_gasPrice" ? "0x1" : "0x76edaf";
+    return Response.json({ jsonrpc: "2.0", id: body.id, result });
   };
   try {
     const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS, read: { kind: "public" }, wallet: {
@@ -165,7 +166,9 @@ test("extending only entities with the longest lifetime signs nothing and leaves
     attributes: [{ name: "app", type: "str", value: APP_ID }, { name: "kind", type: "str", value: "dot" }] });
   const answers: Record<string, (params: unknown) => unknown> = {
     eth_chainId: () => "0x76edaf",
-    eth_getBlockByNumber: () => ({ number: "0x64", timestamp: "0x6720f000", hash: `0x${"5".repeat(64)}` }),
+    eth_estimateGas: () => "0x30d40",
+    eth_blockNumber: () => "0x64",
+    eth_getBlockByNumber: () => ({ gasLimit: "0x1c9c380", number: "0x64", timestamp: "0x6720f000", hash: `0x${"5".repeat(64)}` }),
     arkiv_getBlockTiming: () => ({ current_block: 100, current_block_time: 1_730_000_000, duration: 2 }),
     // writeParams reads the nonce and gas price before every write.
     eth_getTransactionCount: () => "0x0",
@@ -207,6 +210,8 @@ test("Delete sends one deleteEntity from the workshop wallet and returns its rec
         if (method === "eth_getTransactionReceipt") return receipt();
         if (method === "eth_getTransactionCount") return "0x0";
         if (method === "eth_gasPrice") return "0x3b9aca00";
+        if (method === "eth_estimateGas") return "0x30d40";
+        if (method === "eth_getBlockByNumber") return { gasLimit: "0x1c9c380" };
         throw new Error(`Unexpected RPC method ${method}`);
       } },
       wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async ({ method, params }: { method: string; params?: unknown[] }) => {
@@ -235,6 +240,8 @@ test("a delete rejected in the wallet leaves the next delete free", async () => 
         if (method === "eth_chainId") return "0x76edaf";
         if (method === "eth_getTransactionCount") return "0x0";
         if (method === "eth_gasPrice") return "0x3b9aca00";
+        if (method === "eth_estimateGas") return "0x30d40";
+        if (method === "eth_getBlockByNumber") return { gasLimit: "0x1c9c380" };
         throw new Error(`Unexpected RPC method ${method}`);
       } },
       wallet: { kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { prompts++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } } } });

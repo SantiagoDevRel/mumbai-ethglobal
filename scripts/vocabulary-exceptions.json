@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "decision": "Compatibility policy, 2026-10-31",
+  "frozen": [
+    {
+      "file": "writer/README.md",
+      "sha256": "5fb4b3418ee4c2b2590b6084251c3e789fd7b4db6ce7278b7322fa9842bc712e",
+      "reason": "October 26 retired Worker rollback evidence; not served by the active workshop. Exact path and immutable content only."
+    },
+    {
+      "file": "writer/phase-zero-evidence.json",
+      "sha256": "5a6dec819bfc2663018616f7ac78641ca99a92859572cd37ff0ee74d26408882",
+      "reason": "October 26 retired Worker rollback evidence; not served by the active workshop. Exact path and immutable content only."
+    },
+    {
+      "file": "writer/src/phase-zero.ts",
+      "sha256": "7006d66a17e28becd5a544e27f6e55cd0564576477669146d1d68128053d29c4",
+      "reason": "October 26 retired Worker rollback evidence; not served by the active workshop. Exact path and immutable content only."
+    }
+  ]
+}

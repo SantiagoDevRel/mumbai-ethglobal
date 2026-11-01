@@ -105,12 +105,13 @@ async function main() {
           await save();
           // SDK estimation remains enabled; no fixed gas limit bypasses preflight.
           try {
-            await writer!.executeBatch({ creates: batchRows.map(row => ({
+            const operations = { creates: batchRows.map(row => ({
               schema: (row.kind === "review" ? REVIEW : PLACE) as typeof PLACE,
               values: { ...encodedFields(row.attrs), app: APP_ID, kind: row.kind, seed_id: `${DAY}:${row.id}` } as unknown as CreateEntityValues<typeof PLACE>,
               flags: { permissionlessExtension: true },
               expiration: lifetime(12 * 60 * 60), salt: BigInt(`0x${digest({ day: DAY, id: row.id }).slice(0, 32)}`),
-            })) }, await writeParams(reader, WRITER_ADDRESS, batchRows.length, batch.nonce));
+            })) };
+            await writer!.executeBatch(operations, await writeParams(reader, WRITER_ADDRESS, batchRows.length, batch.nonce, operations));
           } catch (error) { if (!batch.txHash) throw error; }
         }
         if (!batch.txHash || !batch.raw || keccak256(batch.raw) !== batch.txHash) throw new Error("Seed write needs reconciliation; do not resend.");

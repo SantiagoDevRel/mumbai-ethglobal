@@ -30,6 +30,7 @@ const CODE: Line[] = [
   { text: '    country: "india", category: "cafe" },' },
   { text: "  { expiration: ExpirationTime.fromMinutes(15) }," },
   { text: ");" },
+  { text: "// The writer also sets nonce, gasPrice and gas (≥2× estimate), and checks receipt.status.", quiet: true },
 ];
 
 /** String literals in Orange, the rest as is. */
@@ -53,7 +54,7 @@ export function WriteCode() {
       aria-label="createEntity call"
     >
       {CODE.map((line) => (
-        <span key={line.text} className="block" style={line.quiet ? { color: T.t42 } : undefined}>
+        <span key={line.text} className="block" style={line.quiet ? { color: T.t42, whiteSpace: "pre-wrap" } : undefined}>
           {line.quiet ? line.text : <Tinted text={line.text} />}
         </span>
       ))}

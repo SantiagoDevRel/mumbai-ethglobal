@@ -1,3 +1,4 @@
+import { estimatedGas, type WriteBatch, WritePreparationError } from "./write-estimate.ts";
 import { defineSchema, ExpirationTime, i32, key as entityKey, str, u64, type Attributes, type CreateEntityValues, type PatchEntityValues } from "@arkiv-network/sdk";
 import { asc, eq, gt, gte, lte, or, startsWith, type Expression } from "@arkiv-network/sdk/query";
 import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter.ts";
@@ -73,7 +74,8 @@ export function encodedFields(fields: Record<string, unknown>): Record<string, u
  * Rabdi: 3 of 10 default-signed writes reverted at exactly their gas limit (migration lane W,
  * October 31), and explicit parameters passed 10/10 in Rabby and MetaMask and 20/20 with a local
  * key. Measured October 31: one create used 190,179 gas, ten used 1,500,092; this leaves well over 2×
- * headroom and stays far under the 30,000,000 block gas limit for a 20-entity batch. */
+ * headroom. This formula is the floor; writeParams also requires twice the unsigned latest estimate
+ * and refuses a batch above half the latest block gas limit. */
 export function writeGas(operations: number): bigint {
   return 1_000_000n + 400_000n * BigInt(Math.max(0, operations - 1));
 }
@@ -81,13 +83,17 @@ export function writeGas(operations: number): bigint {
 /** Explicit parameters for every write: the nonce at `latest` (Rabdi serves state at the chain head
  * only), the current gas price and writeGas. */
 export async function writeParams(
-  reader: Pick<ReturnType<typeof createSdkClients>["reader"], "getTransactionCount" | "request">,
-  address: Hex, operations: number, nonce?: number,
+  reader: Pick<ReturnType<typeof createSdkClients>["reader"], "getTransactionCount" | "request" | "chain">,
+  address: Hex, operations: number, nonce?: number, batch?: WriteBatch,
 ): Promise<{ nonce: number; gas: bigint; gasPrice: bigint }> {
+  try {
   // The SDK's public client has no getGasPrice action; eth_gasPrice goes through its transport.
   const gasPriceRequest = reader.request as unknown as (args: { method: "eth_gasPrice" }) => Promise<Hex>;
   const [latest, gasPrice] = await Promise.all([nonce ?? reader.getTransactionCount({ address, blockTag: "latest" }), gasPriceRequest({ method: "eth_gasPrice" })]);
-  return { nonce: latest, gas: writeGas(operations), gasPrice: BigInt(gasPrice) };
+  return { nonce: latest, gas: await estimatedGas(reader, address, batch!, operations, latest, BigInt(gasPrice)), gasPrice: BigInt(gasPrice) };
+  } catch (error) {
+    throw new WriteNotSentError(error instanceof WritePreparationError ? error.message : "[WRITE_ESTIMATE_FAILED] The unsigned write could not be estimated. Nothing was sent.");
+  }
 }
 
 export function lifetime(seconds: number) {
@@ -228,10 +234,10 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
     return writer;
   }
   /** The explicit nonce, gas and gas price every write sends (writeParams). */
-  function params(operations: number) {
+  function params(operations: number, batch: WriteBatch) {
     const address = requireWriter().account?.address;
     if (!address) throw new Error("The wallet has no account.");
-    return writeParams(reader, address, operations);
+    return writeParams(reader, address, operations, undefined, batch);
   }
   function serializeWrite(work: () => Promise<WriteResult>): Promise<WriteResult> {
     const next = writes.then(async () => {
@@ -261,11 +267,12 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
   }
   const create = (kind: "business" | "review", items: (BusinessCreate | ReviewCreate)[]) => serializeWrite(async () => {
     if (!items.length) throw new Error("No entities to create.");
-    const result = await requireWriter().executeBatch({ creates: items.map(item => ({
+    const batch = { creates: items.map(item => ({
       schema: (kind === "review" ? REVIEW : PLACE) as typeof PLACE,
       values: { ...encodedFields(item as unknown as Record<string, unknown>), app: APP_ID, kind } as unknown as CreateEntityValues<typeof PLACE>,
       flags: { permissionlessExtension: true }, expiration: lifetime(item.lifetimeSec),
-    })) }, await params(items.length));
+    })) };
+    const result = await requireWriter().executeBatch(batch, await params(items.length, batch));
     return finish(result.txHash, result.createdEntities);
   });
 
@@ -293,7 +300,8 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
     },
     createDots: dots => serializeWrite(async () => {
       if (!dots.length) throw new Error("No entities to create.");
-      const result = await requireWriter().executeBatch({ creates: dots.map(dotToCreate) }, await params(dots.length));
+      const batch = { creates: dots.map(dotToCreate) };
+      const result = await requireWriter().executeBatch(batch, await params(dots.length, batch));
       return finish(result.txHash, result.createdEntities);
     }),
     createBusinesses: items => create("business", items),
@@ -304,19 +312,23 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       const extraBlocks = BigInt(Math.ceil(addSeconds * 1000 / block.blockTimeMs));
       const current = await Promise.all(keys.map(async key => ({ key, expiresAt: (await reader.getEntity(key)).$expiresAt })));
       const extensions = extensionsFor(current, extraBlocks);
-      const result = await requireWriter().executeBatch({ extensions }, await params(extensions.length));
+      const batch = { extensions };
+      const result = await requireWriter().executeBatch(batch, await params(extensions.length, batch));
       return finish(result.txHash, extensions.map(extension => extension.entityKey));
     }),
     patch: (key: Hex, fields: PatchFields, _current: EntityAttrs) => serializeWrite(async () => {
-      const result = await requireWriter().patchEntity(PLACE, key, { set: encodedFields(fields as Record<string, unknown>) as unknown as PatchEntityValues<typeof PLACE> }, await params(1));
+      const batch = { patches: [{ schema: PLACE, entityKey: key, set: encodedFields(fields as Record<string, unknown>) as unknown as PatchEntityValues<typeof PLACE> }] };
+      const result = await requireWriter().executeBatch(batch, await params(1, batch));
       return finish(result.txHash, [key]);
     }),
     changeOwner: (key, newOwner) => serializeWrite(async () => {
-      const result = await requireWriter().changeOwnership({ entityKey: key, newOwner }, await params(1));
+      const batch = { ownershipChanges: [{ entityKey: key, newOwner }] };
+      const result = await requireWriter().executeBatch(batch, await params(1, batch));
       return finish(result.txHash, [key]);
     }),
     deleteEntity: key => serializeWrite(async () => {
-      const result = await requireWriter().deleteEntity({ entityKey: key }, await params(1));
+      const batch = { deletes: [{ entityKey: key }] };
+      const result = await requireWriter().executeBatch(batch, await params(1, batch));
       return finish(result.txHash, [key]);
     }),
   };
