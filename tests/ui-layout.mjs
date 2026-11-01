@@ -1113,7 +1113,7 @@ try {
       const ipfs = slides.getByRole("img", { name: "IPFS", exact: true });
       const ethereum = slides.getByRole("img", { name: "Ethereum", exact: true });
       // While a part is hidden it is aria-hidden too, so look it up by its alt, not its role.
-      const arkiv = slides.locator('img[alt="Arkiv"]');
+      const arkiv = slides.locator('img[src="/brand/a-white.svg"]'); // the network's hub, not the slide's wordmark
       const previous = slides.getByText("Previous testnets", { exact: true });
       await settled(ethereum);
       await faded(arkiv);
