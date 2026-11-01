@@ -65,7 +65,7 @@ export async function runPhaseZero(db: Db, env: WriterEnv, writerAddress: Hex): 
   try {
     const batch = { creates: [{
       schema: PLACE,
-      values: { app: APP_ID, kind: "dot", session: "phase-zero", name: "writer check", color: "#fe7446", country: "india", lat: 19_076_000, lng: 72_877_700 },
+      values: { app: APP_ID, kind: "dot", session: "phase-zero", name: "writer check", color: "orange", country: "india", lat: 19_076_000, lng: 72_877_700 },
       flags: { permissionlessExtension: true }, expiration: lifetime(120),
     }] };
     const result = await writer!.executeBatch(batch, await writeParams(reader, writerAddress, 1, proof.nonce, batch));

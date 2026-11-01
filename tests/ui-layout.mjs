@@ -16,7 +16,7 @@ import { encodes, qrModules, SCAN_URL } from "./scan-qr.mjs";
 const origin = "https://mumbai-ethglobal.vercel.app";
 const writer = origin;
 const PASSWORD = "fixture-password";
-const PALETTE = ["#fe7446", "#f6f4ef", "#14f195", "#9945ff", "#dc1fff", "#627eea", "#00c2ff"];
+const PALETTE = ["yellow", "blue", "red", "orange", "white", "green", "black"];
 const capture = process.argv[2];
 if (capture) await mkdir(capture, { recursive: true });
 const app = await startApp();
@@ -315,7 +315,9 @@ try {
   await expect(scan).toBeVisible();
   await expect(page.locator(".join-qr-corner")).toHaveCount(0);
   await expect(current).toContainText(BUILD);
-  await expect(scan.locator(".qr-scan-label")).toHaveText("Your first entity");
+  await expect(scan.locator(".qr-scan-label")).toHaveText("Create your first entity");
+  // The longer title (November 1) still fits the column, so it never reaches the entity card.
+  assert.ok(await scan.locator(".qr-scan-label").evaluate((label) => label.getBoundingClientRect().width <= label.parentElement.getBoundingClientRect().width + 1), "The scan title fits its column.");
   await expect(scan).not.toContainText(/Name\. Color|Lifetime|expiration/);
   // The QR and both links carry the production /scan URL, read back from the QR's own modules.
   for (const link of [scan.locator("a.qr-image"), scan.locator(".qr-url")]) await expect(link).toHaveAttribute("href", SCAN_URL);
@@ -340,7 +342,7 @@ try {
   const s7Card = page.locator("[data-entity-card]");
   await expect(s7Card.getByText("Your entity", { exact: true })).toBeVisible();
   await expect(s7Card.locator("[data-row] span:first-child")).toHaveText(["name", "color", "country", "expiration"]);
-  await expect(s7Card.locator("[data-row] span:last-child")).toHaveText(['"priya"', '"#fe7446"', '"india"', "15 min"]);
+  await expect(s7Card.locator("[data-row] span:last-child")).toHaveText(['"priya"', '"orange"', '"india"', "15 min"]);
   await expect(page.getByText("YOUR FORM = ONE ENTITY")).toHaveCount(0);
   await expect(s7Card).not.toContainText("Entity Expiration");
   await expect.poll(() => page.evaluate(() => {
@@ -534,7 +536,7 @@ try {
   await colorList.getByRole("option", { name: "Orange", exact: true }).click();
   await expect(colorList).toHaveCount(0);
   await expect(colorField).toContainText("Orange");
-  await expect(queryText).toContainText("AND color = str('#fe7446')");
+  await expect(queryText).toContainText("AND color = str('orange')");
   // A country: its stored name in lower case, and the camera flies there.
   const countryField = filterBar.getByPlaceholder("Any country");
   await countryField.fill("India");
@@ -733,7 +735,7 @@ try {
   // The scan column sits in the middle of the slide (x 960 of 1920) until S7's → moves it aside.
   await expect.poll(async () => { const box = await slides.locator(".join-qr-scan").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(960 * 1280 / 1920));
   await expect(slides.locator(".join-qr-scan .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
-  await expect(slides.locator(".join-qr-scan .qr-scan-label")).toHaveText("Your first entity");
+  await expect(slides.locator(".join-qr-scan .qr-scan-label")).toHaveText("Create your first entity");
   await slides.keyboard.press("d");
   await expect(slides.locator(".join-qr-scan")).toHaveCount(0);
   await expect(slides.getByText("Everyone: tap Write my entity.")).toBeVisible();
@@ -1341,7 +1343,7 @@ try {
     await context.route(`${preview}/api/**`, (route) => route.abort());
     await page.goto(`${preview}/outline#scene-S7`, { waitUntil: "domcontentloaded" });
     const column = page.locator("#scene-S7 .join-qr-scan");
-    await expect(column.locator(".qr-scan-label")).toHaveText("Your first entity", { timeout: 20000 });
+    await expect(column.locator(".qr-scan-label")).toHaveText("Create your first entity", { timeout: 20000 });
     for (const link of [column.locator("a.qr-image"), column.locator(".qr-url")]) await expect(link).toHaveAttribute("href", SCAN_URL);
     const grid = await qrModules(column.locator(".qr-image img"));
     assert.ok(encodes(grid, SCAN_URL), `Served from ${preview}, S7's QR still encodes ${SCAN_URL}.`);
@@ -1366,7 +1368,7 @@ try {
     // Dark only: a light system theme still gets the dark phone.
     assert.equal(layout.background, "rgb(17, 17, 17)");
     // The phone's header matches slide 10's label (Santiago, October 30); /workshop's corner card keeps "Join the map".
-    await expect(page.locator(".phone-header")).toHaveText("Your first entity");
+    await expect(page.locator(".phone-header")).toHaveText("Create your first entity");
     await expect(page.getByText("Choose a country", { exact: true })).toBeVisible();
     await expect(page.getByText("How long should this data (entity) live?")).toBeVisible();
     for (const gone of [/hang tight/i, /doors/i, /testnet/i, /everything you write/i, /custom/i, /Where are you from/i, /no expiration/i, /Join the map/]) assert.doesNotMatch(layout.text, gone);
@@ -1433,12 +1435,12 @@ try {
     await expect(page.getByRole("textbox", { name: "Workshop code" })).toHaveCount(0);
     await snapshot("joined");
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Codeless join");
-    await page.getByRole("button", { name: "Purple", exact: true }).click();
+    await page.getByRole("button", { name: "Red", exact: true }).click();
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();
     await expect.poll(() => submissions.length).toBe(1);
     assert.equal("session" in submissions[0].body, false, "Phones send no session code.");
     assert.equal(submissions[0].body.lifetimeSec, 900, "The slider starts at the 15-minute default.");
-    assert.equal(submissions[0].body.color, "#9945ff");
+    assert.equal(submissions[0].body.color, "red", "The entity stores the color's name, not a hex code.");
     assert.ok(PALETTE.includes(submissions[0].body.color));
     assert.match(submissions[0].device, /^[a-f0-9-]{36}$/i);
     // A session that ended between scan and tap: the phone says so and the button stays usable.

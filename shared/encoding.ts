@@ -29,26 +29,35 @@ export function shortKey(key: string, head = 4, tail = 4): string {
   return `${key.slice(0, 2 + head)}…${key.slice(-tail)}`;
 }
 
-/** The seven dot colors a phone can pick: Arkiv, Solana and Ethereum tones, bright enough for the
- * night globe (Arkiv Blue #181ea9 is too dark there, so Arkiv is Orange and Sand). The writer
- * accepts only these. */
-export const DOT_PALETTE = [
-  "#fe7446", // Arkiv Orange
-  "#f6f4ef", // Arkiv Sand
-  "#14f195", // Solana green
-  "#9945ff", // Solana purple
-  "#dc1fff", // Solana magenta
-  "#627eea", // Ethereum blue
-  "#00c2ff", // cyan
-] as const;
+/** The seven dot colors a phone can pick (Santiago, November 1). The entity stores the plain name
+ * ("orange"), never a hex code, which on screen reads like ciphertext. The writer accepts only these. */
+export const DOT_PALETTE = ["yellow", "blue", "red", "orange", "white", "green", "black"] as const;
 export type DotColor = (typeof DOT_PALETTE)[number];
 
-export const DOT_COLOR_NAMES: Record<DotColor, string> = {
-  "#fe7446": "Orange",
-  "#f6f4ef": "Sand",
-  "#14f195": "Green",
-  "#9945ff": "Purple",
-  "#dc1fff": "Magenta",
-  "#627eea": "Ether blue",
-  "#00c2ff": "Cyan",
+/** How each color is drawn. Orange is Arkiv Orange; black is Arkiv Ink, outlined wherever it sits on
+ * the dark stage. */
+export const DOT_HEX: Record<DotColor, string> = {
+  yellow: "#ffd23f",
+  blue: "#3b82f6",
+  red: "#ef4444",
+  orange: "#fe7446",
+  white: "#ffffff",
+  green: "#22c55e",
+  black: "#111111",
 };
+
+export const DOT_COLOR_NAMES: Record<DotColor, string> = {
+  yellow: "Yellow",
+  blue: "Blue",
+  red: "Red",
+  orange: "Orange",
+  white: "White",
+  green: "Green",
+  black: "Black",
+};
+
+/** The fill for a dot's stored color. Entities written before November 1 stored a hex code: draw it as is. */
+export function dotHex(color: string | undefined): string {
+  if (color && Object.hasOwn(DOT_HEX, color)) return DOT_HEX[color as DotColor];
+  return color?.startsWith("#") ? color : DOT_HEX.orange;
+}

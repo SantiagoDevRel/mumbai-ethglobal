@@ -17,6 +17,7 @@ import type { ReactNode } from "react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
 import { EASE, PANEL, REVEAL_TIME, Slide } from "../../ui";
 import { ALERT, CARD_SHADOW, Show } from "./kit";
+import { dotHex } from "../../../../shared/encoding";
 
 const COLS = "320px 200px 620px minmax(0, 1fr)";
 
@@ -111,7 +112,7 @@ function PublicRow({ name, value, swatch = false, last = false }: { name: string
       <span className="font-mono text-[30px] font-semibold">{name}</span>
       <TypeTag>str</TypeTag>
       <span className="flex items-center gap-4 whitespace-nowrap text-[34px] font-semibold">
-        {swatch ? <span className="block h-[30px] w-[30px] rounded-full" style={{ background: value }} aria-hidden /> : null}
+        {swatch ? <span className="block h-[30px] w-[30px] rounded-full" style={{ background: dotHex(value) }} aria-hidden /> : null}
         {value}
       </span>
       <span className="text-[24px] font-semibold">Everyone</span>
@@ -162,7 +163,7 @@ export function D6({ step }: SceneContentProps) {
           />
         </motion.div>
         <PublicRow name="category" value="cafe" />
-        <PublicRow name="color" value="#fe7446" swatch last />
+        <PublicRow name="color" value="orange" swatch last />
       </div>
 
       <Show on={!encrypted} className="absolute left-[96px] top-[680px] flex items-center gap-4">

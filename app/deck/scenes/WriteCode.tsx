@@ -27,7 +27,7 @@ const CODE: Line[] = [
   { text: "});" },
   { text: "const { entityKey } = await walletClient.createEntity(" },
   { text: "  Place," },
-  { text: '  { name: "chai corner", color: "#fe7446",' },
+  { text: '  { name: "chai corner", color: "orange",' },
   { text: '    country: "india", category: "cafe" },' },
   { text: "  { expiration: ExpirationTime.fromMinutes(15) }," },
   { text: ");" },

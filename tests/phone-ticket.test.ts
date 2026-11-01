@@ -22,7 +22,7 @@ test("the name field is lower case as you type, within the name limit", () => {
   assert.ok(grown.length <= NAME_MAX_CHARS);
   assert.equal(grown, grown.toLowerCase());
   for (const typed of ["KABIR", "İstanbul", "Ωmega", "A".repeat(NAME_MAX_CHARS)]) {
-    assert.equal(SubmitRequest.parse({ name: entityName(typed), color: "#fe7446", country: "in", lifetimeSec: 300 }).name, entityName(typed), "What the phone shows is what the writer stores.");
+    assert.equal(SubmitRequest.parse({ name: entityName(typed), color: "orange", country: "in", lifetimeSec: 300 }).name, entityName(typed), "What the phone shows is what the writer stores.");
   }
 });
 

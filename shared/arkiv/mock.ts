@@ -153,8 +153,8 @@ export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {
   // Two phones that chose the longest lifetime (6 months), so mock mode shows from the start how
   // the stage draws an entity that outlives the workshop.
   write([
-    { attrs: { kind: "dot", session: "MOCK", name: "ada", color: "#14f195", country: "in", category: "cafe", lat: 19.12, lng: 72.85 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },
-    { attrs: { kind: "dot", session: "MOCK", name: "omar", color: "#00c2ff", country: "co", category: "bookstore", lat: 4.71, lng: -74.07 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },
+    { attrs: { kind: "dot", session: "MOCK", name: "ada", color: "green", country: "in", category: "cafe", lat: 19.12, lng: 72.85 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },
+    { attrs: { kind: "dot", session: "MOCK", name: "omar", color: "blue", country: "co", category: "bookstore", lat: 4.71, lng: -74.07 }, lifetimeSec: LIFETIME_MAX_SEC, noExpiry: true },
   ]);
   const timer = opts.autoSpawnMs ? setInterval(spawnRandom, opts.autoSpawnMs) : null;
 

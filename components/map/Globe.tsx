@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Map as GLMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { hasNoExpiry, LONGEST_LIFETIME_LABEL, type BlockInfo, type Hex, type LiveEntity } from "../../shared/types";
+import { dotHex } from "../../shared/encoding";
 import { stage, type StageState } from "../../lib/stage/store";
 import { quietMap } from "../../lib/stage/choreography";
 import { darkStyle } from "../../lib/map/style";
@@ -178,7 +179,9 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
           if (exit && now - exit.at > 600) { leaving.delete(entity.key); born.delete(entity.key); continue; }
           ctx.globalAlpha = exit ? Math.max(0, 1 - (now - exit.at) / 600) : 1;
           const y = point.y - (reducedMotion ? 0 : Math.max(0, 1 - age / 360) ** 2 * 24 * scale);
-          const color = a.color ?? "#fe7446";
+          // Black is drawn in Ink with a light ring, so it still shows on the night globe.
+          const color = dotHex(a.color);
+          const ring = color === "#111111" ? "rgba(246,244,239,.7)" : color;
           const seconds = remainingSeconds(entity, block, Date.now());
           const total = block ? Math.max(1, Number(entity.expiresAtBlock - entity.createdAtBlock) * block.blockTimeMs / 1000) : 1;
           // The longest lifetime (6 months): a full ring that never drains and no countdown.
@@ -202,12 +205,12 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
             ctx.save(); ctx.translate(-12, -50); ctx.strokeStyle = "#111111"; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.stroke(categoryIcons[business.category]!); ctx.restore();
           } else {
             ctx.strokeStyle = "rgba(246,244,239,.2)"; ctx.lineWidth = 3; ctx.lineCap = "round"; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
-            ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (endless ? 1 : Math.min(1, seconds / total))); ctx.stroke();
+            ctx.strokeStyle = ring; ctx.beginPath(); ctx.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (endless ? 1 : Math.min(1, seconds / total))); ctx.stroke();
             if (!endless && seconds <= 0) { ctx.save(); ctx.globalAlpha *= .35; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
             ctx.fillStyle = color; ctx.strokeStyle = "#f6f4ef"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
             if (!reducedMotion && age < 900) {
               const phase = age / 900;
-              ctx.save(); ctx.globalAlpha *= 1 - phase; ctx.strokeStyle = color; ctx.lineWidth = 2;
+              ctx.save(); ctx.globalAlpha *= 1 - phase; ctx.strokeStyle = ring; ctx.lineWidth = 2;
               for (const radius of [28, 44]) { ctx.beginPath(); ctx.arc(0, 0, 13 + (radius - 13) * phase, 0, Math.PI * 2); ctx.stroke(); }
               ctx.restore();
             }

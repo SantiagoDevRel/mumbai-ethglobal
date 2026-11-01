@@ -12,7 +12,7 @@ import "./join-qr.css";
 /** The QR to /scan. Each scene places it (shared/scenes.ts): in the corner, large on S7 until the
  * 3 · 2 · 1 countdown, or not at all on slides that need the whole screen. /workshop/slides shows only the
  * large one. On S7 it is the scan column (Santiago, October 29): no card, the QR on its own sand
- * square, centered, with the URL under it; since October 30 "Your first entity" sits over it and
+ * square, centered, with the URL under it; since October 30 "Create your first entity" sits over it and
  * nothing else under it. S7's → moves the column left so the entity card fits beside it and the pair
  * stays centered; S7.tsx places the card from SCAN.
  * The QR and the link always carry the production URL, never this page's own host: a preview

@@ -48,7 +48,7 @@ export const STAGE_EXTENSION_SEC = 20 * 60;
 export interface DotDraft {
   /** Lower case. */
   name: string;
-  /** `#rrggbb`, any color, lower case. */
+  /** One of the color names in DOT_PALETTE ("orange"); entities written before November 1 hold `#rrggbb`. */
   color: string;
   /** ISO 3166-1 alpha-2, lower case (`in`). */
   country: string;

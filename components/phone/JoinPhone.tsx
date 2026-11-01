@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { DOT_COLOR_NAMES, DOT_PALETTE, shortKey } from "../../shared/encoding";
+import { DOT_COLOR_NAMES, DOT_PALETTE, dotHex, shortKey } from "../../shared/encoding";
 import { explorerUrl, getProfile } from "../../shared/arkiv/profiles";
 import { hasVisibleName, SubmitRequest, SubmitResponse } from "../../shared/writer-api";
 import type { DotDraft, Hex } from "../../shared/types";
@@ -111,19 +111,19 @@ export function JoinPhone() {
   const full = mine.length >= MAX_ENTITIES_PER_DEVICE;
   const another = state.status === "written" || state.status === "queued" ? <button className="phone-submit" disabled={full} onClick={() => { setError(null); setState({ status: "form" }); }}>{full ? `That’s ${MAX_ENTITIES_PER_DEVICE} entities, the limit` : "Create new entity"}</button> : null;
   return <div className="phone-surface"><main className="phone-main">
-    <h1 className="phone-header">Your first entity</h1>
+    <h1 className="phone-header">Create your first entity</h1>
     {!WRITER_CONNECTED && <p className="phone-notice">Not ready yet.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
     {error && <p className="phone-notice" role="alert">{error}</p>}
     {state.status === "written" ? <section className="phone-entity" aria-live="polite">
-      <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={state.draft.color} progress={state.endsAt === null ? 1 : left / state.draft.lifetimeSec} muted={state.endsAt !== null && left === 0} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country.toUpperCase())}</p>
+      <p className="phone-status is-confirmed">Written in block #{state.includedAt.toString()}</p><LifetimeRing color={dotHex(state.draft.color)} progress={state.endsAt === null ? 1 : left / state.draft.lifetimeSec} muted={state.endsAt !== null && left === 0} /><h2>{state.draft.name}</h2><p className="phone-place">{new Intl.DisplayNames(["en"], { type: "region" }).of(state.draft.country.toUpperCase())}</p>
       {state.endsAt === null ? <><p className="phone-lifetime-status">{LONGEST}</p><p className="phone-expires-at"><span>The longest lifetime</span> Rabdi allows</p></> : left > 0 ? <p className="phone-countdown" aria-label="Time left">{formatClock(left)}</p> : <p className="phone-lifetime-status">Time’s up. Unless someone extended it, your entity has expired: that’s Entity Expiration.</p>}
       <code>{shortKey(state.key)}</code>
       {entityLink && <a className="entity-explorer" href={entityLink} target="_blank" rel="noreferrer">View in explorer <ArrowUpRight size={18} /></a>}
-    </section> : state.status === "queued" ? <section className="phone-entity" role="status"><p className="phone-status">On its way</p><LifetimeRing color={state.draft.color} progress={0} muted /><h2>{state.draft.name}</h2><p>Your dot is on its way. Watch the map.</p></section> : <form className="phone-form" onSubmit={submit} noValidate>
+    </section> : state.status === "queued" ? <section className="phone-entity" role="status"><p className="phone-status">On its way</p><LifetimeRing color={dotHex(state.draft.color)} progress={0} muted /><h2>{state.draft.name}</h2><p>Your dot is on its way. Watch the map.</p></section> : <form className="phone-form" onSubmit={submit} noValidate>
       <label>Your name<input ref={nameInput} name="name" placeholder="Name or nickname" autoComplete="nickname" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={NAME_MAX_CHARS} required aria-invalid={nameMissing} aria-describedby={nameMissing ? "name-missing" : undefined} value={draft.name} onChange={(event) => { const name = lowerCaseName(event.currentTarget); setDraft({ ...draft, name }); if (hasVisibleName(name)) setNameMissing(false); }} /></label>
       {nameMissing && <p className="phone-field-error" id="name-missing" role="alert">Add a name or nickname: it shows next to your dot.</p>}
-      <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" style={{ background: color }} aria-label={DOT_COLOR_NAMES[color]} aria-pressed={draft.color === color} onClick={() => setDraft({ ...draft, color })} />)}</div></fieldset>
+      <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" data-color={color} style={{ background: dotHex(color) }} aria-label={DOT_COLOR_NAMES[color]} aria-pressed={draft.color === color} onClick={() => setDraft({ ...draft, color })} />)}</div></fieldset>
       <div className="phone-field"><span>Choose a country</span><CountryPicker value={draft.country} onChange={(country) => setDraft({ ...draft, country })} /></div>
       {/* The longest choice sits under the slider and switches it off: the entity is written with
           Rabdi's maximum lifetime, six months (LONGEST). The slider keeps its value. */}

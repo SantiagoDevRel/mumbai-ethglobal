@@ -5,10 +5,10 @@ import { NO_EXPIRY_BLOCK, type LiveEntity, type QueryRun } from "../shared/types
 
 // Text attributes are stored in lower case (October 29): the phone and the writer lower-case them.
 const entity: LiveEntity = { key: "0x01", owner: "0x02", creator: "0x02", createdAtBlock: 10n, expiresAtBlock: 20n,
-  attrs: { kind: "dot", session: "TEST", name: "priya", color: "#fe7446", country: "in", lat: 19, lng: 73 }, raw: [] };
+  attrs: { kind: "dot", session: "TEST", name: "priya", color: "orange", country: "in", lat: 19, lng: 73 }, raw: [] };
 /** Written with ExpirationTime.permanent(): `$expiresAt` is 2**64 - 1. */
 const endless: LiveEntity = { ...entity, key: "0x05", expiresAtBlock: NO_EXPIRY_BLOCK,
-  attrs: { kind: "dot", session: "TEST", name: "ada", color: "#14f195", country: "in", lat: 19.12, lng: 72.85 } };
+  attrs: { kind: "dot", session: "TEST", name: "ada", color: "green", country: "in", lat: 19.12, lng: 72.85 } };
 function run(entities: LiveEntity[], block = 20n): QueryRun {
   return { entities, block, rows: entities.length, pages: 1, latencyMs: 2, ranAt: 20000, description: { code: "", query: "", appSide: [] } };
 }

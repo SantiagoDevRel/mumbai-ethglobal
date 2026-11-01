@@ -34,7 +34,7 @@ for(const mode of ['failed estimate','oversized batch'])test('adapter never prom
  if(method==='eth_getBlockByNumber')return {gasLimit:'0x1c9c380'};
  if(method==='eth_estimateGas'){if(mode==='failed estimate')throw new Error(keyed);return '0x1c9c380';}throw new Error('Unexpected read');
  }},wallet:{kind:'eip1193',account:WRITER_ADDRESS,provider:{request:async()=>{prompts++;throw new Error('No wallet call allowed');}}}});
- const dots=[{session:'TEST',name:'test',country:'IN',color:'#fe7446',lat:20,lng:75,lifetimeSec:20}];
+ const dots=[{session:'TEST',name:'test',country:'IN',color:'orange',lat:20,lng:75,lifetimeSec:20}];
  for(let attempt=0;attempt<2;attempt++)await assert.rejects(adapter.createDots(dots),error=>{assert.ok(!inspect(error,{depth:20}).includes(keyed));return true;});assert.equal(prompts,0);
 });
 

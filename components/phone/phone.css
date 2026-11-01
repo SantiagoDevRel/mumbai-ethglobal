@@ -31,3 +31,4 @@
 /* On a 320 px phone the written entity's sides narrow to 16 px, so its 20-digit block number (240 px)
    stays on one line. */
 @media(max-width:359px){.phone-entity{padding-inline:16px}}
+.color-swatch[data-color=black]{border-color:rgba(246,244,239,.55)}

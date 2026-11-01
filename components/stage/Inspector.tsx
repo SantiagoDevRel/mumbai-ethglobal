@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { decodeCoord, shortKey } from "../../shared/encoding";
+import { decodeCoord, dotHex, shortKey } from "../../shared/encoding";
 import { hasNoExpiry, LONGEST_LIFETIME_LABEL, type BlockInfo, type LiveEntity, type RawAttribute } from "../../shared/types";
 import { stage } from "../../lib/stage/store";
 import { remainingSeconds } from "../../lib/data/entity-state";
@@ -75,7 +75,7 @@ export function Inspector({ entity, block, businessMode, reviews, showReviews = 
     setTransferKey(null);
     setNewOwner("");
   };
-  return <section data-reviews={businessMode && showReviews} className={`inspector-panel panel pointer-events-auto${businessMode ? " business-inspector" : ""}`}><div className="panel-heading"><h2><i className="inspected-color" style={{ background: "color" in entity.attrs ? entity.attrs.color ?? "#fe7446" : "#fe7446" }} />{business.name}</h2><button aria-label="Close inspector" onClick={() => stage.dispatch({ type: "inspect", key: null })}>×</button></div>
+  return <section data-reviews={businessMode && showReviews} className={`inspector-panel panel pointer-events-auto${businessMode ? " business-inspector" : ""}`}><div className="panel-heading"><h2><i className="inspected-color" style={{ background: dotHex("color" in entity.attrs ? entity.attrs.color : undefined) }} />{business.name}</h2><button aria-label="Close inspector" onClick={() => stage.dispatch({ type: "inspect", key: null })}>×</button></div>
     {seconds < 60 && <p className="extend-suggestion">Less than 60 s left. Extend it before we look.</p>}
     {!businessMode && <div className="inspector-columns">
       <div className="stored-attributes"><h3>Stored attributes</h3><table><thead><tr><th scope="col">name</th><th scope="col">type</th><th scope="col">value</th></tr></thead><tbody>{shown.map((attribute) => {

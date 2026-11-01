@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
-import { DOT_COLOR_NAMES, DOT_PALETTE } from "../../shared/encoding";
+import { DOT_COLOR_NAMES, DOT_PALETTE, dotHex } from "../../shared/encoding";
 import { stage, type StageState } from "../../lib/stage/store";
 import { countryOptions } from "../../lib/data/countries";
 
@@ -14,7 +14,7 @@ function countryFrom(text: string): string | undefined {
   return countries.find((country) => country.name.toLowerCase() === value || country.code === value)?.code;
 }
 
-/** "Any color", then the phone's seven colors (lower-case hex, as stored). */
+/** "Any color", then the phone's seven colors (their names, as stored). */
 const COLOR_OPTIONS: { value?: string; name: string }[] = [{ name: "Any color" }, ...DOT_PALETTE.map((value) => ({ value, name: DOT_COLOR_NAMES[value] }))];
 
 /** The color field: a list of the phone's colors with their swatches (Santiago, October 29). Its own
@@ -52,7 +52,7 @@ function ColorFilter({ value, onChange }: { value?: string; onChange: (color: st
     else if (event.key === "Enter" || event.key === " ") choose(active, true);
     else setActive(event.key === "Home" ? 0 : event.key === "End" ? last : event.key === "ArrowDown" ? Math.min(last, active + 1) : Math.max(0, active - 1));
   };
-  const swatch = (color?: string) => <i className="filter-swatch" data-any={color ? undefined : true} style={color ? { background: color } : undefined} aria-hidden />;
+  const swatch = (color?: string) => <i className="filter-swatch" data-any={color ? undefined : true} style={color ? { background: dotHex(color) } : undefined} aria-hidden />;
   return <div className="filter-field color-filter" ref={root}>
     <span aria-hidden>Color</span>
     <button ref={trigger} type="button" role="combobox" aria-label="Color" aria-haspopup="listbox" aria-expanded={open} aria-controls={`${id}-colors`} aria-activedescendant={open ? `${id}-${active}` : undefined} onClick={() => { setActive(selected); setOpen(!open); }} onKeyDown={onKeyDown}>

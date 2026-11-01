@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { hasVisibleName, SubmitRequest } from "../shared/writer-api.ts";
 
-const draft = { color: "#fe7446", country: "IN", lifetimeSec: 15 * 60 };
+const draft = { color: "orange", country: "IN", lifetimeSec: 15 * 60 };
 
 // Every entity's name labels its dot on the map, so the writer refuses one you can't see (Santiago,
 // October 29). The phone checks the same rule before it sends anything.
@@ -26,15 +26,15 @@ test("real names pass, in any script, and keep their joiners", () => {
 // Arkiv compares strings exactly, so everything is stored in lower case (Santiago, October 29),
 // whatever the phone sent, and every check runs on the lowercased value.
 test("name, color and country are stored in lower case", () => {
-  const parsed = SubmitRequest.parse({ name: "  KABIR Rao ", color: "#FE7446", country: "IN", lifetimeSec: 300 });
+  const parsed = SubmitRequest.parse({ name: "  KABIR Rao ", color: "ORANGE", country: "IN", lifetimeSec: 300 });
   assert.equal(parsed.name, "kabir rao");
-  assert.equal(parsed.color, "#fe7446");
+  assert.equal(parsed.color, "orange");
   assert.equal(parsed.country, "in");
   assert.equal(SubmitRequest.parse({ ...draft, name: "José ÁLVAREZ" }).name, "josé álvarez");
   assert.equal(SubmitRequest.safeParse({ ...draft, name: "A".repeat(24) }).success, true);
   assert.equal(SubmitRequest.safeParse({ ...draft, name: "A".repeat(25) }).success, false);
   for (const country of ["IND", "I", "1N", "", "in "]) assert.equal(SubmitRequest.safeParse({ ...draft, name: "asha", country }).success, false, country);
-  for (const color of ["red", "#FE744", "#123456"]) assert.equal(SubmitRequest.safeParse({ ...draft, name: "asha", color }).success, false, color);
+  for (const color of ["purple", "#fe7446", "#123456"]) assert.equal(SubmitRequest.safeParse({ ...draft, name: "asha", color }).success, false, color);
 });
 
 test("no expiration is an optional yes or no, and the slider's lifetime is still checked", () => {

@@ -75,7 +75,7 @@ test("presenter auth, CORS, session state and per-device queuing", opts, async (
     assert.equal(bare.data.doors, "open");
     assert.match(bare.headers.get("vercel-cdn-cache-control") ?? "", /max-age=2/, "Phones' session polls are answered by the CDN.");
     assert.equal((await call("/api/session?s=WRONG123", undefined, {})).data.valid, false);
-    const draft = { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 900 };
+    const draft = { session: code, name: "Asha", color: "orange", country: "IN", lifetimeSec: 900 };
     const device = { "x-device-token": "test-device-token-1234", "content-type": "application/json", origin: "https://app.example" };
     assert.equal((await call("/api/submit", { ...draft, color: "#3ddc97" }, device)).data.error, "invalid", "Only the seven palette colors are accepted.");
     await call("/api/presenter/doors", { open: false });
@@ -118,7 +118,7 @@ test("the /workshop ON|OFF switch opens and pauses writes, and starts a session 
   const { call, dispose } = await fixture();
   try {
     const device = { "x-device-token": "test-device-token-switch", "content-type": "application/json", origin: "https://app.example" };
-    const draft = { name: "Switch", color: "#fe7446", country: "IN", lifetimeSec: 300 };
+    const draft = { name: "Switch", color: "orange", country: "IN", lifetimeSec: 300 };
     assert.equal((await call("/api/submit", draft, device)).data.error, "doors_closed", "No session yet.");
     const on = await call("/api/presenter/writing", { on: true });
     assert.equal(on.status, 200);
@@ -250,7 +250,7 @@ test("the balance floor closes doors and holds queued writes before any send", o
   balance = "0x6124fee993bc0000"; // Seven test GLM.
   try {
     const { data: { code } } = await call("/api/presenter/session/start", {});
-    const accepted = await call("/api/submit", { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 900 }, { "x-device-token": "balance-floor-test-device" });
+    const accepted = await call("/api/submit", { session: code, name: "Asha", color: "orange", country: "IN", lifetimeSec: 900 }, { "x-device-token": "balance-floor-test-device" });
     assert.equal(accepted.status, 200);
     await drain();
     const status = (await call("/api/presenter/status")).data;
@@ -268,7 +268,7 @@ test("a phone's one submit joins the running session and waits for its block", o
   balance = "0x6124fee993bc0000";
   try {
     const phone = { "x-device-token": "one-request-phone-device", "content-type": "application/json", origin: "https://app.example" };
-    const dot = { name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 300 };
+    const dot = { name: "Asha", color: "orange", country: "IN", lifetimeSec: 300 };
     assert.equal((await call("/api/submit?wait=1", dot, phone)).data.error, "doors_closed", "Before a session starts, a phone is told to try again.");
     const { data: { code } } = await call("/api/presenter/session/start", {});
     const key = `0x${"ab".repeat(32)}`;
@@ -310,7 +310,7 @@ test("two instances never send at once, and hold stops a batch that was not admi
   };
   try {
     const { data: { code } } = await call("/api/presenter/session/start", {});
-    await call("/api/submit", { session: code, name: "Asha", color: "#fe7446", country: "IN", lifetimeSec: 900 }, { "x-device-token": "responsive-phone-device" });
+    await call("/api/submit", { session: code, name: "Asha", color: "orange", country: "IN", lifetimeSec: 900 }, { "x-device-token": "responsive-phone-device" });
     await Promise.race([reachedBlock, new Promise((_, reject) => setTimeout(() => reject(new Error("The sender did not start.")), 10_000))]);
     // The other instance finds the lease taken and sends nothing.
     await writers[1]!.runWriter();
@@ -336,13 +336,13 @@ test("the writer stores lower-case text and keeps No expiration for the create",
     const { data: { code } } = await call("/api/presenter/session/start", {});
     assert.equal((await call("/api/presenter/hold", {})).data.idle, true);
     const phone = (device: string) => ({ "x-device-token": device, "content-type": "application/json", origin: "https://app.example" });
-    const forever = await call("/api/submit", { name: "  ASHA Rao ", color: "#FE7446", country: "IN", lifetimeSec: 300, noExpiry: true }, phone("lower-case-phone-device-1"));
+    const forever = await call("/api/submit", { name: "  ASHA Rao ", color: "ORANGE", country: "IN", lifetimeSec: 300, noExpiry: true }, phone("lower-case-phone-device-1"));
     assert.equal(forever.status, 200, JSON.stringify(forever.data));
-    const timed = await call("/api/submit", { name: "Ravi", color: "#fe7446", country: "in", lifetimeSec: 300 }, phone("lower-case-phone-device-2"));
+    const timed = await call("/api/submit", { name: "Ravi", color: "orange", country: "in", lifetimeSec: 300 }, phone("lower-case-phone-device-2"));
     assert.equal(timed.status, 200, JSON.stringify(timed.data));
-    assert.equal((await call("/api/submit", { name: "ravi", color: "#fe7446", country: "IND", lifetimeSec: 300 }, phone("lower-case-phone-device-3"))).data.error, "invalid");
+    assert.equal((await call("/api/submit", { name: "ravi", color: "orange", country: "IND", lifetimeSec: 300 }, phone("lower-case-phone-device-3"))).data.error, "invalid");
     const rows = await db.query<{ dot: DotCreate }>(`select dot from ${db.t("tickets")} where session = $1 order by seq`, [code]);
-    assert.deepEqual(rows.map(({ dot }) => [dot.name, dot.color, dot.country, dot.noExpiry]), [["asha rao", "#fe7446", "in", true], ["ravi", "#fe7446", "in", undefined]]);
+    assert.deepEqual(rows.map(({ dot }) => [dot.name, dot.color, dot.country, dot.noExpiry]), [["asha rao", "orange", "in", true], ["ravi", "orange", "in", undefined]]);
     assert.deepEqual(dotToCreate(rows[0]!.dot).expiration, LONGEST_EXPIRATION);
     assert.deepEqual(dotToCreate(rows[1]!.dot).expiration, ExpirationTime.fromSeconds(300));
     // Placement read the lower-case code: both dots are in India.

@@ -15,7 +15,7 @@ test("adapter walks every page by $key and describes the exact query sent", asyn
     createdAt: "0x60", updatedAt: "0x60", expiresAt: "0x80",
     attributes: [ { name: "app", type: "str", value: APP_ID }, { name: "kind", type: "str", value: "dot" },
       { name: "session", type: "str", value: "TEST" }, { name: "name", type: "str", value: "Asha" },
-      { name: "color", type: "str", value: "#fe7446" }, { name: "country", type: "str", value: "colombia" },
+      { name: "color", type: "str", value: "orange" }, { name: "country", type: "str", value: "colombia" },
       { name: "lat", type: "i32", value: -4_500_000 }, { name: "lng", type: "i32", value: -74_000_000 } ] });
   globalThis.fetch = async (_input, options) => {
     const body = JSON.parse(String(options?.body)) as { id: number; method: string; params: [string, { limit?: string }] };
@@ -55,7 +55,7 @@ test("the access key is the RPC URL's last path segment", () => {
 });
 
 test("write encoding preserves signed coordinates, schema columns and extension permission", () => {
-  const create = dotToCreate({ session: "TEST", name: "Asha", country: "CO", color: "#fe7446", lat: -4.5, lng: -74, lifetimeSec: 20 });
+  const create = dotToCreate({ session: "TEST", name: "Asha", country: "CO", color: "orange", lat: -4.5, lng: -74, lifetimeSec: 20 });
   assert.deepEqual(Object.keys(create).sort(), ["expiration", "flags", "schema", "values"]);
   assert.equal(create.flags.permissionlessExtension, true);
   const values = create.values as Record<string, unknown>;
@@ -101,7 +101,7 @@ test("an explicit wallet rejection permits the next explicit user action", async
     const adapter = createArkivAdapter({ profile: getProfile("rabdi"), creator: WRITER_ADDRESS, read: { kind: "public" }, wallet: {
       kind: "eip1193", account: WRITER_ADDRESS, provider: { request: async () => { prompts++; throw Object.assign(new Error("User rejected the request."), { code: 4001 }); } },
     } });
-    const dots = [{ session: "TEST", name: "Asha", country: "IN", color: "#fe7446", lat: 20, lng: 75, lifetimeSec: 20 }];
+    const dots = [{ session: "TEST", name: "Asha", country: "IN", color: "orange", lat: 20, lng: 75, lifetimeSec: 20 }];
     await assert.rejects(adapter.createDots(dots));
     await assert.rejects(adapter.createDots(dots));
     assert.equal(prompts, 2);
@@ -123,7 +123,7 @@ test("the stage relay reads without any fetch: no browser touches the public RPC
 // The phone's longest choice is Rabdi's maximum lifetime: a deadline at 2**64 - 1 reverts there
 // (ExpiryBeyondMaxLifetime, 7,884,000 blocks, October 31).
 test("the longest choice writes Rabdi's maximum lifetime, and neither lifetime choice is an attribute", () => {
-  const dot = { session: "TEST", name: "asha", country: "in", color: "#fe7446", lat: 19.1, lng: 72.9, lifetimeSec: 900 };
+  const dot = { session: "TEST", name: "asha", country: "in", color: "orange", lat: 19.1, lng: 72.9, lifetimeSec: 900 };
   const forever = dotToCreate({ ...dot, noExpiry: true });
   assert.deepEqual(forever.expiration, LONGEST_EXPIRATION);
   assert.deepEqual(forever.expiration, ExpirationTime.fromBlocks(Number(LONGEST_LIFETIME_BLOCKS)));

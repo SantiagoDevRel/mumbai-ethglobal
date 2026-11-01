@@ -19,7 +19,7 @@ extends any entity. Expired dots leave the map.
 | `/workshop/slides` | Optional second window | The slides alone, in step with `/workshop`. Presenter password. |
 | `/outline` | Presenter | The talk at a glance: each part folds open or shut, and each scene shows its slide and a few short points (no script, no times). Click a slide to zoom in and step through its reveals. Marks the scene on screen when `/workshop` or `/workshop/slides` is open in the same browser. Presenter password. |
 | `/slides` | The room | The public copy of the slides to share: every slide without a QR, and the close with its links. Each slide shows complete, with no reveals and no animation (W2 and W4 keep both of their views); ← → or a swipe go one slide at a time, and the footer shows only the slide's number. `/slides#W4` opens a slide. No password, no QR, no wallet buttons, no live scene; it follows nobody and asks the writer nothing, so viewers cost the writer no request. |
-| `/scan` | Phones | Your first entity: write an entity (up to ten per phone per session), then watch it on the projector |
+| `/scan` | Phones | Create your first entity: write an entity (up to ten per phone per session), then watch it on the projector |
 
 `/` opens `/workshop`; the old `/j`, `/notes`, `/map` and `/talk` links redirect to `/scan`, `/workshop`, `/workshop` and `/slides` (November 1: the presenter's page is `/workshop`, the room's copy is `/slides`).
 

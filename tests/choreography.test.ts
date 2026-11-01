@@ -27,7 +27,7 @@ test("a country filter on L3 flies the camera there; a name or a color leaves it
   state = filter(state, { namePrefix: "pri" });
   assert.equal(state.camera.cue, "globe");
   assert.equal(state.camera.nonce, entered, "typing a name keeps the camera where the presenter put it");
-  state = filter(state, { color: "#fe7446" });
+  state = filter(state, { color: "orange" });
   assert.equal(state.camera.nonce, entered);
   state = filter(state, { country: "in" });
   assert.deepEqual(state.camera, { cue: "country:in", nonce: entered + 1 });
@@ -52,7 +52,7 @@ test("filters move the camera only on L3, and the cue is lower case", () => {
 });
 
 test("filters set by hand belong to that visit: leaving L3 and coming back starts unfiltered", () => {
-  let state = filter(filter(at("L3"), { country: "in" }), { color: "#fe7446", namePrefix: "pri" });
+  let state = filter(filter(at("L3"), { country: "in" }), { color: "orange", namePrefix: "pri" });
   state = next(state);
   assert.equal(SCENES[state.sceneIndex]!.id, "B4");
   assert.deepEqual(state.chainFilters, { kinds: ["dot"] });
@@ -61,7 +61,7 @@ test("filters set by hand belong to that visit: leaving L3 and coming back start
   assert.deepEqual(state.chainFilters, { kinds: ["dot"] });
   assert.equal(state.camera.cue, "globe");
   // A filter left on any other scene doesn't reach L3 either.
-  state = reduce(filter(at("L1"), { country: "in", color: "#fe7446" }), { type: "goto", index: sceneIndex("L3") });
+  state = reduce(filter(at("L1"), { country: "in", color: "orange" }), { type: "goto", index: sceneIndex("L3") });
   assert.deepEqual(state.chainFilters, { kinds: ["dot"] });
 });
 

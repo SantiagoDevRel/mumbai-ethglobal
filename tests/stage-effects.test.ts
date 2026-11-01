@@ -12,7 +12,7 @@ import type { Command, StageState } from "../lib/stage/store.ts";
 const key = (digit: string) => `0x${digit.repeat(64)}` as Hex;
 function dot(digit: string, extra: Partial<LiveEntity> = {}): LiveEntity {
   return { key: key(digit), owner: WRITER_ADDRESS, creator: WRITER_ADDRESS, createdAtBlock: 10n, expiresAtBlock: 400n,
-    attrs: { kind: "dot", session: "TEST", name: `dot ${digit}`, color: "#fe7446", country: "in", lat: 19, lng: 73 }, raw: [], ...extra };
+    attrs: { kind: "dot", session: "TEST", name: `dot ${digit}`, color: "orange", country: "in", lat: 19, lng: 73 }, raw: [], ...extra };
 }
 const timed = dot("1");
 /** Written with ExpirationTime.permanent(): `$expiresAt` is 2**64 - 1. */

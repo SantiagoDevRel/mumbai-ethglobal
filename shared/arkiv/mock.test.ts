@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { createMockAdapter } from "./mock.ts";
 import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
 import { hasNoExpiry, LONGEST_LIFETIME_BLOCKS, type DotAttrs, type Hex } from "../types.ts";
+import { DOT_PALETTE } from "../encoding.ts";
 
 test("mock mode starts with dots that have no expiration, in lower case like every write", async () => {
   const mock = createMockAdapter();
@@ -18,7 +19,8 @@ test("mock mode starts with dots that have no expiration, in lower case like eve
       // Countries are stored by their full name in lower case, like the SDK adapter writes them.
       assert.match(entity.attrs.country, /^[a-z][a-z ]{3,}$/);
       assert.equal(entity.raw.find((attribute) => attribute.name === "country")?.stored, entity.attrs.country);
-      assert.match(entity.attrs.color, /^#[0-9a-f]{6}$/);
+      // Colors are stored by name ("orange"), never as a hex code.
+      assert.ok((DOT_PALETTE as readonly string[]).includes(entity.attrs.color), entity.attrs.color);
       assert.equal(entity.raw.some((attribute) => attribute.name === "noExpiry" || attribute.name === "lifetimeSec"), false);
     }
   } finally { mock.stop(); }
@@ -27,7 +29,7 @@ test("mock mode starts with dots that have no expiration, in lower case like eve
 test("mock writes and Lifetime Extension treat no expiration like the SDK adapter", async () => {
   const mock = createMockAdapter();
   try {
-    const dot = { session: "TEST", name: "asha", color: "#fe7446", country: "in", lat: 19, lng: 72.8, lifetimeSec: 300 };
+    const dot = { session: "TEST", name: "asha", color: "orange", country: "in", lat: 19, lng: 72.8, lifetimeSec: 300 };
     const { keys: [timed, endless] } = await mock.createDots([dot, { ...dot, name: "ada", noExpiry: true }]);
     const read = async () => new Map((await mock.query({ kinds: ["dot"], session: "TEST" })).entities.map((entity) => [entity.key, entity]));
     const before = await read();
@@ -52,7 +54,7 @@ test("mock writes and Lifetime Extension treat no expiration like the SDK adapte
 test("mock Delete: only the owner deletes a live entity, and the next query no longer has it", async () => {
   const mock = createMockAdapter();
   try {
-    const dot = { session: "TEST", name: "asha", color: "#fe7446", country: "in", lat: 19, lng: 72.8, lifetimeSec: 300 };
+    const dot = { session: "TEST", name: "asha", color: "orange", country: "in", lat: 19, lng: 72.8, lifetimeSec: 300 };
     const { keys: [mine, endless, given] } = await mock.createDots([dot, { ...dot, name: "ada", noExpiry: true }, { ...dot, name: "omar" }]);
     const keys = async () => (await mock.query({ kinds: ["dot"], session: "TEST" })).entities.map((entity) => entity.key).sort();
     const notSent = (message: string) => (error: unknown) => error instanceof WriteNotSentError && error.message === message;

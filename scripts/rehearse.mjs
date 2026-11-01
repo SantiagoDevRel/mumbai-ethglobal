@@ -20,8 +20,8 @@ const FLOOR = 8n * 10n ** 18n;
 // Verified against the pinned SDK's entity/operations.ts and entity/params.ts.
 const EXECUTE = parseAbi(["function execute((uint8 operation, bytes operationData)[] ops) external returns (bytes32[] keys)"]);
 const REGISTRY = "0x4400000000000000000000000000000000000044";
-const GREEN = "#14f195";
-const ORANGE = "#fe7446";
+const GREEN = "green";
+const ORANGE = "orange";
 const flag = (name) => process.argv[process.argv.indexOf(name) + 1];
 const preflight = process.argv.includes("--preflight");
 for (const name of ["WORKSHOP_WRITER_PRIVATE_KEY", "RPC", "ACCESS_KEY", "WORKSHOP_PRESENTER_TOKEN"]) assert.ok(process.env[name], `${name} must be supplied in the Node environment.`);
@@ -278,10 +278,10 @@ async function sceneWork(id, step) {
     // S7 is a slide: the event log and the counter show from L1, the first live scene, on.
     await expect(stage.locator(".event-log").getByRole("button", { name: /rehearsal phone/ }).first()).toBeVisible({ timeout: 20000 });
     realPhoneItem.visibleAtMs = now(); realPhoneItem.submitToVisibleMs = now() - realPhoneItem.submittedAtMs;
-    // The dot is painted in its stored color: Green, #14f195.
+    // The dot is painted in its stored color, green: #22c55e (DOT_HEX in shared/encoding.ts).
     await expect.poll(() => stage.locator(".globe-dots").evaluate((canvas) => {
       const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
-      let count = 0; for (let i = 0; i < data.length; i += 4) if (data[i] === 20 && data[i + 1] === 241 && data[i + 2] === 149 && data[i + 3] > 100) count++;
+      let count = 0; for (let i = 0; i < data.length; i += 4) if (data[i] === 34 && data[i + 1] === 197 && data[i + 2] === 94 && data[i + 3] > 100) count++;
       return count;
     }), { timeout: 15000 }).toBeGreaterThan(0);
     realPhoneItem.paintedAtMs = now();

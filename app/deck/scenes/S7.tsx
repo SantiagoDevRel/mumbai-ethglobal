@@ -1,7 +1,7 @@
 "use client";
 
-// S7 · Your first entity: the room scans (handoff boards "S7 · Doors open (QR)" and "S7 · write!").
-// The app draws the scan column in the middle (JoinQR): "Your first entity" over the QR on its own
+// S7 · Create your first entity: the room scans (handoff boards "S7 · Doors open (QR)" and "S7 · write!").
+// The app draws the scan column in the middle (JoinQR): "Create your first entity" over the QR on its own
 // sand square, and the URL under it (Santiago, October 29: everything centered, no grey card, a bigger
 // QR; October 30: that label, and no form lines under the QR). On →, step 1, the column moves left
 // and "Your entity" comes in beside it, centered on the QR's square, so the pair stays centered: the
@@ -22,7 +22,7 @@ import { FootLogo, Reveal, T, Wash } from "../ui";
  * entity's `$expiresAt`, its Entity Expiration. 15 min is the phone's default. */
 const ROWS: [name: string, value: string][] = [
   ["name", '"priya"'],
-  ["color", '"#fe7446"'],
+  ["color", '"orange"'],
   ["country", '"india"'],
   ["expiration", `${LIFETIME_DEFAULT_SEC / 60} min`],
 ];

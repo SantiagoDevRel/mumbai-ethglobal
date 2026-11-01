@@ -19,7 +19,7 @@ try {
   await presenterRequest("doors", { open: true });
   const token = randomUUID();
   const submittedAt = Date.now();
-  const accepted = await writerRequest<{ ticket: string; lat: number; lng: number }>("/api/submit", { session: code, name: "Chain smoke", color: "#fe7446", country: "CO", lifetimeSec: 300 }, { "x-device-token": token });
+  const accepted = await writerRequest<{ ticket: string; lat: number; lng: number }>("/api/submit", { session: code, name: "Chain smoke", color: "orange", country: "CO", lifetimeSec: 300 }, { "x-device-token": token });
   let ticket: { status: string; entityKey?: Hex; txHash?: Hex; block?: string; expiresAtBlock?: string } | undefined;
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {

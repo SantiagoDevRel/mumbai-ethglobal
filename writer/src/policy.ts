@@ -1,5 +1,6 @@
 import { LIFETIME_MAX_SEC, LIFETIME_MIN_SEC, LIFETIME_STEP_SEC, MAX_ENTITIES_PER_DEVICE, MAX_ENTITIES_PER_SESSION, type DotDraft } from "../../shared/types.ts";
 import { isNameAllowed } from "../../shared/data/blocklist.ts";
+import { DOT_PALETTE } from "../../shared/encoding.ts";
 import countries from "../../shared/geo/countries.json" with { type: "json" };
 import { countryByIso2, spreadInCountry, type CountryShape } from "../../shared/geo/place.ts";
 
@@ -19,7 +20,7 @@ export function nameBlocked(input: string): boolean {
 
 export function validDraft(value: DotDraft): boolean {
   return value.name.trim().length >= 1 && value.name.trim().length <= 24
-    && /^#[0-9a-f]{6}$/i.test(value.color) && /^[A-Z]{2}$/.test(value.country)
+    && (DOT_PALETTE as readonly string[]).includes(value.color.toLowerCase()) && /^[A-Z]{2}$/.test(value.country)
     && Number.isInteger(value.lifetimeSec) && value.lifetimeSec >= LIFETIME_MIN_SEC
     && value.lifetimeSec <= LIFETIME_MAX_SEC && value.lifetimeSec % LIFETIME_STEP_SEC === 0;
 }

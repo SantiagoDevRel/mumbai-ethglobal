@@ -12,11 +12,12 @@ test("ten per device and four hundred per session", () => {
   assert.equal(admissionError(false, 2, 399), null);
 });
 test("lifetime, name and data validation reject boundary violations", () => {
-  const draft = { name: "Asha", color: "#FE7446", country: "IN", lifetimeSec: 300 };
+  const draft = { name: "Asha", color: "ORANGE", country: "IN", lifetimeSec: 300 };
   assert.equal(validDraft(draft), true);
   for (const lifetimeSec of [0, 20, 120, 299, 330, 901, 960, NaN, 300.5]) assert.equal(validDraft({ ...draft, lifetimeSec }), false);
   assert.equal(validDraft({ ...draft, lifetimeSec: 900 }), true);
-  assert.equal(validDraft({ ...draft, color: "red" }), false);
+  assert.equal(validDraft({ ...draft, color: "purple" }), false);
+  assert.equal(validDraft({ ...draft, color: "#fe7446" }), false, "A hex code is no longer a color.");
   assert.equal(validDraft({ ...draft, name: "x".repeat(25) }), false);
   assert.equal(validDraft({ ...draft, country: "in" }), false);
 });
