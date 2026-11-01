@@ -1,7 +1,7 @@
-// Production check of the presenter pages: the password gate, a shared login across /map and
-// /slides, the corner QR on L1, the data source's status in the "?" presenter card (never on the
+// Production check of the presenter pages: the password gate, a shared login across /workshop and
+// /workshop/slides, the corner QR on L1, the data source's status in the "?" presenter card (never on the
 // stage), and every chain read going through the writer's keyed proxy (never the public RPC).
-// Reads only; opening /map starts a writer session when none is running, as it does on stage.
+// Reads only; opening /workshop starts a writer session when none is running, as it does on stage.
 // Usage: PRESENTER_PASSWORD=… node tests/presenter-prod.mjs [origin]
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
@@ -24,7 +24,7 @@ try {
   const map = await context.newPage();
   map.on("pageerror", (error) => errors.push(error.message));
   const root = await map.goto(origin, { waitUntil: "domcontentloaded" });
-  assert.equal(new URL(map.url()).pathname, "/map", "/ opens /map.");
+  assert.equal(new URL(map.url()).pathname, "/workshop", "/ opens /workshop.");
   assert.ok(root.ok());
   await expect(map.getByRole("heading", { name: "Presenter", exact: true })).toBeVisible({ timeout: 20000 });
   await map.getByLabel("Password").fill("not-the-password");
@@ -59,12 +59,12 @@ try {
   await expect(card).toHaveCount(0);
   const slides = await context.newPage();
   slides.on("pageerror", (error) => errors.push(error.message));
-  await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
+  await slides.goto(`${origin}/workshop/slides`, { waitUntil: "domcontentloaded" });
   await expect(slides.locator('[data-screen="slides"]')).toBeVisible({ timeout: 20000 });
   await expect(slides.getByRole("heading", { name: "Presenter", exact: true })).toHaveCount(0);
   await map.waitForTimeout(8000);
   const redirects = {};
-  for (const [from, to] of [["/j", "/scan"], ["/notes", "/map"]]) {
+  for (const [from, to] of [["/j", "/scan"], ["/notes", "/workshop"], ["/map", "/workshop"], ["/talk", "/slides"]]) {
     const response = await fetch(origin + from, { redirect: "manual", headers: protectionHeaders() });
     redirects[from] = { status: response.status, location: new URL(response.headers.get("location"), origin).pathname };
     assert.equal(redirects[from].location, to);

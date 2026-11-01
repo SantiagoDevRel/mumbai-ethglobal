@@ -49,3 +49,23 @@ body {
   color: var(--stage-fg);
   -webkit-font-smoothing: antialiased;
 }
+
+/* A live DB-Chain on the slides (W4): a green dot that blinks, the one thing on a slide that moves on
+   its own (Santiago, November 1). With reduced motion it stays lit. */
+.live-dot {
+  background: #22c55e;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.75);
+  animation: live-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes live-dot {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}

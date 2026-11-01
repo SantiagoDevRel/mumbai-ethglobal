@@ -10,8 +10,9 @@
 
 import { T, WELL } from "../ui";
 
-/** The popup's heading and the line under it. */
-export const WRITE_IT = { title: "Write it", under: "The call behind your tap. Our wallet signed it for you." } as const;
+/** The popup's heading and the line under it: who signed, and how the call looks in the SDK (Santiago,
+ * November 1). */
+export const WRITE_IT = { title: "Write it", under: "Our wallet signed for you, using the SDK:" } as const;
 
 type Line = { text: string; quiet?: boolean };
 

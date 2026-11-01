@@ -9,7 +9,7 @@ import { SCENES, SECTIONS, sceneIndex } from "../shared/scenes.ts";
 import { LONGEST_LIFETIME_BLOCKS } from "../shared/types.ts";
 import { NOTHING_TO_EXTEND } from "../shared/arkiv/adapter.ts";
 import { NOT_YOURS_TO_DELETE } from "../lib/data/stage-effects.ts";
-import { TALK_SCENES } from "../app/talk/scenes.ts";
+import { FRAMES, TALK_SCENES } from "../app/slides/scenes.ts";
 import { startApp } from "./local-app.mjs";
 import { encodes, qrModules, SCAN_URL } from "./scan-qr.mjs";
 
@@ -50,7 +50,7 @@ const go = (id) => ({ type: "goto", index: sceneIndex(id) });
 async function commands(page, list) {
   await page.evaluate((items) => { const channel = new BroadcastChannel("arkiv-mumbai-stage"); for (const cmd of items) channel.postMessage({ kind: "command", cmd }); channel.close(); }, list);
 }
-/** The leading /map's stage state: the store answers a hello on its channel. */
+/** The leading /workshop's stage state: the store answers a hello on its channel. */
 async function stageState(page) {
   return page.evaluate(() => new Promise((resolve) => {
     const channel = new BroadcastChannel("arkiv-mumbai-stage");
@@ -65,7 +65,7 @@ try {
   // The presenter pages ask for the password; one login unlocks both windows of the split screen.
   {
     const { context, page } = await setup({ viewport: { width: 1280, height: 720 } }, { loggedIn: false });
-    await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/workshop`, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: "Presenter", exact: true })).toBeVisible();
     await expect(page.locator(".globe-shell,.join-qr")).toHaveCount(0);
     await page.getByLabel("Password").fill("wrong");
@@ -76,7 +76,7 @@ try {
     await expect(page.getByText("From zero to hero", { exact: true })).toBeVisible();
     const slides = await context.newPage();
     slides.on("pageerror", (error) => errors.push(error.message));
-    await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
+    await slides.goto(`${origin}/workshop/slides`, { waitUntil: "domcontentloaded" });
     await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
     await expect(slides.getByRole("heading", { name: "Presenter", exact: true })).toHaveCount(0);
     // The phone page has no gate.
@@ -93,7 +93,7 @@ try {
   // time, clear of the link at the bottom and the logo.
   {
     const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
-    await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/workshop`, { waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
     // These are all slides: the globe under them only slows the software renderer down.
     await page.addStyleTag({ content: ".globe-shell{display:none}" });
@@ -134,6 +134,13 @@ try {
     await expect(t2.getByRole("img", { name: "Arkiv mascot, disappointed, with a tear", exact: true })).toHaveAttribute("src", "/deck/memes/arkiv-meme-plugin-sad.webp");
     await expect(t2).toContainText("Codex");
     await expect(t2).not.toContainText(/\bMCP\b/);
+    // The logos stand beside the title, on its line, with no line under it (Santiago, November 1).
+    await expect(t2).not.toContainText("The Arkiv AI plugin, for");
+    const title = await t2.getByRole("heading", { name: "Plugin: your agent knows Arkiv", exact: true }).evaluate((h) => { const range = document.createRange(); range.selectNodeContents(h); const r = range.getBoundingClientRect(); return { right: r.right, top: r.top, bottom: r.bottom }; });
+    const claude = await t2.getByRole("img", { name: "Claude Code", exact: true }).boundingBox();
+    const codex = await t2.getByText("Codex", { exact: true }).boundingBox();
+    assert.ok(claude.x >= title.right + 24, `The Claude Code logo starts right of the title (${claude.x} vs ${title.right}).`);
+    for (const [name, box] of [["Claude Code", claude], ["Codex", codex]]) assert.ok(box.y < title.bottom && box.y + box.height > title.top, `${name} sits on the title's line.`);
     const without = await t2.getByText("Without the plugin", { exact: true }).boundingBox();
     const withIt = await t2.getByText("With the plugin", { exact: true }).boundingBox();
     assert.ok(without.y + without.height <= withIt.y, "Without the plugin sits above With the plugin.");
@@ -227,7 +234,7 @@ try {
   }
 
   const { context, page } = await setup({ viewport: { width: 1920, height: 1080 } });
-  await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${origin}/workshop`, { waitUntil: "domcontentloaded" });
   // One screen, one thing at a time: the title slide covers the map (no HUD), with no QR and no
   // outline bar yet. The room scans later, in "Build your entity". The title is "Arkiv, the Web3
   // database" and only the title slide carries the subtitle "From zero to hero" (October 29).
@@ -549,7 +556,7 @@ try {
     const scale = Math.min(width / 1920, height / 1080);
     await expect.poll(() => page.locator(".query-panel").evaluate((element) => Math.round(element.getBoundingClientRect().width)), { timeout: 20000 }).toBe(Math.round(984 * scale));
     const layout = await measure();
-    // /map keeps the stage 1920 wide: a window wider than 16:9 centers it, with the globe at the sides.
+    // /workshop keeps the stage 1920 wide: a window wider than 16:9 centers it, with the globe at the sides.
     const left = (width - 1920 * scale) / 2;
     assert.ok(Math.abs(layout.query.x - (left + 32 * scale)) < 1 && Math.abs(layout.query.y + layout.query.height - (height - 32 * scale)) < 1, "The query panel sits at the bottom left.");
     assert.ok(Math.abs(layout.counter.y - 56 * scale) < 1 && Math.abs(layout.filters.y - 56 * scale) < 1, "The counter and the filter bar share the top row.");
@@ -707,11 +714,11 @@ try {
   // entity-card captures have: the default 30 s timed out on main (run 40888175044) and points-31 (41066509531).
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L9.png"), timeout: 60000 }); }
 
-  // /slides follows the map, and its keys drive both windows.
+  // /workshop/slides follows the map, and its keys drive both windows.
   const slides = await context.newPage();
   slides.on("pageerror", (error) => errors.push(error.message));
   await slides.setViewportSize({ width: 1280, height: 720 });
-  await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
+  await slides.goto(`${origin}/workshop/slides`, { waitUntil: "domcontentloaded" });
   await expect(slides.locator('[data-screen="slides"][data-scene="L9"]')).toBeVisible({ timeout: 20000 });
   await commands(page, [go("S7")]);
   // The follower changes scene once the leader, still drawing the 1920 px globe and the L9 finale in
@@ -744,7 +751,7 @@ try {
   await expect(slides.locator('[aria-label="Show the code"], #l1-code-popup')).toHaveCount(0);
   await expect(slides.getByRole("img", { name: "Arkiv mascot typing on a laptop" })).toBeVisible();
   await expect(page.getByText("Write it. Every dot is an entity you just wrote.")).toHaveCount(0);
-  // /slides shows the same outline bar, on the same part.
+  // /workshop/slides shows the same outline bar, on the same part.
   await expect(slides.getByRole("navigation", { name: "Talk outline" }).locator('[aria-current="step"]')).toContainText(BUILD);
   // Half a screen: the slide keeps 16:9 inside its window, nothing scrolls.
   await slides.setViewportSize({ width: 960, height: 1080 });
@@ -755,12 +762,12 @@ try {
   await expect(slides.getByText("The map is one query.")).toBeVisible({ timeout: 20000 });
   await expect(slides.getByText("Filter it live: name, country or color.")).toBeVisible();
   await expect(slides.getByRole("img", { name: "Arkiv mascot with a magnifying glass" })).toBeVisible();
-  // A second /map window follows the first instead of running the talk twice (two Rabby prompts).
+  // A second /workshop window follows the first instead of running the talk twice (two Rabby prompts).
   await commands(page, [go("B5")]);
   const secondMap = await context.newPage();
   secondMap.on("pageerror", (error) => errors.push(error.message));
   await secondMap.setViewportSize({ width: 1280, height: 720 });
-  await secondMap.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+  await secondMap.goto(`${origin}/workshop`, { waitUntil: "domcontentloaded" });
   await expect(secondMap.getByText("Another map window is running the talk. This one follows it.")).toBeVisible({ timeout: 20000 });
   await expect(page.getByText("Another map window is running the talk.")).toHaveCount(0);
   await expect(secondMap.locator('[data-screen="map"][data-scene="B5"]')).toBeVisible();
@@ -776,7 +783,7 @@ try {
   await expect.poll(() => writerCalls.start).toBe(1);
   await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible();
   await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible();
-  // /map keeps Reset in the "?" presenter card, out of the projected picture.
+  // /workshop keeps Reset in the "?" presenter card, out of the projected picture.
   await expect(page.getByRole("button", { name: "Reset", exact: true })).toHaveCount(0);
   await page.keyboard.press("?");
   await expect(page.getByRole("button", { name: "Reset", exact: true })).toBeVisible();
@@ -822,7 +829,7 @@ try {
   // The update blinker next to the label: this fixture rejects chain reads, so it says so.
   await expect(page.locator(".source-label")).toHaveAttribute("data-status", "error", { timeout: 15000 });
   await expect(page.locator(".source-label .refresh-detail")).toHaveText("Reconnecting…");
-  // A hidden /map stops reading (every query spends the key's quota) and resumes on the next key.
+  // A hidden /workshop stops reading (every query spends the key's quota) and resumes on the next key.
   let reads = 0;
   const countRead = (request) => { if (request.url() === `${writer}/api/rpc`) reads++; };
   page.on("request", countRead);
@@ -833,7 +840,7 @@ try {
   await page.waitForTimeout(500);
   const paused = reads;
   await page.waitForTimeout(5000);
-  assert.equal(reads, paused, "A hidden /map must not read the DB-Chain.");
+  assert.equal(reads, paused, "A hidden /workshop must not read the DB-Chain.");
   await page.evaluate(() => { delete document.visibilityState; });
   await page.keyboard.press("Shift");
   await expect(page.getByText("Live reads paused", { exact: false })).toHaveCount(0);
@@ -921,12 +928,12 @@ try {
       rabdiReads.push(route.request().headers().authorization);
       return route.fulfill({ json: { chainId: 424242, chainIdHex: "0x67932", rpcUrl: "https://rpc.rabdi.example/", explorerUrl: "https://explorer.rabdi.example/", currencySymbol: "tGLM" } });
     });
-    await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${origin}/workshop`, { waitUntil: "domcontentloaded" });
     await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
     const slides = await context.newPage();
     slides.on("pageerror", (error) => errors.push(error.message));
     await slides.setViewportSize({ width: 1280, height: 720 });
-    await slides.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
+    await slides.goto(`${origin}/workshop/slides`, { waitUntil: "domcontentloaded" });
     await expect(slides.locator('[data-screen="slides"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
     // Every → shows one more of the five rows, even pressed without a pause, from either window; the
     // next → leaves for "What Arkiv DB-Chain is not". Hidden rows are aria-hidden, so the role count is what the room sees.
@@ -947,7 +954,7 @@ try {
     }
     // Slide 8, live (October 30): every tag is a link; Add network asks the wallet for an account,
     // adds Rabdi and switches to it; Get balance reads that account's balance through the same wallet,
-    // with no signature and no transaction. Each window keeps its own: on /map, Get balance first asks
+    // with no signature and no transaction. Each window keeps its own: on /workshop, Get balance first asks
     // for Add network and calls nothing.
     {
       await commands(page, [go("ST")]);
@@ -1008,12 +1015,12 @@ try {
       if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-ST-wallet.png") });
       const mapReads = row(page, "Reads are free");
       const mapBalance = mapReads.getByRole("button", { name: "Get balance", exact: true });
-      assert.equal(await onTop(mapBalance), "on top", "On /map, Get balance takes a click where it is drawn");
+      assert.equal(await onTop(mapBalance), "on top", "On /workshop, Get balance takes a click where it is drawn");
       await mapBalance.click();
       await expect(mapReads.getByRole("status")).toHaveText("Add the network first");
       assert.deepEqual(await page.evaluate(() => window.__walletCalls), []);
       assert.equal(rabdiReads.length, 1);
-      assert.equal(await scrolled(page), 0, "The slide on /map stays in place too.");
+      assert.equal(await scrolled(page), 0, "The slide on /workshop stays in place too.");
       evidence.push({ surface: "five-steps-wallet", links: 3, walletCalls: calls.map((call) => call.method), detailsReads: rabdiReads.length, perWindow: true });
     }
     // A scene change: the new scene fades in over 0.22 s while the old one waits under it and goes in
@@ -1064,7 +1071,7 @@ try {
       }
       evidence.push({ surface: "scene-change", screen: target === page ? "map" : "slides", from, to, enter: samples[0].enter, exit: samples[0].exit, clockChangeMs: samples.map((timing) => Math.round(timing.change)), clockTotalMs: samples.map((timing) => Math.round(timing.total)) });
     }
-    // Why Arkiv and What Arkiv DB-Chain is not (Santiago, October 30), on /slides. Hidden reveals are
+    // Why Arkiv and What Arkiv DB-Chain is not (Santiago, October 30), on /workshop/slides. Hidden reveals are
     // aria-hidden, so a role query finds only what the room sees.
     {
       const settled = (locator) => expect.poll(() => locator.evaluate((element) => { for (let e = element; e; e = e.parentElement) if (Number(getComputedStyle(e).opacity) < 1) return false; return true; })).toBe(true);
@@ -1097,11 +1104,29 @@ try {
       await commands(page, [go("W3"), { type: "next" }, { type: "next" }]);
       for (const item of ["a lifetime", "who may extend it", "who may edit it"]) await expect(slides.getByRole("listitem").filter({ hasText: new RegExp(`^${item}$`) })).toBeVisible();
       await expect(slides.getByText("who may extend or change it")).toHaveCount(0);
-      // W4: the network, then one column of the app view per →; logos only, straight on the panel.
+      // W4: the network one part per → (Santiago, November 1: Ethereum on the right first, then Arkiv in
+      // the middle, then the DB-Chains on the left), then one column of the app view per →; logos only,
+      // straight on the panel.
+      const faded = (locator) => expect.poll(() => locator.evaluate((element) => { for (let e = element; e; e = e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.05) return true; return false; })).toBe(true);
       await commands(page, [go("W4")]);
       const solana = slides.getByRole("img", { name: "Solana", exact: true });
       const ipfs = slides.getByRole("img", { name: "IPFS", exact: true });
-      await settled(slides.getByText("Previous testnets", { exact: true }));
+      const ethereum = slides.getByRole("img", { name: "Ethereum", exact: true });
+      // While a part is hidden it is aria-hidden too, so look it up by its alt, not its role.
+      const arkiv = slides.locator('img[alt="Arkiv"]');
+      const previous = slides.getByText("Previous testnets", { exact: true });
+      await settled(ethereum);
+      await faded(arkiv);
+      await faded(previous);
+      await commands(page, [{ type: "next" }]);
+      await settled(arkiv);
+      await faded(previous);
+      await commands(page, [{ type: "next" }]);
+      await settled(previous);
+      // Tiramisu is a previous testnet like the others, without OFF; Rabdi and Sorbet show a live dot.
+      await expect(slides.getByRole("listitem")).toHaveText([/^Tiramisu$/, /^Braga\s*OFF$/, /^Kaolin\s*OFF$/, /^Mendoza\s*OFF$/]);
+      await expect(slides.locator(".live-dot")).toHaveCount(2);
+      if (capture) await slides.screenshot({ path: path.join(capture, "slides-1280-W4-network.png") });
       await commands(page, [{ type: "next" }]);
       await settled(slides.getByText("Keeps your Arkiv entities", { exact: true }));
       await expect(solana).toHaveCount(0);
@@ -1179,7 +1204,7 @@ try {
     const listed = await outlineText();
     assert.doesNotMatch(listed, /\b\d{1,2}:\d{2}\b|\bminutes\b|Script/, "/outline shows no times and no script");
     await expect(outline.locator("[data-preview] [data-stage]").first()).toBeAttached({ timeout: 20000 });
-    // L1's Write it and Query it popups open only on /map: the outline shows L1's card.
+    // L1's Write it and Query it popups open only on /workshop: the outline shows L1's card.
     await expect(outline.locator('[aria-label="Show the code"], #l1-code-popup')).toHaveCount(0);
     await commands(page, [go("ST")]);
     const now = outline.locator('li[aria-current="step"]');
@@ -1241,64 +1266,65 @@ try {
     await context.close();
   }
 
-  // /talk (November 1): the public copy of the slides for the room. No password, every slide without
-  // a QR plus the close, one → per reveal; no QR, no wallet button, and not one request to the writer.
+  // /slides (November 1): the public copy of the slides for the room. No password, every slide without
+  // a QR plus the close, each one complete (no reveals, no animation): one → per slide, and the footer
+  // shows only the slide's number, never its name. No QR, no wallet button, not one request to the writer.
   {
     const { context, page } = await setup({ viewport: { width: 1440, height: 900 } }, { loggedIn: false });
     const writerRequests = [];
     context.on("request", (request) => { if (new URL(request.url()).pathname.startsWith("/api/")) writerRequests.push(new URL(request.url()).pathname); });
     await context.addInitScript(() => {
       window.__walletCalls = [];
-      window.ethereum = { isRabby: true, request: ({ method }) => { window.__walletCalls.push(method); return Promise.reject({ code: 4001, message: "/talk must not ask a wallet." }); } };
+      window.ethereum = { isRabby: true, request: ({ method }) => { window.__walletCalls.push(method); return Promise.reject({ code: 4001, message: "/slides must not ask a wallet." }); } };
     });
-    await page.goto(`${origin}/talk`, { waitUntil: "domcontentloaded" });
-    const counter = page.locator('footer [aria-live="polite"] span');
-    await expect(counter.first()).toHaveText(`1 / ${TALK_SCENES.length}`, { timeout: 20000 });
+    await page.goto(`${origin}/slides`, { waitUntil: "domcontentloaded" });
+    const counter = page.locator('footer [aria-live="polite"]');
+    await expect(counter).toHaveText(`1 / ${FRAMES.length}`, { timeout: 20000 });
     await expect(page.getByRole("heading", { name: "Presenter", exact: true })).toHaveCount(0);
     await expect(page.getByLabel("Password")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Back", exact: true })).toBeDisabled();
-    const shown = [];
-    for (const [index, scene] of TALK_SCENES.entries()) {
-      for (let step = 0; step < scene.steps; step++) {
-        await expect(counter.first()).toHaveText(`${index + 1} / ${TALK_SCENES.length}`);
-        await expect(counter.nth(1)).toHaveText(scene.title);
-        await expect(page.locator("[data-stage]")).toBeAttached();
-        await expect(page.locator(".join-qr, .qr-image, .outline-bar, .app-hud, .globe-shell")).toHaveCount(0);
-        if (scene.steps > 1) await expect(page.getByRole("button", { name: `Reveal ${step + 1} of ${scene.steps}`, exact: true })).toHaveAttribute("aria-pressed", "true");
-        if (scene.id === "ST" && step === scene.steps - 1) {
-          await expect(page.getByRole("button", { name: /Add network|Get balance/ })).toHaveCount(0);
-          await expect(page.locator('[data-stage] a[href="https://hub.arkiv.network/faucet"]')).toBeVisible();
-          if (capture) await page.screenshot({ path: path.join(capture, "talk-1440-ST.png") });
-        }
-        if (step === scene.steps - 1) shown.push(scene.id);
-        await page.keyboard.press("ArrowRight");
+    const titles = new Set(SCENES.map((scene) => scene.title));
+    for (const [index, frame] of FRAMES.entries()) {
+      await expect(counter).toHaveText(`${index + 1} / ${FRAMES.length}`);
+      assert.ok(page.url().endsWith(`#${frame.id}`), `${frame.id} keeps its address`);
+      const footer = (await page.locator("footer").innerText()).replace(/\s+/g, " ").trim();
+      assert.match(footer, /^(Back )?\d+ \/ \d+( Next)?$/, `the footer on ${frame.id} shows only the number: "${footer}"`);
+      assert.ok(![...titles].some((title) => footer.includes(title)), `the footer on ${frame.id} names no slide`);
+      await expect(page.locator("[data-stage]")).toBeAttached();
+      await expect(page.locator(".join-qr, .qr-image, .outline-bar, .app-hud, .globe-shell")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /^Reveal \d+ of \d+$/ })).toHaveCount(0);
+      if (frame.scene.id === "ST") {
+        await expect(page.getByRole("button", { name: /Add network|Get balance/ })).toHaveCount(0);
+        await expect(page.locator('[data-stage] a[href="https://hub.arkiv.network/faucet"]')).toBeVisible();
+        if (capture) await page.screenshot({ path: path.join(capture, "slides-1440-ST.png") });
       }
+      if (capture && (frame.id === "W1" || frame.id.startsWith("W4") || frame.id === "B4" || frame.id === "T2")) await page.screenshot({ path: path.join(capture, `slides-1440-${frame.id}.png`) });
+      await page.keyboard.press("ArrowRight");
     }
-    assert.deepEqual(shown, TALK_SCENES.map((scene) => scene.id));
     // The close keeps its links working; → past it stays there.
-    await expect(counter.nth(1)).toHaveText(TALK_SCENES.at(-1).title);
+    await expect(counter).toHaveText(`${FRAMES.length} / ${FRAMES.length}`);
     await expect(page.getByRole("button", { name: "Next", exact: true })).toBeDisabled();
     const hub = page.locator('[data-stage] a[href="https://hub.arkiv.network"]').first();
     await expect(hub).toBeVisible();
-    assert.equal(await hub.evaluate((link) => link.closest("[inert]") === null && getComputedStyle(link).pointerEvents !== "none"), true, "The close's links can be clicked on /talk.");
-    assert.ok(page.url().endsWith(`#${TALK_SCENES.at(-1).id}`));
-    if (capture) await page.screenshot({ path: path.join(capture, "talk-1440-close.png") });
+    assert.equal(await hub.evaluate((link) => link.closest("[inert]") === null && getComputedStyle(link).pointerEvents !== "none"), true, "The close's links can be clicked on /slides.");
+    assert.ok(page.url().endsWith(`#${FRAMES.at(-1).id}`));
+    if (capture) await page.screenshot({ path: path.join(capture, "slides-1440-close.png") });
     await page.keyboard.press("ArrowLeft");
-    await expect(counter.nth(1)).toHaveText(TALK_SCENES.at(-2).title);
+    await expect(counter).toHaveText(`${FRAMES.length - 1} / ${FRAMES.length}`);
     await page.keyboard.press("Home");
-    await expect(counter.first()).toHaveText(`1 / ${TALK_SCENES.length}`);
+    await expect(counter).toHaveText(`1 / ${FRAMES.length}`);
     // A link to a slide opens on it; on a phone nothing overflows.
     const linked = await context.newPage();
     linked.on("pageerror", (error) => errors.push(error.message));
     await linked.setViewportSize({ width: 390, height: 844 });
-    await linked.goto(`${origin}/talk#W4`, { waitUntil: "domcontentloaded" });
-    await expect(linked.locator('footer [aria-live="polite"] span').nth(1)).toHaveText(SCENES[sceneIndex("W4")].title, { timeout: 20000 });
-    assert.equal(await linked.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "/talk at 390 px");
-    if (capture) await linked.screenshot({ path: path.join(capture, "talk-390-W4.png") });
+    await linked.goto(`${origin}/slides#W4`, { waitUntil: "domcontentloaded" });
+    await expect(linked.locator('footer [aria-live="polite"]')).toHaveText(`${FRAMES.findIndex((frame) => frame.id === "W4") + 1} / ${FRAMES.length}`, { timeout: 20000 });
+    assert.equal(await linked.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, "/slides at 390 px");
+    if (capture) await linked.screenshot({ path: path.join(capture, "slides-390-W4.png") });
     await linked.close();
-    assert.deepEqual(writerRequests, [], "/talk never asks the writer.");
-    assert.deepEqual(await page.evaluate(() => window.__walletCalls), [], "/talk never asks a wallet.");
-    evidence.push({ surface: "talk", scenes: TALK_SCENES.length, noLogin: true, noQr: true, noWalletButtons: true, writerRequests: 0, linkOpensSlide: true });
+    assert.deepEqual(writerRequests, [], "/slides never asks the writer.");
+    assert.deepEqual(await page.evaluate(() => window.__walletCalls), [], "/slides never asks a wallet.");
+    evidence.push({ surface: "slides", scenes: TALK_SCENES.length, frames: FRAMES.length, noLogin: true, noQr: true, noWalletButtons: true, footerNumbersOnly: true, noReveals: true, writerRequests: 0, linkOpensSlide: true });
     await context.close();
   }
 
@@ -1336,7 +1362,7 @@ try {
     assert.equal(layout.cta, "56px");
     // Dark only: a light system theme still gets the dark phone.
     assert.equal(layout.background, "rgb(17, 17, 17)");
-    // The phone's header matches slide 10's label (Santiago, October 30); /map's corner card keeps "Join the map".
+    // The phone's header matches slide 10's label (Santiago, October 30); /workshop's corner card keeps "Join the map".
     await expect(page.locator(".phone-header")).toHaveText("Your first entity");
     await expect(page.getByText("Choose a country", { exact: true })).toBeVisible();
     await expect(page.getByText("How long should this data (entity) live?")).toBeVisible();

@@ -1,10 +1,10 @@
 "use client";
 
-// /map: the whole talk on one screen. Live scenes show the globe, its HUD and, where the scene has
-// one, the QR (October 29: no caption, logo or status line on any scene); slide scenes show the
-// slide over the globe. The data source and its status sit in the presenter's "?" card. The leader
+// /workshop (it was /map until November 1; /map redirects here): the whole talk on one screen. Live
+// scenes show the globe, its HUD and, where the scene has one, the QR (October 29: no caption, logo
+// or status line on any scene); slide scenes show the slide over the globe. The data source and its status sit in the presenter's "?" card. The leader
 // window: it runs the scene engine, reads the DB-Chain through the writer and signs Rabby
-// transactions. /slides can still sit beside it on a split screen and follows the same scene.
+// transactions. /workshop/slides can still sit beside it on a split screen and follows the same scene.
 
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { MapFrame, StageBox } from "../../components/stage/StageFrame";

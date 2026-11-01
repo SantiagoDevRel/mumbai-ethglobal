@@ -28,7 +28,7 @@ export interface LiveData {
   paused: boolean;
 }
 
-// Every query spends the access key's quota (10 units of 100,000,000 each), and a /map left open for a
+// Every query spends the access key's quota (10 units of 100,000,000 each), and a /workshop left open for a
 // day used all of it. Reads pause while this window is hidden or after 20 minutes without a scene
 // change, key, click or touch, and resume on the next one.
 const IDLE_MS = 20 * 60_000;
@@ -125,7 +125,7 @@ export function useLiveData(filters: ChainFilters, session: string | null): Live
     return () => { stopped = true; clearTimeout(timer); };
   }, [data.adapter, queryKey, awake]);
   // A delete from the entity card is logged when the next query no longer has the dot. When a query
-  // already dropped it before the receipt (or the leading /map's message) came, it is logged here.
+  // already dropped it before the receipt (or the leading /workshop's message) came, it is logged here.
   useEffect(() => deletions.subscribe(({ entity, block }) => {
     if (!shown.current.has(entity.key) || previous.current?.entities.some((item) => item.key === entity.key)) return;
     const event = deletedEvent(entity, block, Date.now());

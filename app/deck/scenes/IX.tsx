@@ -4,13 +4,14 @@
 // (shared/scenes.ts) so the outline bar across the top and this list never disagree. One part is lit
 // per → (Santiago, October 29): its number and title turn orange and the other rows dim. "Build your
 // entity", the part where the room scans, keeps a phone as its marker; it is orange only while lit.
-// → steps: 0 part 1 lit, 1 part 2, 2 part 3, 3 part 4.
+// → steps: 0 part 1 lit, 1 part 2, 2 part 3, 3 part 4. The public copy (/slides) shows every part lit.
 
 import { motion } from "motion/react";
+import { useContext } from "react";
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { SECTIONS } from "../../../shared/scenes";
 import { Mascot } from "../Mascot";
-import { EASE, REVEAL_TIME, Rise, Slide, T } from "../ui";
+import { EASE, PublicCopy, REVEAL_TIME, Rise, Slide, T } from "../ui";
 import { PhoneIcon } from "./PhoneIcon";
 
 // Literal colors: Motion interpolates these, not CSS variables.
@@ -22,12 +23,13 @@ const CHANGE = { duration: REVEAL_TIME, ease: EASE };
 
 export function IX({ step }: SceneContentProps) {
   const lit = Math.min(Math.max(step, 0), SECTIONS.length - 1);
+  const all = useContext(PublicCopy);
   return (
     <Slide headline="What we'll do" wash={0.9}>
       <Rise className="absolute left-[96px] top-[340px] w-[1180px]">
         <ol className="flex flex-col gap-4">
           {SECTIONS.map((section, i) => {
-            const on = i === lit;
+            const on = all || i === lit;
             return (
               <motion.li
                 key={section.id}

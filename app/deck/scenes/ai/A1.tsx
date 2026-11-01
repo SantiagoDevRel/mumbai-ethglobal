@@ -8,9 +8,9 @@
 // SDK" wording, which sounds as if the SDK were out of date; the gap is what the agent knows. Both pictures (public/deck/memes,
 // 1536x1024, same framing) are cropped to a wide strip around the eyes, the tear and the mouth so the
 // panels stack like the original; the labels sit beside them, Stone for the bad one and Sand for the
-// good one, as in the deck's other memes. The line under the headline names the two agents the
-// plugin is packaged for, with their logos. Setup isn't on the slide: one link to the Hub's AI tools
-// page, which has the steps.
+// good one, as in the deck's other memes. The logos of the two agents the plugin is packaged for sit
+// beside the headline, with no line under it (Santiago, November 1). Setup isn't on the slide: one
+// link to the Hub's AI tools page, which has the steps.
 // The examples follow the plugin's README (https://github.com/Arkiv-Network/ai-plugin: "Arkiv skills,
 // MCP source discovery, and project rules for the Web3 database, packaged separately for Claude Code
 // and Codex CLI") and the Hub (https://hub.arkiv.network/ai-tools: "Arkiv skills, MCP tools and safety
@@ -56,28 +56,28 @@ function Panel({ label, example, src, alt, good }: { label: string; example: str
   );
 }
 
-/** "The Arkiv AI plugin, for [Claude Code] and [Blossom] Codex": each visible mark 40 px tall. */
+/** [Claude Code] and [Blossom] Codex, right of the headline and centered on its line (top 160, 84 px
+ * tall): each visible mark 40 px tall. */
 function Agents() {
   return (
-    <span className="flex items-center gap-4">
-      The Arkiv AI plugin, for
+    <div className="absolute right-[96px] top-[160px] flex h-[84px] items-center gap-10">
       {/* The file's mark fills y 437-1563 of its 2000-unit height: 72 px tall, 16 px of clear space above and below. */}
       {/* eslint-disable-next-line @next/next/no-img-element -- official logo file, unchanged */}
       <img src="/deck/logos/claude-code-ivory.svg" alt="Claude Code" width={295} height={72} className="-my-4 block h-[72px] w-[295px]" draggable={false} />
-      and
       <span className="flex items-center gap-3">
         {/* The Blossom fills 175-541 of its 716-unit box: 78 px box, 19 px of clear space on each side. */}
         {/* eslint-disable-next-line @next/next/no-img-element -- official logo file, unchanged */}
         <img src="/deck/logos/openai-blossom-white.svg" alt="OpenAI" width={78} height={78} className="-m-[19px] block h-[78px] w-[78px]" draggable={false} />
-        <span className="font-semibold text-[var(--arkiv-sand)]">Codex</span>
+        <span className="text-[40px] font-semibold leading-none text-[var(--arkiv-sand)]">Codex</span>
       </span>
-    </span>
+    </div>
   );
 }
 
 export function A1(_props: SceneContentProps) {
   return (
-    <Slide headline="Plugin: your agent knows Arkiv" under={<Agents />}>
+    <Slide headline="Plugin: your agent knows Arkiv">
+      <Agents />
       {/* Ink shows through the 4 px gaps as the rules between the four cells. */}
       <Rise className="absolute left-[96px] top-[332px] grid h-[588px] w-[1728px] grid-cols-[620px_minmax(0,1fr)] grid-rows-2 gap-[4px] overflow-hidden rounded-[20px] bg-[var(--arkiv-ink)] shadow-[0_24px_64px_rgba(0,0,0,0.5)]">
         <Panel

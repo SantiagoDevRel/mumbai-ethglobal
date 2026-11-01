@@ -8,7 +8,7 @@
 // counter, so the presenter shows the code without leaving the map. Each opens its code in a popup on
 // the left (x 32-692, from y 280), which leaves India (from about x 708 on L1's globe), Europe above
 // it, the event log, the QR card and the entity card's column in view. One popup at a time: the other
-// button swaps it. × or Esc closes it, and → goes on to L3. Only /map draws L1's overlay: /slides and
+// button swaps it. × or Esc closes it, and → goes on to L3. Only /workshop draws L1's overlay: /workshop/slides and
 // /outline show its card (./LiveCard.tsx), so the popups never open there.
 
 import { AnimatePresence, motion } from "motion/react";

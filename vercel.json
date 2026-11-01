@@ -3,10 +3,14 @@
   "framework": "nextjs",
   "regions": ["fra1"],
   "redirects": [
-    { "source": "/", "destination": "/map", "permanent": false },
+    { "source": "/", "destination": "/workshop", "permanent": false },
     { "source": "/j", "destination": "/scan", "permanent": false },
     { "source": "/j/", "destination": "/scan", "permanent": false },
-    { "source": "/notes", "destination": "/map", "permanent": false },
-    { "source": "/notes/", "destination": "/map", "permanent": false }
+    { "source": "/notes", "destination": "/workshop", "permanent": false },
+    { "source": "/notes/", "destination": "/workshop", "permanent": false },
+    { "source": "/map", "destination": "/workshop", "permanent": false },
+    { "source": "/map/", "destination": "/workshop", "permanent": false },
+    { "source": "/talk", "destination": "/slides", "permanent": false },
+    { "source": "/talk/", "destination": "/slides", "permanent": false }
   ]
 }

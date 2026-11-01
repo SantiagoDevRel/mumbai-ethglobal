@@ -31,7 +31,7 @@ function SourceLabel({ data }: { data: LiveData }) {
   </span>;
 }
 
-/** For the presenter only, in the "?" card on /map: the data source and its status. The projected
+/** For the presenter only, in the "?" card on /workshop: the data source and its status. The projected
  * stage shows neither (Santiago, October 29: no logo or status line on any scene). */
 export function LiveStatus({ data }: { data: LiveData }) {
   const mode = useSourceMode();

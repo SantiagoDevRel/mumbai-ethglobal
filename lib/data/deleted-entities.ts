@@ -1,5 +1,5 @@
-// Entities deleted from the entity card, kept for the page's life (a handful). The leading /map
-// records them and shares them with the other windows of this browser (a second /map that follows
+// Entities deleted from the entity card, kept for the page's life (a handful). The leading /workshop
+// records them and shares them with the other windows of this browser (a second /workshop that follows
 // it), so none of them ever calls a deleted dot "expired". The query stays the authority for what the
 // map draws. This only tells the event log why a dot left ("deleted", never "expired"), keeps it out
 // of the expired memory and keeps Extend from targeting it before the next query lands.
@@ -48,5 +48,5 @@ export function createDeletions(channel?: string) {
 
 export type Deletions = ReturnType<typeof createDeletions>;
 
-/** This browser's deletions: the leading /map records them, every window's live data reads them. */
+/** This browser's deletions: the leading /workshop records them, every window's live data reads them. */
 export const deletions = createDeletions(typeof window === "undefined" ? undefined : "arkiv-mumbai-deleted");

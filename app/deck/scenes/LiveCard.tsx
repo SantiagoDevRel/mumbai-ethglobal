@@ -1,9 +1,9 @@
 "use client";
 
-// What /slides shows during a live scene: the scene's name, what is happening on the map in plain
+// What /workshop/slides shows during a live scene: the scene's name, what is happening on the map in plain
 // words, and the mascot. Every detail itself (the dots, the query, the entity's fields) lives on the
 // map; this half of the screen only explains what to look at. The lines describe how it works, never
-// that something already happened: /slides can't see the chain. October 29: L3 has no scripted
+// that something already happened: /workshop/slides can't see the chain. October 29: L3 has no scripted
 // filters (the presenter filters by hand) and the Own it (L6) and Expire it (L2) scenes are gone.
 
 import { MotionConfig, AnimatePresence, motion } from "motion/react";

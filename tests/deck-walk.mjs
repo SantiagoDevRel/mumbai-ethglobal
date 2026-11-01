@@ -1,4 +1,4 @@
-// Walks every scene and every reveal step on /map (1920x1080, mock data, writer fixtures):
+// Walks every scene and every reveal step on /workshop (1920x1080, mock data, writer fixtures):
 // no page errors, the step dots match the scene's step count, nothing scrolls sideways, and every
 // slide draws the logo at the bottom center with no text or picture crossing it (Santiago, October
 // 30: the logo must never get in the way of a slide's text).
@@ -36,7 +36,7 @@ try {
   await context.route(`${origin}/api/presenter/status`, (route) => route.fulfill({ json: { session: "DECK-WALK", doors: "open", phase: "talk", replay: false, held: false, queued: 0, inFlight: false, written: 0, failed: 0, lastBatch: null, balanceWei: "0", network: "Rabdi", requestsToday: 0 } }));
   const page = await context.newPage();
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(`${origin}/map`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${origin}/workshop`, { waitUntil: "domcontentloaded" });
   await expect(page.locator('[data-screen="map"][data-scene="S0"]')).toBeVisible({ timeout: 20000 });
   if (capture) await page.addStyleTag({ content: ".globe-shell{display:none}" });
   const send = (cmd) => page.evaluate((item) => { const channel = new BroadcastChannel("arkiv-mumbai-stage"); channel.postMessage({ kind: "command", cmd: item }); channel.close(); }, cmd);

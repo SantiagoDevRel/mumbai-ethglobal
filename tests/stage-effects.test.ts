@@ -140,8 +140,8 @@ test("the deletion registry keeps each entity once, with its block, and tells it
   assert.equal(registry.has(given.key), false);
 });
 
-// A second /map follows the leading one: it hears each delete too, so it never calls the dot "expired".
-test("a delete recorded on the leading /map reaches the other windows on the channel", async () => {
+// A second /workshop follows the leading one: it hears each delete too, so it never calls the dot "expired".
+test("a delete recorded on the leading /workshop reaches the other windows on the channel", async () => {
   const name = `arkiv-mumbai-deleted-test-${process.pid}`;
   const leader = createDeletions(name), follower = createDeletions(name), alone = createDeletions();
   let timer: ReturnType<typeof setTimeout> | undefined;

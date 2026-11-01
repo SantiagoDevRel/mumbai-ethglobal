@@ -70,7 +70,7 @@ function isTyping(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-/** Mount once on /map and on /slides. */
+/** Mount once on /workshop and on /workshop/slides. */
 export function usePresenterKeys(enabled = true): void {
   useEffect(() => {
     if (!enabled) return;

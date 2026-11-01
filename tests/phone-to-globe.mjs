@@ -44,7 +44,7 @@ try {
   stage.on("pageerror", (error) => errors.push(error.message));
   let publicRpcReads = 0;
   stage.on("request", (request) => { if (/rpc\.[a-z0-9.-]*arkiv\.network/.test(new URL(request.url()).host)) publicRpcReads++; });
-  await stage.goto(`${ORIGIN}/map`, { waitUntil: "domcontentloaded" });
+  await stage.goto(`${ORIGIN}/workshop`, { waitUntil: "domcontentloaded" });
   await expect(stage.getByText("From zero to hero", { exact: true })).toBeVisible({ timeout: 20000 });
   await stage.evaluate(([code, index]) => {
     const channel = new BroadcastChannel("arkiv-mumbai-stage");

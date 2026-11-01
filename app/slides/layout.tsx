@@ -6,6 +6,6 @@ export const metadata: Metadata = {
   description: "The slides of the ETHGlobal Mumbai workshop on Arkiv, the Web3 database.",
 };
 
-export default function TalkLayout({ children }: { children: ReactNode }) {
+export default function SlidesLayout({ children }: { children: ReactNode }) {
   return children;
 }

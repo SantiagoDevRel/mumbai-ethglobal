@@ -1,5 +1,5 @@
 // Writer HTTP API (Cloudflare Worker + one Durable Object). Contract owned by the orchestrator.
-// Phones call the public endpoints. The presenter pages (/map, /slides) trade the password for a
+// Phones call the public endpoints. The presenter pages (/workshop, /workshop/slides) trade the password for a
 // signed token at /api/login and call presenter endpoints with `Authorization: Bearer <token>`;
 // scripts send the presenter secret itself. All bodies are JSON.
 
@@ -143,7 +143,7 @@ export const SessionStartResponse = z.object({ code: z.string() });
 /** POST /api/presenter/session/end → {} */
 /** POST /api/presenter/doors: pause or resume writes (scripts only: seed, load test). */
 export const DoorsRequest = z.object({ open: z.boolean() });
-/** POST /api/presenter/writing: the /map ON|OFF switch. ON starts a session if none is running and
+/** POST /api/presenter/writing: the /workshop ON|OFF switch. ON starts a session if none is running and
  * opens writes (doors open, talk phase, replay off); OFF pauses writes and keeps the session. */
 export const WritingRequest = z.object({ on: z.boolean() });
 export const WritingResponse = z.object({ code: z.string().nullable() });
@@ -155,7 +155,7 @@ export const ReplayRequest = z.object({ on: z.boolean() });
 export const HoldResponse = z.object({ held: z.literal(true), idle: z.boolean() });
 /** POST /api/presenter/resume → {} (also auto-resumes 60 s after a hold). */
 
-/** GET /api/presenter/status, polled every 3 s by /map. */
+/** GET /api/presenter/status, polled every 3 s by /workshop. */
 export const PresenterStatus = z.object({
   session: z.string().nullable(),
   doors: z.enum(["closed", "open"]),

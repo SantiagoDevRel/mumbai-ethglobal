@@ -40,7 +40,7 @@ const report = {
   schema: 1, network: profile.id, origin: ORIGIN, writerUrl: WRITER,
   sourceSnapshot: execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
   scriptSha256: createHash("sha256").update(await readFile(new URL(import.meta.url))).digest("hex"),
-  mapHtmlSha256: createHash("sha256").update(await (await fetch(`${ORIGIN}/map`, { headers: PROTECTION })).text()).digest("hex"),
+  mapHtmlSha256: createHash("sha256").update(await (await fetch(`${ORIGIN}/workshop`, { headers: PROTECTION })).text()).digest("hex"),
   startedAt: new Date().toISOString(), plannedTalkMs: TALK_LENGTH_SEC * 1000,
   timingPolicy: "Scene starts use SCENES.at with an unscaled monotonic clock. Reveal steps run in order at scene start, 750 ms apart, with each live operation awaited. S7 submits ten synthetic phones at +0 to +1 s, ten at +31 to +32 s, and a real phone at +33 s; every phone writes a 15-minute lifetime (the phone's default and longest), so the room is still alive at L3. Every entity has an expiration: the rehearsal never writes one with no expiration. L1 opens the entity card and fills the transfer form without sending it. L3 opens unfiltered; the presenter filters by hand (name, color, country), clears the filters, then extends the selected entity and every live one, promptly. Scene starts more than 1000 ms late count as overruns.",
   writer: "the app's own /api (Vercel function)",
@@ -389,8 +389,8 @@ try {
     window.__rehearsalChannel = new BroadcastChannel("arkiv-mumbai-stage");
     window.__rehearsalChannel.onmessage = (event) => { if (event.data.kind === "state") window.__rehearsalState = event.data.state; };
   }, process.env.WORKSHOP_PRESENTER_TOKEN);
-  // /map starts a writer session by itself when none is running; the rehearsal's own start below replaces it.
-  await stage.goto(`${ORIGIN}/map`, { waitUntil: "domcontentloaded" });
+  // /workshop starts a writer session by itself when none is running; the rehearsal's own start below replaces it.
+  await stage.goto(`${ORIGIN}/workshop`, { waitUntil: "domcontentloaded" });
   await stage.evaluate(() => window.__rehearsalChannel.postMessage({ kind: "hello" }));
   await expect.poll(() => stage.evaluate(() => window.__rehearsalState?.sceneIndex)).toBe(0);
   // Check the live source on a live scene (in the "?" card, never on the stage), then reset before the clock.
@@ -468,7 +468,7 @@ try {
 finally {
   clearInterval(monitor);
   if (wave) { await wave; if (waveError) { report.status = "failed"; report.waveError = safeMessage(waveError); process.exitCode = 1; } }
-  // Close the browser first: an open /map starts a new session whenever it finds none, so ending
+  // Close the browser first: an open /workshop starts a new session whenever it finds none, so ending
   // ours while the stage still polls would leave a fresh session with its doors open.
   await browser?.close();
   if (session) {

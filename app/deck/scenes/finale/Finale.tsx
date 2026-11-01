@@ -9,12 +9,12 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useContext, useEffect, useRef, useState, type MouseEvent } from "react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
 import { usePrefersReducedMotion } from "../../../../components/stage/StageFrame";
 import { Mascot } from "../../Mascot";
 import { MASCOT_ART } from "../../mascot-art";
-import { GLASS, OverlayShell, PANEL_EASE, Rise, T } from "../../ui";
+import { GLASS, OverlayShell, PANEL_EASE, PublicCopy, Rise, T } from "../../ui";
 import {
   artGrid,
   BAND,
@@ -54,7 +54,9 @@ const LINKS = [
 ] as const;
 
 export function L9(_props: SceneContentProps) {
-  const reduced = usePrefersReducedMotion();
+  // The public copy (/slides) shows the last frame too: no slide moves there.
+  const publicCopy = useContext(PublicCopy);
+  const reduced = usePrefersReducedMotion() || publicCopy;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [run, setRun] = useState(0);
   const [livePhase, setLivePhase] = useState(0);

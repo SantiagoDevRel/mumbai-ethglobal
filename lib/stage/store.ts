@@ -2,9 +2,9 @@
 
 // Scene engine. Contract owned by the orchestrator.
 //
-// One store per window. /map is the leader: it applies every command and broadcasts the resulting
-// state. /slides is a follower: it sends commands and mirrors the leader's state over a
-// BroadcastChannel, and applies them itself while no /map is open. Side effects that touch the
+// One store per window. /workshop is the leader: it applies every command and broadcasts the resulting
+// state. /workshop/slides is a follower: it sends commands and mirrors the leader's state over a
+// BroadcastChannel, and applies them itself while no /workshop is open. Side effects that touch the
 // chain or the writer (extend, patch, hold, phase) are not done here: the app registers effect
 // handlers with `onCommand`, which run on the leader after the reducer.
 
@@ -218,7 +218,7 @@ type Message =
   | { kind: "bye" };
 
 const CHANNEL = "arkiv-mumbai-stage";
-/** Held by the one /map window that drives the stage; a second /map follows until it is free. */
+/** Held by the one /workshop window that drives the stage; a second /workshop follows until it is free. */
 const LEADER_LOCK = "arkiv-mumbai-leader";
 
 type Listener = () => void;
@@ -236,8 +236,8 @@ class StageStore {
   connect(role: Role): () => void {
     this.role = role;
     if (typeof BroadcastChannel === "undefined") return () => {};
-    // Two leaders would apply every command twice (two Rabby prompts for one Extend). A /map window
-    // starts as a follower and leads only once it holds the lock, so a second /map just mirrors.
+    // Two leaders would apply every command twice (two Rabby prompts for one Extend). A /workshop window
+    // starts as a follower and leads only once it holds the lock, so a second /workshop just mirrors.
     const locks = role === "leader" && typeof navigator !== "undefined" ? navigator.locks : undefined;
     const release = new AbortController();
     let unlock = () => {};
@@ -263,7 +263,7 @@ class StageStore {
     };
     if (this.role === "follower") channel.postMessage({ kind: "hello" } satisfies Message);
     else channel.postMessage({ kind: "state", state: this.state } satisfies Message);
-    // A closing /map tells /slides to drive itself again.
+    // A closing /workshop tells /workshop/slides to drive itself again.
     const bye = () => { if (this.role === "leader") channel.postMessage({ kind: "bye" } satisfies Message); };
     window.addEventListener("pagehide", bye);
     return () => {

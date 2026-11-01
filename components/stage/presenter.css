@@ -46,7 +46,7 @@
 /* Where the talk is, bottom right (StageProgress in StageFrame.tsx): in a scene with reveals one dot
    per step, then the scene counter ("9 / 19"). It is sized like the stage (--h is 22 stage px, never
    under 12 px), so it reads the same on any projector and keeps to the strip under the HUD's bottom
-   edge on /map (32 stage px, under L3's query panel). right:72px clears the map's attribution button. */
+   edge on /workshop (32 stage px, under L3's query panel). right:72px clears the map's attribution button. */
 .stage-progress{--h:max(12px,min(1.1458vw,2.037vh));position:fixed;right:72px;bottom:calc(var(--h)*.18);z-index:45;display:flex;align-items:center;gap:calc(var(--h)*.45);height:var(--h);box-sizing:border-box;padding:0 calc(var(--h)*.5);border-radius:999px;background:rgba(17,17,17,.7);color:var(--arkiv-sand);font:500 calc(var(--h)*.68)/1 var(--font-mono);white-space:nowrap;pointer-events:none;opacity:.5}
 .step-dots{display:flex;align-items:center;gap:calc(var(--h)*.27)}
 .step-dots i{--d:max(5px,calc(var(--h)*.36));flex:none;width:var(--d);height:var(--d);border-radius:50%;background:rgba(246,244,239,.28)}.step-dots i[data-on=true]{background:rgba(246,244,239,.8)}.step-dots i[data-current=true]{background:#fe7446}

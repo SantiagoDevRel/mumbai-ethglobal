@@ -1,4 +1,4 @@
-// Screenshots of every scene and step on /map and /slides, and of /scan, from this build (served by
+// Screenshots of every scene and step on /workshop and /workshop/slides, and of /scan, from this build (served by
 // tests/local-app.mjs), in mock mode.
 // Read-only: the writer's session endpoint is a fixture and nothing is sent to the chain.
 // Usage: npm run build && node scripts/stage-shots.mjs [outDir] [only]   (default: shots/, every surface)
@@ -46,10 +46,10 @@ const shot = (page, name) => page.screenshot({ path: path.join(dir, `${name}.png
 
 for (const [screen, width, height] of [["map", 1920, 1080], ["map", 1280, 720], ["map", 960, 1080], ["slides", 1920, 1080], ["slides", 960, 1080]]) {
   if (only && !only.includes(`${screen}-${width}x${height}`)) continue;
-  const { context, page } = await open(`/${screen}`, { width, height });
+  const { context, page } = await open(screen === "map" ? "/workshop" : "/workshop/slides", { width, height });
   await settle(page);
-  // /slides on its own drives itself from the keyboard (a follower ignores channel commands), so it
-  // walks the talk with → from the first slide; /map takes channel commands as the leader.
+  // /workshop/slides on its own drives itself from the keyboard (a follower ignores channel commands),
+  // so it walks the talk with → from the first slide; /workshop takes channel commands as the leader.
   const next = () => (screen === "slides" ? page.keyboard.press("ArrowRight") : send(page, [{ type: "next" }]));
   for (const [index, scene] of SCENES.entries()) {
     if (screen === "slides") { if (index > 0) { await next(); await settle(page); } }

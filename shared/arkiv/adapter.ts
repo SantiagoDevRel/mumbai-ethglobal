@@ -82,7 +82,7 @@ export interface ArkivAdapter {
 export type ArkivReader = Pick<ArkivAdapter, "profile" | "creator" | "getBlock" | "query" | "describe">;
 
 /** How an adapter is built. The access key never reaches a browser. Browsers read through the
- * Worker's keyed read proxy: `proxy` with the presenter login (/map, /slides). `relay` hands each
+ * Worker's keyed read proxy: `proxy` with the presenter login (/workshop, /workshop/slides). `relay` hands each
  * call to a function (without a login it rejects every read). `public` is for scripts only. */
 export type ReadTransport =
   | { kind: "public" }

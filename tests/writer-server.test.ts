@@ -114,7 +114,7 @@ test("presenter auth, CORS, session state and per-device queuing", opts, async (
   } finally { await dispose(); }
 });
 
-test("the /map ON|OFF switch opens and pauses writes, and starts a session when none runs", opts, async () => {
+test("the /workshop ON|OFF switch opens and pauses writes, and starts a session when none runs", opts, async () => {
   const { call, dispose } = await fixture();
   try {
     const device = { "x-device-token": "test-device-token-switch", "content-type": "application/json", origin: "https://app.example" };

@@ -137,7 +137,7 @@ export function Globe({ entities, ghosts = [], block, state, source }: { entitie
         const scale = Math.min(width / 1920, height / 1080);
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
         ctx.clearRect(0, 0, width, height);
-        // /map shows the dots in every scene: the room can write from the first slide.
+        // /workshop shows the dots in every scene: the room can write from the first slide.
         if (surface.dataset.source !== source) return;
         const box = stageGeometry(width, height, "fill");
         if (lastSource !== source) { born.clear(); leaving.clear(); lastEntities.clear(); lastSource = source; }

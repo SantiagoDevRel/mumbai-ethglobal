@@ -15,21 +15,21 @@ extends any entity. Expired dots leave the map.
 
 | Route | Who | What |
 |---|---|---|
-| `/map` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
-| `/slides` | Optional second window | The slides alone, in step with `/map`. Presenter password. |
-| `/outline` | Presenter | The talk at a glance: each part folds open or shut, and each scene shows its slide and a few short points (no script, no times). Click a slide to zoom in and step through its reveals. Marks the scene on screen when `/map` or `/slides` is open in the same browser. Presenter password. |
-| `/talk` | The room | The public copy of the slides to share: every slide without a QR, and the close with its links. ← → or a swipe step through the reveals; `/talk#W4` opens a slide. No password, no QR, no wallet buttons, no live scene; it follows nobody and asks the writer nothing, so viewers cost the writer no request. |
+| `/workshop` | Projector | The whole talk: the live globe, the query panel, the QR, and the slides between map scenes. Presenter password. |
+| `/workshop/slides` | Optional second window | The slides alone, in step with `/workshop`. Presenter password. |
+| `/outline` | Presenter | The talk at a glance: each part folds open or shut, and each scene shows its slide and a few short points (no script, no times). Click a slide to zoom in and step through its reveals. Marks the scene on screen when `/workshop` or `/workshop/slides` is open in the same browser. Presenter password. |
+| `/slides` | The room | The public copy of the slides to share: every slide without a QR, and the close with its links. Each slide shows complete, with no reveals and no animation (W2 and W4 keep both of their views); ← → or a swipe go one slide at a time, and the footer shows only the slide's number. `/slides#W4` opens a slide. No password, no QR, no wallet buttons, no live scene; it follows nobody and asks the writer nothing, so viewers cost the writer no request. |
 | `/scan` | Phones | Your first entity: write an entity (up to ten per phone per session), then watch it on the projector |
 
-`/` opens `/map`; the old `/j` and `/notes` links redirect to `/scan` and `/map`.
+`/` opens `/workshop`; the old `/j`, `/notes`, `/map` and `/talk` links redirect to `/scan`, `/workshop`, `/workshop` and `/slides` (November 1: the presenter's page is `/workshop`, the room's copy is `/slides`).
 
-Present from `/map` full screen: one thing at a time, map scenes and slides in one window
-(scene order in `shared/scenes.ts`). `/slides` can still sit beside it on a split screen; the arrow
-keys work in either window and move both. The presenter card opens with the small ? button at the bottom left, or the ? key (¿ and / work too; Esc closes it). It lists every scene to jump to, the keys, and Reset (also bottom right on /slides; click twice), which starts a new session: an empty
+Present from `/workshop` full screen: one thing at a time, map scenes and slides in one window
+(scene order in `shared/scenes.ts`). `/workshop/slides` can still sit beside it on a split screen; the arrow
+keys work in either window and move both. The presenter card opens with the small ? button at the bottom left, or the ? key (¿ and / work too; Esc closes it). It lists every scene to jump to, the keys, and Reset (also bottom right on /workshop/slides; click twice), which starts a new session: an empty
 map, fresh limits for every phone and the slides back at the start. D runs the 3 · 2 · 1 countdown on
 the QR slide.
 
-Every reveal is one →; nothing moves on a timer, except the close (L9): on entry the mascot says the
+Every reveal is one →; nothing moves on a timer, except the blinking live dot beside Rabdi and Sorbet (W4, still with reduced motion) and the close (L9): on entry the mascot says the
 four verbs and its cubes build THANK YOU in bricks, once (a click on the bricks plays it again; with
 reduced motion the last frame shows at once). The dots and the scene counter (n / N) at the bottom
 right show the steps of the current scene and where it is in the talk. Drag with the right mouse button, on a slide or on the map (panels and the QR card
@@ -61,7 +61,7 @@ while it is OFF see "Not open yet" or "Writing is paused".
 ```
 phone /scan ──POST /api/submit──► writer (this app's /api on Vercel + Postgres) ──► Arkiv DB-Chain (Rabdi)
                                                                                       ▲
-/map and /slides ── query every block, via the writer's keyed read proxy ─────────────┘
+/workshop and /workshop/slides ── query every block, via the writer's keyed read proxy ─────────────┘
 ```
 
 - Every entity is written by one writer wallet, with permissionless extension on, so anyone can extend it.
@@ -104,9 +104,9 @@ Each entity a phone writes is one request:
    `MAX_ENTITIES_PER_DEVICE` (10) entities per session, and its list ("Your entities") keeps a local
    countdown for each. The session takes at most `MAX_ENTITIES_PER_SESSION` (400).
 
-The live countdown, the extension and the expiration are on `/map`, which queries the DB-Chain once
+The live countdown, the extension and the expiration are on `/workshop`, which queries the DB-Chain once
 per block through the writer's read proxy; the status ("Updated · block #N") sits in the presenter's
-"?" card, never on the stage. `/map` stops reading while hidden or after 20 minutes without input.
+"?" card, never on the stage. `/workshop` stops reading while hidden or after 20 minutes without input.
 
 | Session | CDN requests | Function invocations |
 | --- | ---: | ---: |
@@ -114,7 +114,7 @@ per block through the writer's read proxy; the status ("Updated · block #N") si
 | Workshop: 50 phones, 20 min | about 2,700 | about 2,000 |
 | Workshop, every phone at its limit (400 entities, the session cap) | about 3,100 | about 2,400 |
 
-Most of it is `/map` (about 60 reads a minute); each phone adds about 16 requests, page files
+Most of it is `/workshop` (about 60 reads a minute); each phone adds about 16 requests, page files
 included, and one function invocation per entity. On Vercel Pro that is well under 1% of the 1M CDN requests
 included each month; the database runs on Neon's free plan. The load tests ran 200 phones:
 [writer/vercel-loadtest.md](./writer/vercel-loadtest.md).

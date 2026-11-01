@@ -1,7 +1,7 @@
 "use client";
 
 // A scene drawn outside the stage engine, at a given step and scaled to its box: /outline's cards and
-// zoom, and the public /talk copy. Neither follows /map, logs in or reads the DB-Chain.
+// zoom, and the public /slides copy. Neither follows /workshop, logs in or reads the DB-Chain.
 
 import { useEffect, useRef, useState } from "react";
 import { QrCard } from "../../components/stage/JoinQR";
@@ -12,7 +12,7 @@ import { LiveCard } from "./scenes/LiveCard";
 
 export const lastStep = (scene: SceneDef) => scene.steps - 1;
 
-/** What /slides draws for a scene at a step: the slide, L9's closing lines, or the live card for
+/** What /workshop/slides draws for a scene at a step: the slide, L9's closing lines, or the live card for
  * the other map scenes; S7 gets its big QR. */
 export function StagePicture({ scene, step }: { scene: SceneDef; step: number }) {
   const entry = deck[scene.id];
@@ -27,7 +27,7 @@ export function StagePicture({ scene, step }: { scene: SceneDef; step: number })
 
 /** A scene drawn in stage pixels and scaled to the box's width. `lazy`: drawn once the box comes
  * near the screen, so the outline opens without rendering every slide at once. `interactive`: its
- * links work and it is read aloud (/talk); otherwise it is an inert picture (/outline). */
+ * links work and it is read aloud (/slides); otherwise it is an inert picture (/outline). */
 export function StagePreview({ scene, step, lazy = false, interactive = false }: { scene: SceneDef; step: number; lazy?: boolean; interactive?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);

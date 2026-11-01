@@ -1,6 +1,6 @@
 "use client";
 
-// Presenter chrome shared by /map and /slides: the password gate, the Reset button, and (on /map)
+// Presenter chrome shared by /workshop and /workshop/slides: the password gate, the Reset button, and (on /workshop)
 // the session sync with the writer.
 
 import Image from "next/image";
@@ -38,8 +38,8 @@ export function PresenterGate({ children }: { children: ReactNode }) {
 }
 
 /** Reset: a new writer session (empty map, fresh limits for every phone) and the deck back at S0.
- * Two clicks, so a stray one during the talk does nothing. `inline` sits in the "?" card on /map;
- * otherwise it is a faint button in the bottom-right corner (/slides). */
+ * Two clicks, so a stray one during the talk does nothing. `inline` sits in the "?" card on /workshop;
+ * otherwise it is a faint button in the bottom-right corner (/workshop/slides). */
 export function PresenterBar({ inline = false }: { inline?: boolean }) {
   const [armed, setArmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -74,7 +74,7 @@ function setWritingState(value: boolean | null) {
 const subscribeWriting = (listener: () => void) => { writingListeners.add(listener); return () => { writingListeners.delete(listener); }; };
 const isOpen = (status: PresenterStatus) => Boolean(status.session) && status.doors === "open" && status.phase === "talk" && !status.replay;
 
-/** The /map ON|OFF switch, bottom left beside "?": ON lets phones write entities (it starts a session
+/** The /workshop ON|OFF switch, bottom left beside "?": ON lets phones write entities (it starts a session
  * if none is running), OFF pauses writes and keeps the map. */
 export function WritingSwitch() {
   const on = useSyncExternalStore(subscribeWriting, () => writing, () => null);
@@ -98,7 +98,7 @@ export function WritingSwitch() {
   </div>;
 }
 
-/** /map keeps the stage on the writer's running session and starts one if there is none, so the
+/** /workshop keeps the stage on the writer's running session and starts one if there is none, so the
  * QR works from the first slide. */
 export function usePresenterSession() {
   useEffect(() => {
@@ -112,7 +112,7 @@ export function usePresenterSession() {
         if (!session) { session = SessionStartResponse.parse(await presenterRequest(WRITER_ROUTES.presenter.sessionStart, {})).code; setWritingState(true); }
         if (!controller.signal.aborted && stage.getState().session !== session) stage.dispatch({ type: "session", code: session });
       } catch { /* The next poll retries; a rejected login brings the password form back. */ }
-      // A hidden /map stops polling the writer until it is shown again.
+      // A hidden /workshop stops polling the writer until it is shown again.
       waitVisible(3000, controller.signal).then(poll, () => undefined);
     }
     void poll();

@@ -15,9 +15,9 @@
 //     (eth_chainId, then eth_getBalance), with no signature and no transaction.
 // The wallet's RPC URL carries the presenter's access key, so the writer serves the network to a
 // presenter login from server-only env vars (GET /api/presenter/rabdi, lib/server/rabdi.ts). The
-// buttons act only on /map and /slides, and each window shows its own result. /outline draws this
+// buttons act only on /workshop and /workshop/slides, and each window shows its own result. /outline draws this
 // slide inert, as a picture: a click there never reaches a wallet or the writer. The public copy
-// (/talk) leaves both buttons out.
+// (/slides) leaves both buttons out.
 // Logos: official files, colors unchanged, straight on the dark panel (no box), only to say which
 // wallets the button works with.
 //   metamask-fox.svg · metamask.com/assets, "The official MetaMask logos and symbol" (the fox):
@@ -61,7 +61,7 @@ const TAG = `inline-flex items-center gap-2 whitespace-nowrap rounded-[10px] bor
 /** The deck's quiet pill (T1's page links), as a button. */
 const BUTTON = `inline-flex h-[52px] items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-[rgba(246,244,239,0.28)] px-5 text-[24px] font-semibold text-[rgba(246,244,239,0.84)] transition-colors duration-200 enabled:cursor-pointer enabled:hover:border-[var(--arkiv-orange)] enabled:hover:text-[var(--arkiv-orange)] disabled:opacity-60 ${FOCUS}`;
 
-/** One per window: /map and /slides each keep their own wallet connection and lines. */
+/** One per window: /workshop and /workshop/slides each keep their own wallet connection and lines. */
 const rabdi = rabdiController({
   wallet: () => injectedWallet(window as unknown as { ethereum?: Wallet }),
   loadNetwork: () => presenterRequest(WRITER_ROUTES.presenter.rabdi),

@@ -1,10 +1,10 @@
 "use client";
 
-// The presenter screens. Contract owned by the orchestrator. /map is the whole talk on one screen,
-// one thing at a time: the map in live scenes, the slide over it in slide scenes. /slides is the
+// The presenter screens. Contract owned by the orchestrator. /workshop is the whole talk on one screen,
+// one thing at a time: the map in live scenes, the slide over it in slide scenes. /workshop/slides is the
 // optional second window for a split screen.
 //
-// /map, layers bottom to top:
+// /workshop, layers bottom to top:
 //   map      full viewport, always mounted                         z-0
 //   overlay  live scenes' captions (deck Overlay)                   z-10
 //   hud      query panel, event log, filters, inspector (live)      z-20
@@ -12,11 +12,11 @@
 //   qr       the QR, where the scene places it                      z-30
 //   outline  the outline bar across the top (OutlineBar)            z-35
 //   controls the "?" keyboard overlay                               z-40
-// /slides: every slide scene's Slide, a card for live scenes, the S7 QR, the outline bar and the
+// /workshop/slides: every slide scene's Slide, a card for live scenes, the S7 QR, the outline bar and the
 // "?" overlay. Both keep the presenter chrome in window pixels: the ? button (and the Writing switch
-// on /map) bottom left, the scene counter and step dots bottom right, the pointer rectangles.
+// on /workshop) bottom left, the scene counter and step dots bottom right, the pointer rectangles.
 //
-// Everything is drawn in stage pixels. /slides fits a 1920x1080 box to the window ("contain"). /map
+// Everything is drawn in stage pixels. /workshop/slides fits a 1920x1080 box to the window ("contain"). /workshop
 // keeps the box 1920 wide and stretches it to the window's height ("fill"), so in half a 16:9
 // screen the HUD reaches the top and bottom edges instead of floating in a letterbox.
 
@@ -102,7 +102,7 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: 
         <div className="absolute inset-0 z-0">{map}</div>
         {overlay ? <div className="pointer-events-none absolute inset-0 z-10">{overlay}</div> : null}
         {hud ? <div className="pointer-events-none absolute inset-0 z-20">{hud}</div> : null}
-        {/* Slides fit the screen like /slides does; while one shows, the map underneath takes no input. */}
+        {/* Slides fit the screen like /workshop/slides does; while one shows, the map underneath takes no input. */}
         <AnimatePresence initial={false} custom={Boolean(slide)}>
           {slide ? (
             <motion.div key={scene.id} data-scene-layer={scene.id} className="absolute inset-0" custom={Boolean(slide)} variants={slideFade(reduced ? 0 : SCENE_FADE)} initial="hidden" animate="shown" exit="hidden">

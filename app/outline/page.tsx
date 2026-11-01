@@ -3,7 +3,7 @@
 // /outline: the talk at a glance, for the presenter (Santiago, October 29: a few short points per
 // scene, no script and no times). Each part folds open or shut, and all start shut. Each scene shows
 // its slide, drawn by the deck itself at its last reveal, and its points (app/deck/points.ts); click
-// the slide to zoom in and step through its reveals with ← and →. With /map or /slides open in this
+// the slide to zoom in and step through its reveals with ← and →. With /workshop or /workshop/slides open in this
 // browser, the scene on screen is marked.
 
 import Image from "next/image";
@@ -31,7 +31,7 @@ export default function OutlinePage() {
   return <PresenterGate><Outline /></PresenterGate>;
 }
 
-/** The scene /map or /slides shows now, once one of them has said so; null before that. */
+/** The scene /workshop or /workshop/slides shows now, once one of them has said so; null before that. */
 function useSceneOnScreen(): SceneId | null {
   useEffect(() => stage.connect("follower"), []);
   const { scene } = useScene();
@@ -71,7 +71,7 @@ function Outline() {
           <div className="flex items-center justify-between gap-4">
             <Image src="/brand/arkiv-white.svg" alt="Arkiv" width={104} height={24} priority />
             <nav className="flex gap-2" aria-label="Presenter screens">
-              {["/map", "/slides"].map((href) => (
+              {["/workshop", "/workshop/slides"].map((href) => (
                 <Link key={href} href={href} className="rounded-full border border-[var(--t-28)] px-4 py-1.5 font-mono text-[14px] font-medium text-[var(--t-84)] transition-colors hover:border-[var(--t-56)] hover:text-[var(--arkiv-sand)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--arkiv-orange)]">
                   {href}
                 </Link>

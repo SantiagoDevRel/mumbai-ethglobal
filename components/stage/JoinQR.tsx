@@ -10,7 +10,7 @@ import { SCENE_FADE, usePrefersReducedMotion } from "./StageFrame";
 import "./join-qr.css";
 
 /** The QR to /scan. Each scene places it (shared/scenes.ts): in the corner, large on S7 until the
- * 3 · 2 · 1 countdown, or not at all on slides that need the whole screen. /slides shows only the
+ * 3 · 2 · 1 countdown, or not at all on slides that need the whole screen. /workshop/slides shows only the
  * large one. On S7 it is the scan column (Santiago, October 29): no card, the QR on its own sand
  * square, centered, with the URL under it; since October 30 "Your first entity" sits over it and
  * nothing else under it. S7's → moves the column left so the entity card fits beside it and the pair
@@ -21,7 +21,7 @@ import "./join-qr.css";
 const SCAN_URL = new URL("/scan", "https://mumbai-ethglobal.vercel.app");
 
 /** S7's scan column, in stage pixels. It is placed from the stage box's center, so it lands on the
- * same spot in /map's stretched box as on the slide's 1920x1080 one. */
+ * same spot in /workshop's stretched box as on the slide's 1920x1080 one. */
 export const SCAN = {
   /** Column width: the URL under the QR (614 px) and the QR's square fit in it. */
   width: 640,

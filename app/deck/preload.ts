@@ -1,7 +1,7 @@
 "use client";
 
 // The deck's pictures (mascot art, the memes, the logos, and ME's photos and flags), fetched and
-// decoded as soon as /map or /slides opens, so no slide waits for its picture the first time it comes
+// decoded as soon as /workshop or /workshop/slides opens, so no slide waits for its picture the first time it comes
 // up (October 28: the first pass through the deck stuttered on the slides with a mascot).
 
 import { useEffect } from "react";

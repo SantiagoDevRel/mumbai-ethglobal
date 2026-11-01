@@ -10,9 +10,10 @@ import Image from "next/image";
 import { motion, MotionConfig, type Transition } from "motion/react";
 import { createContext, type CSSProperties, type ReactNode } from "react";
 
-/** True on the public copy (/talk): a slide leaves out what only works for the presenter (ST's
+/** True on the public copy (/slides): a slide leaves out what only works for the presenter (ST's
  * Add network and Get balance use the presenter's wallet and login), so a viewer's page never
- * reaches a wallet or the writer. */
+ * reaches a wallet or the writer, and it shows complete and still (IX lights every part, L9 draws its
+ * last frame). */
 export const PublicCopy = createContext(false);
 
 export const EASE: Transition["ease"] = [0.22, 1, 0.36, 1];

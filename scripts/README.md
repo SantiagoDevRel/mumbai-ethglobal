@@ -61,7 +61,7 @@ against the deployed app (`APP_ORIGIN`). Run it through your secret injector, ne
 pass credential values as arguments. Install the Chromium revision belonging to
 the pinned Playwright dependency on the execution machine. Pages, writer
 requests, phone ticket reads, signatures and receipts are real. It keeps the
-SHA-256 of the served /map page. The private key and RPC access key stay in Node; only the stage receives
+SHA-256 of the served /workshop page. The private key and RPC access key stay in Node; only the stage receives
 the presenter token. Its injected EIP-1193 provider delegates to a Node function.
 The preflight also exercises India and green filters and checks their exact query
 text through the writer. It may read an active session in a separate browser

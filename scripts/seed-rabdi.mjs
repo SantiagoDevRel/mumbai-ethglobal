@@ -7,9 +7,9 @@
 //   node --experimental-strip-types scripts/seed-rabdi.mjs [--dry-run] [--signer writer|test] [--hours 12]
 //
 // Env: RPC (Rabdi's RPC base URL) and ACCESS_KEY. --signer writer (default) signs with
-// WORKSHOP_WRITER_PRIVATE_KEY, the address /map reads, and holds the app's writer while it sends
+// WORKSHOP_WRITER_PRIVATE_KEY, the address /workshop reads, and holds the app's writer while it sends
 // (WORKSHOP_PRESENTER_TOKEN; doors closed, queue empty). --signer test signs with
-// TEST_MUMBAI_PRIVATE_KEY, whose entities /map does not show. --dry-run only reads and prints the plan.
+// TEST_MUMBAI_PRIVATE_KEY, whose entities /workshop does not show. --dry-run only reads and prints the plan.
 import assert from "node:assert/strict";
 import { privateKeyToAccount } from "viem/accounts";
 import { asc, eq, gt } from "@arkiv-network/sdk/query";

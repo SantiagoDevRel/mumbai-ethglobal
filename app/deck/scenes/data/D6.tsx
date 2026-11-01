@@ -1,15 +1,15 @@
 "use client";
 
-// D6 · Encrypt what's private (outline v3 scene B4). A table where everyone reads every value, the
-// owner's phone among them; → your app encrypts the value with your key before it writes, and the
-// field keeps its name, owner_phone, with ciphertext as its value (base64 text in a string
+// D6 · Encrypt what's private (outline v3 scene B4). The entity the room just wrote, as a table where
+// everyone reads every value: name, category and color (Santiago, November 1: the name, not a phone
+// number, so it is the entity they know); → your app encrypts the name with your key before it
+// writes, and the field keeps its name, with ciphertext as its value (base64 text in a string
 // attribute: anyone can read the field, only the key holder can read the value); → with the key you
-// get the number back, without it only ciphertext, and two links: the arkiv-encryption npm package
+// get the name back, without it only ciphertext, and two links: the arkiv-encryption npm package
 // and its Arkiv skill. The slide presents them as tools to encrypt private values and claims nothing
 // about the other columns. Each step lands whole.
 // Steps: 0 every field is public · 1 encrypt before you write · 2 decrypt or not, and the two tools.
-// Santiago, October 29: owner_phone keeps its name and the step-0 line
-// says all fields are public.
+// Santiago, October 29: the field keeps its name and the step-0 line says all fields are public.
 
 import { ArrowUpRight } from "lucide-react";
 import { motion } from "motion/react";
@@ -20,10 +20,11 @@ import { ALERT, CARD_SHADOW, Show } from "./kit";
 
 const COLS = "320px 200px 620px minmax(0, 1fr)";
 
-const PHONE = "+91 98765 43210";
-/** The phone under AES-GCM (12-byte IV, 15 bytes of ciphertext, 16-byte tag) in base64: 60
- * characters in full, shortened here. */
-const CIPHER = "kZ8rQm…Vf2w==";
+/** The name, in lower case like everything the phones write. */
+const NAME = "priya";
+/** The name under AES-GCM (12-byte IV, 5 bytes of ciphertext, 16-byte tag) in base64: 44 characters
+ * in full, shortened here. */
+const CIPHER = "kZ8rQm…Vf2w";
 
 /** Where each tool lives (checked October 29). */
 const TOOLS: { kind: string; name: string; href: string }[] = [
@@ -104,12 +105,15 @@ function Branch({ label, labelColor, accent, children }: { label: string; labelC
   );
 }
 
-function PublicRow({ name, value }: { name: string; value: string }) {
+function PublicRow({ name, value, swatch = false, last = false }: { name: string; value: string; swatch?: boolean; last?: boolean }) {
   return (
-    <div className="grid h-[80px] items-center border-b border-[rgba(17,17,17,0.08)] px-8" style={{ gridTemplateColumns: COLS }}>
+    <div className={`grid h-[80px] items-center px-8 ${last ? "" : "border-b border-[rgba(17,17,17,0.08)]"}`} style={{ gridTemplateColumns: COLS }}>
       <span className="font-mono text-[30px] font-semibold">{name}</span>
       <TypeTag>str</TypeTag>
-      <span className="whitespace-nowrap text-[34px] font-semibold">{value}</span>
+      <span className="flex items-center gap-4 whitespace-nowrap text-[34px] font-semibold">
+        {swatch ? <span className="block h-[30px] w-[30px] rounded-full" style={{ background: value }} aria-hidden /> : null}
+        {value}
+      </span>
       <span className="text-[24px] font-semibold">Everyone</span>
     </div>
   );
@@ -128,14 +132,12 @@ export function D6({ step }: SceneContentProps) {
           <span>value</span>
           <span>who reads it in plain text</span>
         </div>
-        <PublicRow name="name" value="chai corner" />
-        <PublicRow name="category" value="cafe" />
-        <motion.div className="grid h-[80px] items-center px-8" style={{ gridTemplateColumns: COLS }} initial={false} animate={{ backgroundColor: rowBg }} transition={{ duration: REVEAL_TIME, ease: EASE }}>
-          <span className="font-mono text-[30px] font-semibold">owner_phone</span>
+        <motion.div className="grid h-[80px] items-center border-b border-[rgba(17,17,17,0.08)] px-8" style={{ gridTemplateColumns: COLS }} initial={false} animate={{ backgroundColor: rowBg }} transition={{ duration: REVEAL_TIME, ease: EASE }}>
+          <span className="font-mono text-[30px] font-semibold">name</span>
           <TypeTag>str</TypeTag>
           <Swap
             flip={encrypted}
-            a={<span className="whitespace-nowrap text-[34px] font-semibold">{PHONE}</span>}
+            a={<span className="whitespace-nowrap text-[34px] font-semibold">{NAME}</span>}
             b={
               <span className="inline-flex items-center gap-[14px] whitespace-nowrap font-mono text-[30px] font-medium">
                 <Lock color="#181EA9" />
@@ -159,6 +161,8 @@ export function D6({ step }: SceneContentProps) {
             }
           />
         </motion.div>
+        <PublicRow name="category" value="cafe" />
+        <PublicRow name="color" value="#fe7446" swatch last />
       </div>
 
       <Show on={!encrypted} className="absolute left-[96px] top-[680px] flex items-center gap-4">
@@ -187,7 +191,7 @@ export function D6({ step }: SceneContentProps) {
 
       <Show on={encrypted} className="absolute left-[96px] top-[724px] h-[120px] w-[360px]">
         <Box label="IN YOUR APP">
-          <span className="whitespace-nowrap text-[32px] font-semibold leading-none">{PHONE}</span>
+          <span className="whitespace-nowrap text-[32px] font-semibold leading-none">{NAME}</span>
         </Box>
       </Show>
       <Show on={encrypted} className="absolute left-[494px] top-[736px]">
@@ -214,7 +218,7 @@ export function D6({ step }: SceneContentProps) {
       </Show>
       <Show on={read} className="absolute left-[1260px] top-[690px] h-[80px] w-[564px]">
         <Branch label="WITH THE KEY" labelColor="#FE7446" accent>
-          <span className="whitespace-nowrap text-[30px] font-semibold">{PHONE}</span>
+          <span className="whitespace-nowrap text-[30px] font-semibold">{NAME}</span>
         </Branch>
       </Show>
       <Show on={read} className="absolute left-[1150px] top-[798px]">
@@ -251,7 +255,7 @@ export function D6({ step }: SceneContentProps) {
 export const D6_STEPS = 3;
 
 export const D6_NOTES: string[] = [
-  "Everything in an entity is public: every field, readable by anyone. That's what makes it queryable. So think about what you write in plain text: here, the owner's phone number, in owner_phone.",
-  "So your app encrypts the value with your key, before it writes it. The field keeps its name, owner_phone; its value is now ciphertext. Anyone can read the field. Only the key holder can read the value.",
-  "With the key you get the number back; without it, only ciphertext. To do it for real: the arkiv-encryption npm package, and the arkiv-encryption skill for your agent. They encrypt a private value with your key before it is written.",
+  "This is the entity you just wrote. Everything in it is public: every field, readable by anyone. That's what makes it queryable. So think about what you write in plain text: here, your name.",
+  "So your app encrypts the value with your key, before it writes it. The field is still called name; its value is now ciphertext. Anyone can read the field. Only the key holder can read the value.",
+  "With the key you get the name back; without it, only ciphertext. To do it for real: the arkiv-encryption npm package, and the arkiv-encryption skill for your agent. They encrypt a private value with your key before it is written.",
 ];

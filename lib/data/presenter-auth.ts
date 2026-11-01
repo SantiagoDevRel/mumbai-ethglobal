@@ -1,6 +1,6 @@
 "use client";
 
-// Presenter login for /map and /slides. The password goes to the Worker once, which answers with a
+// Presenter login for /workshop and /workshop/slides. The password goes to the Worker once, which answers with a
 // signed 12-hour token. The token sits in localStorage so both windows of a split screen share it;
 // the RPC access key never leaves the Worker.
 
