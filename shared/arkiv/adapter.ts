@@ -38,6 +38,11 @@ export class WriteNotSentError extends Error {
   constructor(message: string) { super(message); this.name = "WriteNotSentError"; }
 }
 
+/** Dots store `kind` without an index (Santiago, November 2, to show an unindexed attribute in the
+ * explorer). The DB-Chain filters only on indexed attributes, so a read that includes dots leaves kind
+ * out of the query and the app keeps the kinds it asked for (stage copy). */
+export const DOT_KIND_APP_SIDE = "Dots store kind without an index: your app keeps the kinds it wants.";
+
 /** Why a Lifetime Extension of entities that all have the longest lifetime sends nothing (stage copy). */
 export const NOTHING_TO_EXTEND = "Nothing to extend: these entities already have the longest lifetime, 6 months.";
 

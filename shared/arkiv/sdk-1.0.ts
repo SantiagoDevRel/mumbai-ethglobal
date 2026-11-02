@@ -2,7 +2,7 @@ import { estimatedGas, type WriteBatch, WritePreparationError } from "./write-es
 import { defineSchema, ExpirationTime, i32, key as entityKey, str, u64, type Attributes, type CreateEntityValues, type PatchEntityValues } from "@arkiv-network/sdk";
 import { asc, eq, gt, gte, lte, or, startsWith, type Expression } from "@arkiv-network/sdk/query";
 import type { AdapterOptions, ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter.ts";
-import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
+import { DOT_KIND_APP_SIDE, NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter.ts";
 import { createSdkClients } from "./clients-1.0.ts";
 import { decodeCoord, decodeRating, encodeCoord, encodeRating } from "../encoding.ts";
 import { countryName } from "../geo/country-name.ts";
@@ -13,9 +13,10 @@ export const LIVE_SELECTION = { $key: true, $owner: true, $creator: true, $creat
 /** One query page: the most an `arkiv_query` returns. */
 const PAGE = 100;
 
-// The workshop's two entity shapes. Every column a query filters on is indexed: Arkiv filters only on
+// The workshop's entity shapes. Every column a query filters on is indexed: Arkiv filters only on
 // indexed columns. The schemas are unnamed, so they add no tag and the queries filter on `app` and
-// `kind` alone. A dot and a business share PLACE: "Make it a business" patches a dot in place.
+// `kind` alone. A dot and a business share PLACE: "Make it a business" patches a dot in place (and
+// writes kind indexed again). DOT, below, is PLACE with kind unindexed.
 export const PLACE = defineSchema({
   app: str().indexed(),
   kind: str().indexed(),
@@ -34,6 +35,9 @@ export const PLACE = defineSchema({
   // Seeded businesses only (scripts/seed-rabdi.mjs): which seed row an entity is, to skip it on a rerun.
   seed_id: str().indexed().optional(),
 });
+/** A dot as phones write it: PLACE with `kind` unindexed (Santiago, November 2), so the explorer shows
+ * an attribute without an index. Reads that include dots cannot filter on kind (DOT_KIND_APP_SIDE). */
+export const DOT = defineSchema({ ...PLACE.columns, kind: str() });
 export const REVIEW = defineSchema({
   app: str().indexed(),
   kind: str().indexed(),
@@ -136,8 +140,8 @@ export function extensionsFor(entities: readonly { key: Hex; expiresAt: bigint }
 export function dotToCreate(dot: DotCreate) {
   const fields = encodedFields(dot as unknown as Record<string, unknown>);
   return {
-    schema: PLACE,
-    values: { ...fields, app: APP_ID, kind: "dot", country: countryName(dot.country) } as unknown as CreateEntityValues<typeof PLACE>,
+    schema: DOT,
+    values: { ...fields, app: APP_ID, kind: "dot", country: countryName(dot.country) } as unknown as CreateEntityValues<typeof DOT>,
     flags: { permissionlessExtension: true },
     expiration: dot.noExpiry ? LONGEST_EXPIRATION : lifetime(dot.lifetimeSec),
   };
@@ -183,7 +187,11 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       expressions.push(expression);
       code.push(`  .where(${text})`);
     }
-    if (filters.kinds.length) {
+    // Dots store kind unindexed: with dots in the read, kind stays out of the query and the app filters it.
+    const appKinds = filters.kinds.includes("dot");
+    if (appKinds) {
+      // No kind clause on the DB-Chain.
+    } else if (filters.kinds.length) {
       const kinds = filters.kinds.map(kind => eq("kind", kind));
       const texts = filters.kinds.map(kind => `eq("kind", ${JSON.stringify(kind)})`);
       where(kinds.length === 1 ? kinds[0]! : or(kinds), texts.length === 1 ? texts[0]! : `or(${texts.join(", ")})`);
@@ -226,7 +234,8 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       if (after) builder.where(gt("$key", entityKey(after)));
       return builder;
     };
-    return { page, description: { code: `const page = await ${code.join("\n")}`, query: page().toString(), appSide: [] } satisfies QueryDescription };
+    if (appKinds) code.push(`const entities = page.entities.filter((entity) => ${JSON.stringify(filters.kinds)}.includes(entity.$attributes.kind.value));`);
+    return { page, appKinds, description: { code: `const page = await ${code.join("\n")}`, query: page().toString(), appSide: appKinds ? [DOT_KIND_APP_SIDE] : [] } satisfies QueryDescription };
   }
 
   function requireWriter() {
@@ -283,8 +292,8 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
       const started = performance.now();
       await checkNetwork();
       if (filters.expiringWithinSec !== undefined) await getBlock();
-      const { page, description } = build(filters);
-      const entities: LiveEntity<T>[] = [];
+      const { page, appKinds, description } = build(filters);
+      let entities: LiveEntity<T>[] = [];
       let block = 0n;
       let pages = 0;
       let after: Hex | undefined;
@@ -296,7 +305,9 @@ export function createArkivAdapter(options: AdapterOptions): ArkivAdapter {
         if (result.entities.length < PAGE) break;
         after = (result.entities.at(-1) as EntityRow).$key;
       }
-      return { entities, description, block, rows: entities.length, pages, latencyMs: performance.now() - started, ranAt: Date.now() };
+      const rows = entities.length;
+      if (appKinds) entities = entities.filter(entity => (filters.kinds as string[]).includes(String(entity.attrs.kind)));
+      return { entities, description, block, rows, pages, latencyMs: performance.now() - started, ranAt: Date.now() };
     },
     createDots: dots => serializeWrite(async () => {
       if (!dots.length) throw new Error("No entities to create.");

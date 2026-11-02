@@ -347,7 +347,7 @@ function YourApp({ step }: { step: number }) {
           <img src="/brand/a-orange.svg" alt="" width={62} height={35} draggable={false} className="block h-[35px] w-[62px]" />
           <span className="text-[44px] font-bold leading-none">DB-Chain</span>
         </span>
-        <span className="mt-2.5 text-[26px] leading-[1.25]" style={{ color: T.t84 }}>Small data you search and filter</span>
+        <span className="mt-2.5 text-[26px] leading-[1.25]" style={{ color: T.t84 }}>Data you search and filter</span>
         <span className="mt-6 flex items-center gap-4">
           <WayIn title="Arkiv SDK" sub="TypeScript" />
           <span className="w-[28px] text-center text-[24px]" style={{ color: T.t64 }}>or</span>
@@ -425,7 +425,7 @@ export const W4_NOTES: string[] = [
   "Arkiv is the Web3 database. Here's the network, from the right: Ethereum mainnet.",
   "In the middle, Arkiv's own chain, still under construction, which bridges to Ethereum mainnet.",
   "And on the left, the DB-Chains: chains built to store and query app data, joined by Arkiv's chain. A DB-Chain runs a database engine instead of the EVM. Two are live: Rabdi, the one you build on this weekend, and Sorbet, which holds Sourcify's verified contracts. Tiramisu, Braga, Kaolin and Mendoza were our previous testnets.",
-  "And here's your app. It talks to a DB-Chain through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: small data you search and filter. This weekend, that's Rabdi.",
+  "And here's your app. It talks to a DB-Chain through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: data you search and filter. This weekend, that's Rabdi.",
   "Your logic lives wherever you want: on Ethereum, Base, Optimism, Arbitrum or Solana, or in a web2 backend. Those chains can't read your entities directly: your app talks to each side.",
   "Heavy files, like photos and video, go to storage built for them: Swarm or IPFS. Your entity keeps the reference.",
 ];

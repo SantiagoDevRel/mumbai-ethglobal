@@ -53,3 +53,28 @@ test('unsigned estimate matches the exact SDK call with its retained salt',async
  }},{retryCount:0})});
  await assert.rejects(wallet.executeBatch(batch,params));assert.equal(sent,1);assert.ok(estimated);
 });
+
+import {RPC_READ_ALLOWLIST} from '../shared/writer-api.ts';
+// The presenter's wallet adapter reads through /api/rpc, which forwards only RPC_READ_ALLOWLIST. Every
+// read writeParams makes must be on it: eth_estimateGas was missing, so each Extend, Transfer and Delete
+// on stage failed with WRITE_ESTIMATE_FAILED before Rabby opened (November 2).
+test('writeParams reads only methods the /api/rpc proxy forwards',async()=>{
+ const batch={extensions:[{entityKey:('0x'+'ab'.repeat(32)) as `0x${string}`,expiration:ExpirationTime.atBlock(5000n)}]};
+ const used:string[]=[];
+ const reader={
+  chain:{id:1337,name:"Test",nativeCurrency:{name:"Test",symbol:"T",decimals:18},rpcUrls:{default:{http:["https://offline.invalid"]}}},
+  async getTransactionCount(){used.push('eth_getTransactionCount');return 7;},
+  async request(call:{method:string;params?:unknown[]}){used.push(call.method);
+   if(!(RPC_READ_ALLOWLIST as readonly string[]).includes(call.method))throw new Error('Read method not allowed.');
+   if(call.method==='eth_gasPrice')return '0x3';
+   if(call.method==='eth_blockNumber')return '0x64';
+   if(call.method==='eth_getBlockByNumber')return {gasLimit:'0x1c9c380'};
+   if(call.method==='eth_estimateGas')return '0x30d40';
+   throw new Error('unexpected request');
+  }
+ };
+ const result=await writeParams(reader as never,address,1,undefined,batch as never);
+ assert.equal(result.gas,1000000n);
+ for(const method of used)assert.ok((RPC_READ_ALLOWLIST as readonly string[]).includes(method),method);
+ assert.ok(used.includes('eth_estimateGas'));
+});

@@ -4,7 +4,7 @@ Edit instructions only in AGENTS.md; CLAUDE.md only imports this file.
 
 "From zero to hero with Arkiv, the Web3 database": a 20-minute live workshop. The room scans a QR,
 writes Arkiv entities from their phones, and watches them land on a 3D globe, where they count down and
-expire (or stay for 6 months, the longest lifetime Rabdi allows).
+expire. Phones choose 5 to 15 minutes; the six-month choice was removed on November 2 to save the writer's GLM.
 
 ## Layout
 

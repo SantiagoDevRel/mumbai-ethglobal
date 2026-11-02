@@ -328,22 +328,25 @@ test("two instances never send at once, and hold stops a batch that was not admi
   } finally { release(); await dispose(); }
 });
 
-// Santiago, October 29: text is stored in lower case, and the longest choice reaches the create as
-// Rabdi's maximum lifetime.
-test("the writer stores lower-case text and keeps No expiration for the create", opts, async () => {
+// Santiago, October 29: text is stored in lower case. November 2: phones write 5 to 15 minutes only,
+// so the six-month choice is refused before anything is queued.
+test("the writer stores lower-case text and refuses the six-month choice", opts, async () => {
   const { db, call, dispose } = await fixture();
   try {
     const { data: { code } } = await call("/api/presenter/session/start", {});
     assert.equal((await call("/api/presenter/hold", {})).data.idle, true);
     const phone = (device: string) => ({ "x-device-token": device, "content-type": "application/json", origin: "https://app.example" });
-    const forever = await call("/api/submit", { name: "  ASHA Rao ", color: "ORANGE", country: "IN", lifetimeSec: 300, noExpiry: true }, phone("lower-case-phone-device-1"));
+    const refused = await call("/api/submit", { name: "Asha", color: "orange", country: "in", lifetimeSec: 300, noExpiry: true }, phone("lower-case-phone-device-0"));
+    assert.equal(refused.status, 400, JSON.stringify(refused.data));
+    assert.equal(refused.data.error, "invalid");
+    const forever = await call("/api/submit", { name: "  ASHA Rao ", color: "ORANGE", country: "IN", lifetimeSec: 300 }, phone("lower-case-phone-device-1"));
     assert.equal(forever.status, 200, JSON.stringify(forever.data));
     const timed = await call("/api/submit", { name: "Ravi", color: "orange", country: "in", lifetimeSec: 300 }, phone("lower-case-phone-device-2"));
     assert.equal(timed.status, 200, JSON.stringify(timed.data));
     assert.equal((await call("/api/submit", { name: "ravi", color: "orange", country: "IND", lifetimeSec: 300 }, phone("lower-case-phone-device-3"))).data.error, "invalid");
     const rows = await db.query<{ dot: DotCreate }>(`select dot from ${db.t("tickets")} where session = $1 order by seq`, [code]);
-    assert.deepEqual(rows.map(({ dot }) => [dot.name, dot.color, dot.country, dot.noExpiry]), [["asha rao", "orange", "in", true], ["ravi", "orange", "in", undefined]]);
-    assert.deepEqual(dotToCreate(rows[0]!.dot).expiration, LONGEST_EXPIRATION);
+    assert.deepEqual(rows.map(({ dot }) => [dot.name, dot.color, dot.country, dot.noExpiry]), [["asha rao", "orange", "in", undefined], ["ravi", "orange", "in", undefined]]);
+    assert.deepEqual(dotToCreate(rows[0]!.dot).expiration, ExpirationTime.fromSeconds(300));
     assert.deepEqual(dotToCreate(rows[1]!.dot).expiration, ExpirationTime.fromSeconds(300));
     // Placement read the lower-case code: both dots are in India.
     for (const { data } of [forever, timed]) assert.ok(data.lat > 6 && data.lat < 36 && data.lng > 68 && data.lng < 98, JSON.stringify(data));

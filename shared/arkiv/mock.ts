@@ -3,7 +3,7 @@
 // Never shown as live: the stage labels mock data.
 
 import type { ArkivAdapter, BusinessCreate, DotCreate, PatchFields, ReviewCreate } from "./adapter";
-import { NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter";
+import { DOT_KIND_APP_SIDE, NOTHING_TO_EXTEND, WriteNotSentError } from "./adapter";
 import { getProfile, WRITER_ADDRESS } from "./profiles";
 import type {
   BlockInfo,
@@ -50,7 +50,9 @@ function rawOf(attrs: EntityAttrs): RawAttribute[] {
 export function describeFilters(filters: ChainFilters, creator: Hex): QueryDescription {
   const where: string[] = [`eq("app", "${APP_ID}")`];
   const q: string[] = [`app = str('${APP_ID}')`];
-  if (filters.kinds.length === 1) {
+  // Dots store kind unindexed, as in the SDK adapter: with dots in the read, the app filters kind.
+  const appKinds = filters.kinds.includes("dot");
+  if (filters.kinds.length === 1 && !appKinds) {
     where.push(`eq("kind", "${filters.kinds[0]}")`);
     q.push(`kind = str('${filters.kinds[0]}')`);
   }
@@ -74,7 +76,7 @@ export function describeFilters(filters: ChainFilters, creator: Hex): QueryDescr
   if (filters.owner) q.push(`$owner = addr(${filters.owner})`);
   q.push(`$creator = addr(${creator})`);
   const code = `const result = await client\n  .select()\n  .where(\n    ${where.join(",\n    ")},\n  )${owner}\n  .createdBy("${creator}")\n  .fetch()`;
-  return { code, query: q.join(" AND "), appSide: [] };
+  return { code, query: q.join(" AND "), appSide: appKinds ? [DOT_KIND_APP_SIDE] : [] };
 }
 
 export function createMockAdapter(opts: MockOptions = {}): ArkivAdapter & {

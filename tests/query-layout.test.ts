@@ -5,6 +5,7 @@ import { getProfile, WRITER_ADDRESS } from "../shared/arkiv/profiles.ts";
 import { queryLayout, type QueryLine } from "../lib/data/query-layout.ts";
 import { describeFilters } from "../shared/arkiv/mock.ts";
 import { APP_ID } from "../shared/types.ts";
+import { DOT_KIND_APP_SIDE } from "../shared/arkiv/adapter.ts";
 
 const OTHER_OWNER = "0x00000000000000000000000000000000000000aa";
 const texts = (lines: QueryLine[]) => lines.map((line) => line.text);
@@ -16,9 +17,11 @@ test("the SDK's own description: one predicate per line, the scope first, the pr
   for (const kind of ["code", "query"] as const) {
     const text = description[kind];
     const lines = queryLayout(text, kind);
-    // app, kind and session open the panel, one per line and never marked.
-    assert.deepEqual(lines.slice(0, 3).map((line) => line.live), [false, false, false], text);
-    for (const [i, name] of ["app", "kind", "session"].entries()) assert.match(lines[i]!.text, new RegExp(`\\b${name}\\b`), text);
+    // app and session open the panel, one per line and never marked. Dots store kind unindexed
+    // (November 2): kind is no clause; the app filters it (appSide).
+    assert.deepEqual(lines.slice(0, 2).map((line) => line.live), [false, false], text);
+    for (const [i, name] of ["app", "session"].entries()) assert.match(lines[i]!.text, new RegExp(`\\b${name}\\b`), text);
+    assert.ok(lines.every((line) => !/\bkind\b/.test(line.text)), text);
     // Every filter set on stage is its own marked line: the name prefix, the color, the country, the
     // map view and the owner.
     const live = marked(lines);
@@ -37,10 +40,9 @@ test("the SDK's own description: one predicate per line, the scope first, the pr
 
 test("the mock describes reads in the SDK's AND form; the panel lists them one per line, without $creator", () => {
   const description = describeFilters({ kinds: ["dot"], session: "MOCK", color: "orange", country: "in", namePrefix: "pri" }, WRITER_ADDRESS);
-  assert.equal(description.query, `app = str('${APP_ID}') AND kind = str('dot') AND session = str('MOCK') AND color = str('orange') AND country = str('india') AND name STARTSWITH str("pri") AND $creator = addr(${WRITER_ADDRESS})`);
+  assert.equal(description.query, `app = str('${APP_ID}') AND session = str('MOCK') AND color = str('orange') AND country = str('india') AND name STARTSWITH str("pri") AND $creator = addr(${WRITER_ADDRESS})`);
   assert.deepEqual(queryLayout(description.query, "query"), [
     { text: `app = str('${APP_ID}')`, live: false },
-    { text: "AND kind = str('dot')", live: false },
     { text: "AND session = str('MOCK')", live: false },
     { text: "AND color = str('orange')", live: true },
     { text: "AND country = str('india')", live: true },
@@ -48,7 +50,6 @@ test("the mock describes reads in the SDK's AND form; the panel lists them one p
   ]);
   assert.deepEqual(queryLayout(description.code, "code"), [
     { text: `eq("app", "${APP_ID}")`, live: false },
-    { text: 'eq("kind", "dot")', live: false },
     { text: 'eq("session", "MOCK")', live: false },
     { text: 'eq("color", "orange")', live: true },
     { text: 'eq("country", "india")', live: true },
@@ -58,7 +59,8 @@ test("the mock describes reads in the SDK's AND form; the panel lists them one p
 
 test("with no filter on stage, nothing is marked", () => {
   const description = describeFilters({ kinds: ["dot"], session: "MOCK" }, WRITER_ADDRESS);
-  for (const kind of ["code", "query"] as const) assert.deepEqual(queryLayout(description[kind], kind).map((line) => line.live), [false, false, false], kind);
+  for (const kind of ["code", "query"] as const) assert.deepEqual(queryLayout(description[kind], kind).map((line) => line.live), [false, false], kind);
+  assert.deepEqual(description.appSide, [DOT_KIND_APP_SIDE]);
 });
 
 test("a quoted ' AND ' or an OR group never splits a predicate", () => {

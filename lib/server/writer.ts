@@ -497,8 +497,8 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
     const deviceId = `device:${session}:${hash}`;
     // A phone may keep several entities live (up to MAX_ENTITIES_PER_DEVICE per session).
     const [device] = await db.query<{ count: number; last_ticket: string | null }>(`select count, last_ticket from ${t("devices")} where id = $1`, [deviceId]);
-    // The longest choice travels with the ticket to dotToCreate, which writes Rabdi's maximum lifetime.
-    const dot: DotCreate = { session, name: data.name, color: data.color, country: data.country, category, lifetimeSec: data.lifetimeSec, ...(data.noExpiry ? { noExpiry: true } : {}), ...point };
+    // Phones write 5 to 15 minutes only: SubmitRequest refuses the six-month choice.
+    const dot: DotCreate = { session, name: data.name, color: data.color, country: data.country, category, lifetimeSec: data.lifetimeSec, ...point };
     const position = await db.transaction(async q => {
       const meta = await lockMeta(q);
       if (session !== meta.session) fail("bad_session", 403, "This session has ended or the code is incorrect.");

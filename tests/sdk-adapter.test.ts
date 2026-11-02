@@ -63,7 +63,9 @@ test("write encoding preserves signed coordinates, schema columns and extension 
   assert.equal(values.country, "colombia");
   assert.equal(values.kind, "dot");
   const columns = create.schema.columns as Record<string, { isIndexed: boolean } | undefined>;
-  for (const name of ["app", "kind", "name", "session", "color", "country", "lat", "lng"]) assert.equal(columns[name]?.isIndexed, true, `${name} is filterable`);
+  for (const name of ["app", "name", "session", "color", "country", "lat", "lng"]) assert.equal(columns[name]?.isIndexed, true, `${name} is filterable`);
+  // Dots store kind unindexed (Santiago, November 2): the explorer shows it without an index.
+  assert.equal(columns.kind?.isIndexed, false);
   assert.equal(encodedFields({ rating: 4.5 }).rating, 45);
   assert.throws(() => encodedFields({ photo: "a".repeat(128) }), /plain Swarm reference/);
 });

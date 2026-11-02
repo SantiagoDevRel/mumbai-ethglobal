@@ -10,7 +10,7 @@ import { deviceToken, writerRequest, WriterRequestError, WRITER_ROUTES, WRITER_C
 import { entityName, phoneWriteMessage, writtenWithoutExpiry } from "../../lib/data/phone-ticket";
 import { CountryPicker } from "./CountryPicker";
 import { LifetimeRing } from "./LifetimeRing";
-import { ArrowUpRight, Check, InfinityIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import "./phone.css";
 
 /** `endsAt` is when the countdown reaches zero on this phone's clock, or null for an entity written
@@ -107,7 +107,6 @@ export function JoinPhone() {
   const ready = WRITER_CONNECTED && profile;
   const entityLink = profile && state.status === "written" ? explorerUrl(profile, "entity", state.key) : null;
   const left = state.status === "written" && state.endsAt !== null ? Math.max(0, state.endsAt - now) / 1000 : 0;
-  const forever = draft.noExpiry === true;
   const full = mine.length >= MAX_ENTITIES_PER_DEVICE;
   const another = state.status === "written" || state.status === "queued" ? <button className="phone-submit" disabled={full} onClick={() => { setError(null); setState({ status: "form" }); }}>{full ? `That’s ${MAX_ENTITIES_PER_DEVICE} entities, the limit` : "Create new entity"}</button> : null;
   return <div className="phone-surface"><main className="phone-main">
@@ -125,12 +124,11 @@ export function JoinPhone() {
       {nameMissing && <p className="phone-field-error" id="name-missing" role="alert">Add a name or nickname: it shows next to your dot.</p>}
       <fieldset><legend>Pick a color</legend><div className="color-grid">{DOT_PALETTE.map((color) => <button key={color} type="button" className="color-swatch" data-color={color} style={{ background: dotHex(color) }} aria-label={DOT_COLOR_NAMES[color]} aria-pressed={draft.color === color} onClick={() => setDraft({ ...draft, color })} />)}</div></fieldset>
       <div className="phone-field"><span>Choose a country</span><CountryPicker value={draft.country} onChange={(country) => setDraft({ ...draft, country })} /></div>
-      {/* The longest choice sits under the slider and switches it off: the entity is written with
-          Rabdi's maximum lifetime, six months (LONGEST). The slider keeps its value. */}
-      <div className={`phone-lifetime${forever ? " is-forever" : ""}`}>
-        <div className="lifetime-head"><label htmlFor="lifetime">How long should this data (entity) live?</label><output className="lifetime-value" htmlFor="lifetime">{forever ? <>{LONGEST} <small>max</small></> : `${draft.lifetimeSec / 60} min`}</output></div>
-        <input id="lifetime" type="range" disabled={forever} style={{ background: forever ? "var(--phone-track)" : `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span>
-        <button type="button" className="lifetime-forever" aria-pressed={forever} onClick={() => setDraft({ ...draft, noExpiry: !forever })}><InfinityIcon size={20} aria-hidden="true" /><span>{LONGEST} <small>the longest</small></span><span className="lifetime-forever-box" aria-hidden="true">{forever && <Check size={16} strokeWidth={3} />}</span></button>
+      {/* 5 to 15 minutes only (Santiago, November 2): the six-month choice is gone so the demo keeps the
+          writer's GLM. Entities written with it earlier still show "6 months". */}
+      <div className="phone-lifetime">
+        <div className="lifetime-head"><label htmlFor="lifetime">How long should this data (entity) live?</label><output className="lifetime-value" htmlFor="lifetime">{`${draft.lifetimeSec / 60} min`}</output></div>
+        <input id="lifetime" type="range" style={{ background: `linear-gradient(to right, #fe7446 ${(draft.lifetimeSec - LIFETIME_MIN_SEC) / (LIFETIME_MAX_SEC - LIFETIME_MIN_SEC) * 100}%, var(--phone-track) 0)` }} min={LIFETIME_MIN_SEC} max={LIFETIME_MAX_SEC} step={LIFETIME_STEP_SEC} value={draft.lifetimeSec} onChange={(event) => setDraft({ ...draft, lifetimeSec: Number(event.target.value) })} /><span className="range-labels"><span>{LIFETIME_MIN_SEC / 60} min</span><span>{LIFETIME_MAX_SEC / 60} min</span></span>
       </div>
       <button className="phone-submit" disabled={!ready || !device || state.status === "submitting"}>{state.status === "submitting" ? "Writing… (a few seconds)" : "Write my entity"}</button>
     </form>}

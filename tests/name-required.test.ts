@@ -37,12 +37,11 @@ test("name, color and country are stored in lower case", () => {
   for (const color of ["purple", "#fe7446", "#123456"]) assert.equal(SubmitRequest.safeParse({ ...draft, name: "asha", color }).success, false, color);
 });
 
-test("no expiration is an optional yes or no, and the slider's lifetime is still checked", () => {
-  assert.equal(SubmitRequest.parse({ ...draft, name: "ada", noExpiry: true }).noExpiry, true);
+test("phones write 5 to 15 minutes only: the six-month choice is refused (Santiago, November 2)", () => {
+  assert.equal(SubmitRequest.safeParse({ ...draft, name: "ada", noExpiry: true }).success, false);
   assert.equal(SubmitRequest.parse({ ...draft, name: "ada", noExpiry: false }).noExpiry, false);
   assert.equal(SubmitRequest.parse({ ...draft, name: "ada" }).noExpiry, undefined);
   assert.equal(SubmitRequest.safeParse({ ...draft, name: "ada", noExpiry: "yes" }).success, false);
-  // The phone always sends the slider's value: one outside 5 to 15 minutes is refused either way.
-  assert.equal(SubmitRequest.safeParse({ ...draft, name: "ada", noExpiry: true, lifetimeSec: 330 }).success, false);
-  assert.equal(SubmitRequest.safeParse({ ...draft, name: "ada", noExpiry: false, lifetimeSec: 120 }).success, false);
+  assert.equal(SubmitRequest.safeParse({ ...draft, name: "ada", lifetimeSec: 330 }).success, false);
+  assert.equal(SubmitRequest.safeParse({ ...draft, name: "ada", lifetimeSec: 120 }).success, false);
 });

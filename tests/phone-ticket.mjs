@@ -15,9 +15,6 @@ const capture = process.argv[2];
 if (capture) await mkdir(capture, { recursive: true });
 const raw = "An unknown RPC error occurred. Details: RPC request rejected (429). Version: viem@2.57.11";
 const key = `0x${"12".repeat(32)}`;
-const foreverKey = `0x${"34".repeat(32)}`;
-// A deadline as the writer answers for the longest choice: block 100 + 7,883,970.
-const NO_EXPIRY_BLOCK = "7884070";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const results = [];
 const errors = [];
@@ -43,7 +40,6 @@ try {
       if (phase === "closed") return route.fulfill({ status: 409, json: { error: "doors_closed", message: "Not open yet." } });
       if (phase === "error") return route.fulfill({ status: 500, json: { error: "internal", message: raw } });
       if (phase === "queued") return route.fulfill({ json: { ...accepted, status: "queued" } });
-      if (phase === "forever") return route.fulfill({ json: { ...accepted, status: "written", entityKey: foreverKey, block: "100", expiresAtBlock: NO_EXPIRY_BLOCK } });
       return route.fulfill({ json: { ...accepted, status: "written", entityKey: key, block: "100", expiresAtBlock: "250" } });
     });
     async function tick(ms) { await page.clock.runFor(ms); await page.waitForTimeout(100); }
@@ -135,49 +131,16 @@ try {
     await expect(page.locator(".phone-mine li")).toHaveCount(2);
     await tick(60000);
     assert.equal(api.length, before + 2, "A queued answer is not followed by polling.");
-    // The longest choice (October 31; Permanent on the previous testnet): one tap under the slider
-    // switches it off; the toggle, the readout, the written entity and the list say 6 months, the
-    // longest lifetime Rabdi allows, and it never counts down.
-    const forever = page.getByRole("button", { name: "6 months the longest", exact: true });
-    await page.getByRole("textbox", { name: "Your name", exact: true }).fill("Ada FOREVER");
-    await expect(page.getByRole("textbox", { name: "Your name", exact: true })).toHaveValue("ada forever");
-    await expect(forever).toHaveAttribute("aria-pressed", "false");
+    // Phones write 5 to 15 minutes only (Santiago, November 2): no six-month choice, the slider stays on.
+    await expect(page.getByRole("button", { name: "6 months the longest", exact: true })).toHaveCount(0);
+    await expect(page.locator(".lifetime-forever")).toHaveCount(0);
+    await expect(page.getByRole("slider", { name: "How long should this data (entity) live?" })).toBeEnabled();
     await expect(page.locator(".lifetime-value")).toHaveText("15 min");
-    const type = (selector) => page.locator(selector).first().evaluate((element) => { const style = getComputedStyle(element); return `${style.fontFamily}|${style.fontSize}|${style.fontWeight}`; });
-    const readout = await type(".lifetime-value");
-    // Same type roles as the rest of the phone: the toggle is a field like the country picker.
-    assert.equal(await type(".lifetime-forever"), await type(".country-trigger"));
-    assert.equal(await forever.evaluate((element) => getComputedStyle(element).height), "52px");
-    await forever.click();
-    await expect(forever).toHaveAttribute("aria-pressed", "true");
-    await expect(page.getByRole("slider", { name: "How long should this data (entity) live?" })).toBeDisabled();
-    await expect(page.locator(".lifetime-value")).toHaveText("6 months max");
-    assert.equal(await type(".lifetime-value"), readout, "The readout keeps its type when it says 6 months.");
-    await fits(forever);
-    await snapshot("permanent-form");
-    phase = "forever";
-    await write.click();
-    await expect(page.getByText("Written in block #100", { exact: true })).toBeVisible();
-    await expect(page.locator(".phone-entity h2")).toHaveText("ada forever");
-    const status = page.locator(".phone-entity .phone-lifetime-status");
-    await expect(status).toHaveText("6 months");
-    await expect(page.locator(".phone-expires-at")).toHaveText("The longest lifetime Rabdi allows");
-    assert.equal(await type(".phone-expires-at"), readout, "The line reads like the lifetime it replaces.");
-    await expect(page.getByLabel("Time left")).toHaveCount(0);
-    await fits(page.locator(".phone-expires-at"));
-    await snapshot("permanent-written");
-    await tick(20 * 60_000);
-    await expect(status).toHaveText("6 months");
-    await expect(page.getByText(/Time’s up/)).toHaveCount(0);
-    await expect(page.locator(".phone-mine li")).toHaveCount(3);
-    await expect(page.locator(".phone-mine-time").first()).toHaveText("6 months");
-    assert.equal(submissions.at(-1).body.noExpiry, true);
-    assert.equal(submissions.at(-1).body.name, "ada forever");
-    assert.equal(api.length, before + 3, "The longest choice is still one request.");
+    assert.ok(submissions.every((item) => item.body.noExpiry !== true), "No phone asks for six months.");
     assert.deepEqual(rpc, [], "The phone must never attempt an RPC.");
     assert.ok(submissions.every((item) => !("session" in item.body)), "Phones send no session code.");
     assert.ok(submissions.every((item) => /^[a-f0-9-]{36}$/i.test(item.device)));
-    results.push({ width, colorScheme, requests: api.length, rpcRequests: rpc.length, quietOnLoad: true, oneRequestPerWrite: true, localCountdown: true, lowerCaseName: true, permanent: true });
+    results.push({ width, colorScheme, requests: api.length, rpcRequests: rpc.length, quietOnLoad: true, oneRequestPerWrite: true, localCountdown: true, lowerCaseName: true, fiveToFifteenOnly: true });
     await context.close();
   }
   assert.deepEqual(errors, []);

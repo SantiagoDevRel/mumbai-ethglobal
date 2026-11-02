@@ -1382,25 +1382,19 @@ try {
     await expect(page.getByRole("combobox", { name: "Your country" })).toBeFocused();
     await page.getByRole("button", { name: "Green", exact: true }).click();
     await expect(page.getByRole("button", { name: "Green", exact: true })).toHaveAttribute("aria-pressed", "true");
-    // The longest choice (October 31): Rabdi's maximum lifetime, six months. It was Permanent
-    // (2**64 − 1) on the previous testnet; Rabdi refuses that deadline. "permanent" never shows.
+    // Phones write 5 to 15 minutes only (Santiago, November 2): no six-month toggle under the slider.
     const fitsMain = (selector) => page.locator(selector).first().evaluate((element) => {
       const box = element.getBoundingClientRect(), main = document.querySelector(".phone-main").getBoundingClientRect();
       return box.left >= main.left && box.right <= main.right && element.scrollWidth <= element.clientWidth;
     });
-    const longest = page.getByRole("button", { name: "6 months the longest", exact: true });
-    await expect(longest).toHaveAttribute("aria-pressed", "false");
+    await expect(page.locator(".lifetime-forever")).toHaveCount(0);
     await expect(page.locator(".lifetime-value")).toHaveText("15 min");
-    await longest.click();
-    await expect(longest).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(".lifetime-value")).toHaveText("6 months max");
-    for (const selector of [".lifetime-forever", ".lifetime-value"]) assert.ok(await fitsMain(selector), `${selector} fits at ${width}px`);
-    assert.ok(await longest.locator("span").first().evaluate((element) => element.getBoundingClientRect().height < 2 * parseFloat(getComputedStyle(element).fontSize)), `The toggle's label is one line at ${width}px`);
-    await expect(page.locator(".phone-main")).not.toContainText(/permanent|2\*\*64/i);
+    for (const selector of [".phone-lifetime", ".lifetime-value"]) assert.ok(await fitsMain(selector), `${selector} fits at ${width}px`);
+    await expect(page.locator(".phone-main")).not.toContainText(/permanent|2\*\*64|6 months/i);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
-    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-longest.png`), fullPage: true });
-    // Written with the longest lifetime: no countdown; the list under it says the same. The fixture
-    // answers as the writer does once the block is in (deadline 100 + LONGEST_LIFETIME_BLOCKS).
+    if (capture) await page.screenshot({ path: path.join(capture, `phone-${width}-${colorScheme}-lifetime.png`), fullPage: true });
+    // An entity the writer answers with the longest deadline (one written before November 2) still
+    // reads "6 months", with no countdown; the list under it says the same.
     await context.route(`${writer}/api/submit*`, (route) => route.fulfill({ json: { ticket: "11111111-1111-4111-8111-111111111111", position: 0, lat: 19, lng: 72, session: "UI-LAYOUT", status: "written", entityKey: `0x${"34".repeat(32)}`, block: "100", expiresAtBlock: (100n + LONGEST_LIFETIME_BLOCKS).toString() } }));
     await page.getByRole("textbox", { name: "Your name", exact: true }).fill("ada");
     await page.getByRole("button", { name: "Write my entity", exact: true }).click();

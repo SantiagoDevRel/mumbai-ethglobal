@@ -41,15 +41,16 @@ export const SubmitRequest = z.object({
   color: z.string().toLowerCase().pipe(z.enum(DOT_PALETTE)),
   /** ISO 3166-1 alpha-2 (`in`). */
   country: z.string().toLowerCase().regex(/^[a-z]{2}$/),
-  /** Checked even with `noExpiry` (the phone always sends the slider's value); ignored then. */
+  /** 5 to 15 minutes, the slider's range. */
   lifetimeSec: z
     .number()
     .int()
     .min(LIFETIME_MIN_SEC)
     .max(LIFETIME_MAX_SEC)
     .refine((v) => v % LIFETIME_STEP_SEC === 0, `lifetime must be a multiple of ${LIFETIME_STEP_SEC} s`),
-  /** The longest choice: the writer creates the entity with Rabdi's maximum lifetime (LONGEST_EXPIRATION). */
-  noExpiry: z.boolean().optional(),
+  /** Phones write 5 to 15 minutes only (Santiago, November 2): the six-month choice cost the writer's
+   * GLM, so `noExpiry: true` is refused. `false` is accepted from older pages. */
+  noExpiry: z.literal(false, { message: "Phones write 5 to 15 minutes only." }).optional(),
 });
 export type SubmitRequest = z.infer<typeof SubmitRequest>;
 
@@ -207,9 +208,12 @@ export const RPC_READ_ALLOWLIST = [
   "eth_getTransactionReceipt",
   "eth_getTransactionByHash",
   "eth_getLogs",
-  // writeParams (shared/arkiv/sdk-1.0.ts): the nonce and gas price every presenter write sends.
+  // writeParams (shared/arkiv/sdk-1.0.ts): the nonce, gas price and gas every presenter write sends.
+  // eth_estimateGas simulates the unsigned call and sends nothing; without it every Extend, Transfer,
+  // Delete and Make it a business failed with WRITE_ESTIMATE_FAILED before Rabby opened (November 2).
   "eth_getTransactionCount",
   "eth_gasPrice",
+  "eth_estimateGas",
   "arkiv_query",
   "arkiv_getEntity",
   "arkiv_getEntityCount",
