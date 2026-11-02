@@ -514,10 +514,13 @@ try {
   const queryText = page.locator('pre[aria-label="Executed query text"]');
   const queryLines = page.locator(".query-panel .query-line");
   const liveLines = page.locator(".query-panel .query-line[data-live]");
-  // The Query tab by default: the scope (app, kind, session), one predicate per line, nothing marked,
-  // and $owner, never $creator.
+  // The Query tab by default: the scope (app, session), one predicate per line, nothing marked,
+  // and $owner, never $creator. Dots store kind unindexed (November 2): the app keeps the kind, and
+  // the panel says so app-side.
   await expect(page.getByRole("tab", { name: "Query", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(queryLines).toHaveCount(3);
+  await expect(queryLines).toHaveCount(2);
+  await expect(page.locator(".query-panel")).not.toContainText(/\bkind = /);
+  await expect(page.locator(".query-panel .app-side")).toContainText("Dots store kind without an index");
   await expect(liveLines).toHaveCount(0);
   await expect(page.locator(".query-panel")).not.toContainText(/\$creator|createdBy/);
   // A name: Arkiv compares strings exactly and every stored string is lower case, so the field is too.
@@ -541,7 +544,7 @@ try {
   const countryField = filterBar.getByPlaceholder("Any country");
   await countryField.fill("India");
   await expect(queryText).toContainText("AND country = str('india')");
-  await expect(queryLines).toHaveCount(6);
+  await expect(queryLines).toHaveCount(5);
   await expect(liveLines).toHaveCount(3);
   await expect.poll(async () => (await stageState(page))?.camera.cue).toBe("country:in");
   // The Code tab: the same predicates as the SDK's builder calls, marked the same way, no createdBy.
