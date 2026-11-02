@@ -6,14 +6,13 @@
 
 import { useEffect } from "react";
 import { MASCOT_ART } from "./mascot-art";
-import { BEFORE_ARKIV, flagSrc, photoSrc, PROFILES, TOUR } from "./scenes/me-tour";
+import { BEFORE_ARKIV, flagSrc, photoSrc, TOUR } from "./scenes/me-tour";
 
-/** Pictures the slides use besides the mascot art: ME's photos, flags, logos and LinkedIn icon, the W2
+/** Pictures the slides use besides the mascot art: ME's photos, flags and logos, the W2
  * and T2 memes, and the W4, ST, NT, T2 and PZ logos. */
 const DECK_PICTURES = [
   ...TOUR.flatMap((stop) => [photoSrc(stop), flagSrc(stop)]),
   ...BEFORE_ARKIV.map((logo) => logo.src),
-  ...PROFILES.flatMap((profile) => ("src" in profile.icon ? [profile.icon.src] : [])),
   "/brand/arkiv-orange.svg",
   "/deck/memes/arkiv-meme-distracted.webp",
   "/deck/memes/arkiv-meme-hug.webp",

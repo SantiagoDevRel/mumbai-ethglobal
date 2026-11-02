@@ -34,13 +34,6 @@ test("ME's photos are plain WebP with no metadata", () => {
   }
 });
 
-/** A PNG's size and whether it has an alpha channel (color type 6: RGBA). */
-function png(src: string) {
-  const bytes = readFileSync(file(src));
-  assert.equal(bytes.toString("latin1", 1, 4), "PNG", src);
-  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20), alpha: bytes[25] === 6 };
-}
-
 // The logos replace the "Worked for" title (Santiago, October 30), in the order he named them. Each is
 // the official file, drawn at its own proportions: a stretched logo would break the brand's rules.
 test("ME's logos are the official files, each at its own proportions", () => {
@@ -55,22 +48,16 @@ test("ME's logos are the official files, each at its own proportions", () => {
   }
 });
 
-// X, LinkedIn and Telegram, all @santiagodevrel, open in a new tab from the slide (Santiago, October 30).
+// X and Telegram, both @santiagodevrel, open in a new tab from the slide (Santiago, October 30); no LinkedIn
+// (Santiago, November 2).
 test("ME's profile links go to @santiagodevrel, each with an icon and a label", () => {
   assert.equal(HANDLE, "@santiagodevrel");
   assert.deepEqual(
     PROFILES.map((profile) => profile.href),
-    ["https://x.com/santiagodevrel", "https://www.linkedin.com/in/santiagodevrel", "https://t.me/santiagodevrel"],
+    ["https://x.com/santiagodevrel", "https://t.me/santiagodevrel"],
   );
   for (const profile of PROFILES) {
     assert.equal(profileLabel(profile), `Santiago on ${profile.name}`);
-    const { icon } = profile;
-    if ("path" in icon) {
-      assert.match(icon.path, /^M[\d.\s,a-zA-Z-]+$/, `${profile.name}: an SVG path`);
-    } else {
-      const picture = png(icon.src);
-      assert.ok(picture.alpha, `${icon.src} has a transparent background`);
-      assert.ok(Math.abs(icon.ratio / (picture.width / picture.height) - 1) < 0.005, `${profile.name}: ratio matches the file`);
-    }
+    assert.match(profile.icon.path, /^M[\d.\s,a-zA-Z-]+$/, `${profile.name}: an SVG path`);
   }
 });

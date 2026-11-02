@@ -63,12 +63,12 @@ export interface Profile {
   name: string;
   href: string;
   size: number;
-  /** A simple-icons path in a 24 x 24 box (CC0), drawn white, or LinkedIn's own picture with its width / height. */
-  icon: { path: string } | { src: string; ratio: number };
+  /** A simple-icons path in a 24 x 24 box (CC0), drawn white. */
+  icon: { path: string };
 }
 
-/** His profiles (Santiago, October 30: X, LinkedIn and Telegram icons that open them). LinkedIn allows only
- * its own logo files, so its icon is the white "in" logo from LinkedIn's brand kit. */
+/** His profiles (Santiago, October 30: icons that open them). X and Telegram only: LinkedIn left the slide
+ * (Santiago, November 2). */
 export const PROFILES: readonly Profile[] = [
   {
     name: "X",
@@ -76,7 +76,6 @@ export const PROFILES: readonly Profile[] = [
     size: 38,
     icon: { path: "M14.234 10.162 22.977 0h-2.072l-7.591 8.824L7.251 0H.258l9.168 13.343L.258 24H2.33l8.016-9.318L16.749 24h6.993zm-2.837 3.299-.929-1.329L3.076 1.56h3.182l5.965 8.532.929 1.329 7.754 11.09h-3.182z" },
   },
-  { name: "LinkedIn", href: "https://www.linkedin.com/in/santiagodevrel", size: 40, icon: { src: "/deck/logos/linkedin-in-white.png", ratio: 840 / 779 } },
   {
     name: "Telegram",
     href: "https://t.me/santiagodevrel",

@@ -22,7 +22,7 @@ export const NOTES: Record<SceneId, string[]> = {
     "Start the session first (presenter controls, ?). → starts the timer.",
   ],
   ME: [
-    "I'm SantiagoDevRel, at Arkiv: the first DevRel to do a Web3 Africa tour. Before Arkiv: Cosmos, ChainSafe, web3.js and Lisk. I'm @santiagodevrel on X, LinkedIn and Telegram; each icon opens the profile in a new tab. On the right, my photos: one country per →.",
+    "I'm SantiagoDevRel, at Arkiv: the first DevRel to do a Web3 Africa tour. Before Arkiv: Cosmos, ChainSafe, web3.js and Lisk. I'm @santiagodevrel on X and Telegram; each icon opens the profile in a new tab. On the right, my photos: one country per →.",
     ...TOUR.slice(1).map((stop) => `${stop.name}: the next photo lands on the pile, and its flag lights up on the route.`),
     `And more: ${MORE.badge} ${MORE.label} so far. The route's last stop lights up, and the pile gets its stamp.`,
   ],

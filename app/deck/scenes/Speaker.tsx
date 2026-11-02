@@ -2,7 +2,7 @@
 
 // ME · Who I am (Santiago, October 30): "SantiagoDevRel @ Arkiv" (Arkiv as its official wordmark), "The
 // first DevRel to do a Web3 Africa tour", one row of logos of where he worked before Arkiv (no title), his
-// X, LinkedIn and Telegram icons beside "@santiagodevrel" (each opens the profile in a new tab), and the
+// X and Telegram icons beside "@santiagodevrel" (LinkedIn left the slide on November 2) (each opens the profile in a new tab), and the
 // slide's main picture: his photos from the countries he has been to (`TOUR`), each printed on a card with
 // its round flag pinned to the corner. One → per photo: the next print lands on top of the pile, the ones
 // under it dim and drop their name and flag, and its flag lights up on the route at the left. The → after
@@ -20,9 +20,6 @@
 //     cropped to the mark: https://raw.githubusercontent.com/web3/web3.js/4.x/assets/logo/web3js.svg
 //   lisk-lockup-light.svg · the light lockup in lisk.com's own header, unchanged:
 //     https://lisk.com/assets/lockup-light.svg
-//   linkedin-in-white.png · LinkedIn's brand kit, "in" logo, InBug-White.png, unchanged (LinkedIn allows
-//     only its own logo files, as a link to a profile: https://brand.linkedin.com/in-logo):
-//     https://content.linkedin.com/content/dam/me/business/en-us/amp/xbu/linkedin-revised-brand-guidelines/logos/in-logo.zip
 //   X and Telegram · simple-icons 16.36.0 paths (CC0-1.0), drawn white, in me-tour.ts:
 //     https://github.com/simple-icons/simple-icons/blob/16.36.0/icons/x.svg (and icons/telegram.svg)
 
@@ -154,22 +151,9 @@ function ProfileLink({ profile }: { profile: Profile }) {
   const { icon, size } = profile;
   return (
     <a href={profile.href} target="_blank" rel="noreferrer" aria-label={profileLabel(profile)} draggable={false} className={LINK}>
-      {"path" in icon ? (
-        <svg viewBox="0 0 24 24" width={size} height={size} fill="#fff" aria-hidden="true" focusable="false">
-          <path d={icon.path} />
-        </svg>
-      ) : (
-        // eslint-disable-next-line @next/next/no-img-element -- LinkedIn's own logo file, fixed size
-        <img
-          src={icon.src}
-          alt=""
-          width={Math.round(size * icon.ratio)}
-          height={size}
-          draggable={false}
-          className="block"
-          style={{ width: size * icon.ratio, height: size }}
-        />
-      )}
+      <svg viewBox="0 0 24 24" width={size} height={size} fill="#fff" aria-hidden="true" focusable="false">
+        <path d={icon.path} />
+      </svg>
     </a>
   );
 }

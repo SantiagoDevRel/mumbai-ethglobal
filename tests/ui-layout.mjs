@@ -249,8 +249,8 @@ try {
   await expect(page.locator('[data-screen="map"][data-scene="ME"]')).toBeVisible();
   await expect(page.locator(".join-qr,.outline-bar,.app-hud")).toHaveCount(0);
   {
-    // ME (Santiago, October 30): "SantiagoDevRel" over one row of logos (no "Worked for" title), and the X,
-    // LinkedIn and Telegram icons open his profiles in a new tab: a click at each icon's center reaches its
+    // ME (Santiago, October 30): "SantiagoDevRel" over one row of logos (no "Worked for" title), and the X
+    // and Telegram icons open his profiles in a new tab (no LinkedIn since November 2): a click at each icon's center reaches its
     // link. The whole column stays left of the photos (x 860) and above y 1000.
     const { BEFORE_ARKIV, HANDLE, ME_STEPS, PROFILES, profileLabel } = await import("../app/deck/scenes/me-tour.ts");
     const me = page.locator('[data-screen="map"][data-scene="ME"]');

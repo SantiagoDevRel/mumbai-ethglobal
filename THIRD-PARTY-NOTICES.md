@@ -9,7 +9,7 @@ slide that uses it). The marks belong to their owners, the MIT license does not 
 endorsement or partnership is implied.
 
 - Cosmos (Interchain Foundation), ChainSafe (ChainSafe Systems), web3.js (ChainSafe Systems), Lisk
-  (Lisk Foundation), LinkedIn (LinkedIn Corporation), X (X Corp.) and Telegram (Telegram FZ-LLC):
+  (Lisk Foundation), X (X Corp.) and Telegram (Telegram FZ-LLC):
   `app/deck/scenes/Speaker.tsx`.
 - Ethereum (Ethereum Foundation), Base (Coinbase), OP Mainnet (Optimism Foundation), Arbitrum (Offchain
   Labs), Solana (Solana Foundation) and Swarm (Swarm Foundation): `app/deck/scenes/W4.tsx`.
