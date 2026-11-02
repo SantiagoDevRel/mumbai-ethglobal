@@ -1372,6 +1372,8 @@ try {
     assert.equal(layout.background, "rgb(17, 17, 17)");
     // The phone's header matches slide 10's label (Santiago, October 30); /workshop's corner card keeps "Join the map".
     await expect(page.locator(".phone-header")).toHaveText("Create your first entity");
+    // The phone names the network it writes to, from the active profile (Santiago, November 2).
+    await expect(page.locator(".phone-network")).toHaveText("Network: Rabdi · chain ID 7794095");
     await expect(page.getByText("Choose a country", { exact: true })).toBeVisible();
     await expect(page.getByText("How long should this data (entity) live?")).toBeVisible();
     for (const gone of [/hang tight/i, /doors/i, /testnet/i, /everything you write/i, /custom/i, /Where are you from/i, /no expiration/i, /Join the map/]) assert.doesNotMatch(layout.text, gone);

@@ -19,3 +19,6 @@
    stays on one line. */
 @media(max-width:359px){.phone-entity{padding-inline:16px}}
 .color-swatch[data-color=black]{border-color:rgba(246,244,239,.55)}
+
+/* Network line under the header (November 2): quiet, one line, from the active profile. */
+.phone-network{margin:12px 0 0;font:500 13px/1.4 var(--font-mono);color:var(--muted)}

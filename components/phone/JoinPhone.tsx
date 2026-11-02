@@ -111,6 +111,8 @@ export function JoinPhone() {
   const another = state.status === "written" || state.status === "queued" ? <button className="phone-submit" disabled={full} onClick={() => { setError(null); setState({ status: "form" }); }}>{full ? `That’s ${MAX_ENTITIES_PER_DEVICE} entities, the limit` : "Create new entity"}</button> : null;
   return <div className="phone-surface"><main className="phone-main">
     <h1 className="phone-header">Create your first entity</h1>
+    {/* The network the entity goes to, from the active profile (Santiago, November 2). No "testnet" word: the October 24 phone keeps only the header. */}
+    {profile && <p className="phone-network">Network: {profile.name} · chain ID {profile.chainId}</p>}
     {!WRITER_CONNECTED && <p className="phone-notice">Not ready yet.</p>}
     {!profile && <p className="phone-notice">Network not configured</p>}
     {error && <p className="phone-notice" role="alert">{error}</p>}
