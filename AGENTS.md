@@ -26,9 +26,10 @@ Change a contract only through the orchestrator. Every user-facing string is Eng
 The talk runs on one screen, `/workshop` (outline v3, October 28, with Santiago's October 29 feedback): the
 title (S0), who I am (ME: santiagodevrel @ Arkiv and one photo per → from the countries the speaker has
 been to, each with its round flag; `app/deck/scenes/me-tour.ts`) and the index (IX, one part lit per →), then four parts
-that the outline bar across the top tracks. Why Arkiv (W1-W4), the five steps (ST) and what Arkiv
+that the outline bar across the top tracks (titles: What/why Arkiv, How to Arkiv, Let's Arkiv!,
+Resources and prizes; Santiago, November 2). What/why Arkiv (W1-W4), the five steps (ST) and what Arkiv
 DB-Chain is not (NT) are slides with no QR. The slides and the app both run on Rabdi (W4 with Sorbet also live, ST
-with the access-key step; October 31). In "Build your entity" the room scans (S7, the QR centered) and each idea
+with the access-key step; October 31). In "Let's Arkiv!" the room scans (S7, the QR centered) and each idea
 is shown on their entities: write (L1, whose Write it and Query it buttons open the createEntity call
 and the query in a popup over the map, October 30) and query (L3: the presenter filters by hand), with
 transfer and extension in the entity card, then encryption (B4) and

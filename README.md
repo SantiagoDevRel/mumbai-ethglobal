@@ -5,7 +5,7 @@
 The app behind Arkiv's workshop at ETHGlobal Mumbai (November 5, 2026), in four parts: why Arkiv, the
 five steps before your first write (and what Arkiv is not), building your entity, and the resources and
 prizes for the weekend. An index after the title lists the parts, and a bar across the top shows where
-the talk is. In "Build your entity" everyone scans a QR code, picks a name, a color, a country and a
+the talk is. In "Let's Arkiv!" everyone scans a QR code, picks a name, a color, a country and a
 lifetime (5 to 15 minutes, 15 by default, or 6 months, the longest Rabdi allows), and their
 Arkiv entity drops onto a live 3D globe, where it counts down and expires, or stays. Everything is stored
 in lower case. Each idea runs on the room's own entities: write it and query it (on the map, Write it and

@@ -27,7 +27,7 @@ export const NOTES: Record<SceneId, string[]> = {
     `And more: ${MORE.badge} ${MORE.label} so far. The route's last stop lights up, and the pile gets its stamp.`,
   ],
   IX: [
-    "Four parts, one per →. Why Arkiv. The five steps before your first write, and what Arkiv DB-Chain is not. Then you build your entity with me, live, from your phone. And the resources and prizes for this weekend. The bar at the top shows where we are.",
+    "Four parts, one per →. What and why Arkiv. How to Arkiv: five steps to get started, and what Arkiv DB-Chain is not. Then, let's Arkiv: you build your entity with me, live, from your phone. And the resources and prizes for this weekend. The bar at the top shows where we are.",
   ],
   W1: W1_NOTES,
   W2: W2_NOTES,
@@ -60,7 +60,7 @@ export const NOTES: Record<SceneId, string[]> = {
 export const REVEALS: Record<SceneId, string[]> = {
   S0: [],
   ME: [...TOUR.slice(1).map((stop) => `photo · ${stop.name}`), `${MORE.badge} ${MORE.label}: the route's last stop and the stamp on the pile`],
-  IX: ["part 2 · Five steps", "part 3 · Build your entity", "part 4 · Resources and prizes"],
+  IX: ["part 2 · How to Arkiv", "part 3 · Let's Arkiv!", "part 4 · Resources and prizes"],
   W1: ["card · Account frozen", "card · Data changed", "card · Rules changed, and \"One company decides for you.\""],
   W2: ["the hug: all three robots together"],
   W3: ["column: from web3", "column: of its own, and the closing line"],

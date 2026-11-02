@@ -297,14 +297,14 @@ try {
   await page.keyboard.press("ArrowRight");
   await expect(page.locator('[data-screen="map"][data-scene="W1"]')).toBeVisible();
   const current = bar.locator('[aria-current="step"]');
-  await expect(current).toContainText("Why Arkiv");
+  await expect(current).toContainText("What/why Arkiv");
   const first = await fill(current);
-  assert.ok(first > 0 && first < 1, `W1 fills part of "Why Arkiv" (${first})`);
+  assert.ok(first > 0 && first < 1, `W1 fills part of "What/why Arkiv" (${first})`);
   await page.keyboard.press("ArrowRight");
   await expect.poll(() => fill(current)).toBeGreaterThan(first);
   await commands(page, [go("ST")]);
-  await expect(current).toContainText("Five steps");
-  await expect(bar.locator('[data-state="done"]')).toContainText("Why Arkiv");
+  await expect(current).toContainText("How to Arkiv");
+  await expect(bar.locator('[data-state="done"]')).toContainText("What/why Arkiv");
   assert.equal(await fill(bar.locator('[data-state="done"]')), 1);
   // S7, in "Build your entity": the scan column (the QR on its own sand square) on the map itself; D
   // swaps it for the 3 · 2 · 1 countdown and back. Slide 10 (Santiago, October 30): "Your first

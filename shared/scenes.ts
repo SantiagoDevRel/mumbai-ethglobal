@@ -39,9 +39,9 @@ export type QrLabel = "Create your first entity" | "Join the map";
 /** The talk's parts, in order. The index (IX) lists them and the outline bar across the top tracks
  * them; every scene after the index belongs to one. */
 export const SECTIONS = [
-  { id: "why", title: "Why Arkiv", line: "Your data, the web3 way, and what Arkiv is." },
-  { id: "start", title: "Five steps", line: "What you need before your first write, and what Arkiv DB-Chain is not." },
-  { id: "build", title: "Build your entity", line: "Scan the QR: write your entity, then query, encrypt and explore." },
+  { id: "why", title: "What/why Arkiv", line: "Your data, the web3 way, and what Arkiv is." },
+  { id: "start", title: "How to Arkiv", line: "How to get started, and what Arkiv DB-Chain is not." },
+  { id: "build", title: "Let's Arkiv!", line: "Scan the QR: write your entity, then query, encrypt and explore." },
   { id: "tools", title: "Resources and prizes", line: "The Hub, the docs, your agent and prizes." },
 ] as const;
 
