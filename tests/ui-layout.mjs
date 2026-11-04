@@ -714,6 +714,13 @@ try {
     const links = await page.getByText("START BUILDING").locator("..").boundingBox();
     const mascot = await page.getByRole("img", { name: "Arkiv mascot waving" }).boundingBox();
     assert.ok(links.y + links.height <= mascot.y + 1, "The links end above the mascot.");
+    // November 4: then the photo of Santiago with Arkiv flies out of the mascot and lands above the
+    // bricks (they start at y 812), left of the links.
+    const photo = page.getByRole("img", { name: "Santiago with the Arkiv mascot" });
+    await expect(photo).toBeVisible();
+    await page.waitForTimeout(1500);
+    const landed = await photo.boundingBox();
+    assert.ok(landed.x > 96 && landed.x + landed.width < links.x && landed.y > 56 && landed.y + landed.height < 812, `The photo lands clear of the bricks and the links: ${JSON.stringify(landed)}`);
   }
   // The leader still draws the 1920 px globe in software WebGL here, so this capture gets the 60 s the
   // entity-card captures have: the default 30 s timed out on main (run 40888175044) and points-31 (41066509531).
