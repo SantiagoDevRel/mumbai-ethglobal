@@ -18,9 +18,12 @@ export const CAPTION_KEYTERMS = [
   "Ethereum", "Ethereum mainnet", "Ethereum-aligned", "EVM", "Arbitrum", "Optimism", "Solana", "Swarm", "IPFS",
   "Sourcify", "Rabby", "MetaMask", "JSON-RPC", "RPC", "SDK", "npm", "TypeScript", "smart contracts",
   "MCP", "plugin", "skills", "Claude Code", "Codex", "OpenAI", "your agent",
-  // The event and the speaker
+  // The event and the speaker, with the opening lines (Santiago, November 4: "I'm Santiago, I work as
+  // developer relations at Arkiv" came out "that's why I was in shadow"; "my voice is not doing that
+  // well" came out "my price is not in that file")
   "ETHGlobal", "ETHGlobal Mumbai", "Mumbai", "Devcon", "web2", "web3", "santiagodevrel", "DevRel",
-  "ChainSafe", "Cosmos", "Lisk", "web3.js", "Africa tour", "Continuity", "Node tooling",
+  "ChainSafe", "Cosmos", "Lisk", "web3.js", "Web3 Africa tour", "Continuity", "Node tooling",
+  "Santiago", "I'm Santiago", "developer relations", "first DevRel", "my voice", "Telegram",
 ] as const;
 
 const DEEPGRAM_LISTEN = "wss://api.deepgram.com/v1/listen";
@@ -69,6 +72,7 @@ const CORRECTIONS: [RegExp, string | ((match: string) => string)][] = [
   [/\beth[\s-]?global\b/gi, "ETHGlobal"],
   [/\bjson[\s-]?rpc\b/gi, "JSON-RPC"],
   [/\btiramisu\b/gi, "Tiramisu"],
+  [/\bdev[\s-]?rel\b/gi, "DevRel"],
 ];
 export function correctTerms(text: string): string {
   return CORRECTIONS.reduce((out, [pattern, word]) => (typeof word === "string" ? out.replace(pattern, word) : out.replace(pattern, word)), text);

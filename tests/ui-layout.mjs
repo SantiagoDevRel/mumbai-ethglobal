@@ -758,6 +758,19 @@ try {
   await expect(page.getByText("Write it. Every dot is an entity you just wrote.")).toHaveCount(0);
   // /workshop/slides shows the same outline bar, on the same part.
   await expect(slides.getByRole("navigation", { name: "Talk outline" }).locator('[aria-current="step"]')).toContainText(BUILD);
+  // The microphone lives only on /workshop (Santiago, November 4): /workshop/slides has no captions
+  // row in its "?" card, no C key in its list, and C there starts nothing in either window.
+  await slides.getByRole("button", { name: "Presenter controls" }).click();
+  const slidesCard = slides.getByRole("dialog", { name: "Presenter controls" });
+  await expect(slidesCard).toBeVisible();
+  await expect(slidesCard.getByRole("heading", { name: "Live captions" })).toHaveCount(0);
+  await expect(slidesCard.getByRole("cell", { name: "C", exact: true })).toHaveCount(0);
+  await slides.keyboard.press("Escape");
+  await expect(slidesCard).toHaveCount(0);
+  await slides.keyboard.press("c");
+  await page.waitForTimeout(300);
+  await expect(slides.locator(".captions-band")).toHaveCount(0);
+  await expect(page.locator(".captions-band")).toHaveCount(0);
   // Half a screen: the slide keeps 16:9 inside its window, nothing scrolls.
   await slides.setViewportSize({ width: 960, height: 1080 });
   assert.equal(await slides.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
@@ -813,6 +826,11 @@ try {
   const card = page.getByRole("dialog", { name: "Presenter controls" });
   await page.getByRole("button", { name: "Presenter controls" }).click();
   await expect(card).toBeVisible();
+  // /workshop's card holds the live captions: on/off, the microphone, the noise filter and the audio.
+  await expect(card.getByRole("heading", { name: "Live captions" })).toBeVisible();
+  await expect(card.getByRole("cell", { name: "C", exact: true })).toBeVisible();
+  await expect(card.getByRole("checkbox", { name: "Chrome noise filter" })).not.toBeChecked();
+  await expect(card.getByRole("button", { name: /^Save the audio/ })).toBeDisabled();
   await page.keyboard.press("Escape");
   await expect(card).toHaveCount(0);
   // Playwright has no Spanish layout: send the keys a Spanish keyboard reports (¿; ? through AltGr).

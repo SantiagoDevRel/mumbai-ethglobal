@@ -14,7 +14,8 @@
 //   captions live captions at the bottom, when on (Captions)        z-38
 //   controls the "?" keyboard overlay                               z-40
 // /workshop/slides: every slide scene's Slide, a card for live scenes, the S7 QR, the outline bar and the
-// "?" overlay. Both keep the presenter chrome in window pixels: the ? button (and the Writing switch
+// "?" overlay. No live captions there: the microphone lives only on /workshop (Santiago, November 4),
+// so the C key, the band and the captions row of the "?" card exist only in MapFrame. Both keep the presenter chrome in window pixels: the ? button (and the Writing switch
 // on /workshop) bottom left, the scene counter and step dots bottom right, the pointer rectangles.
 //
 // Everything is drawn in stage pixels. /workshop/slides fits a 1920x1080 box to the window ("contain"). /workshop
@@ -23,7 +24,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { KEY_HELP } from "../../lib/stage/keyboard";
+import { CAPTIONS_KEY, KEY_HELP } from "../../lib/stage/keyboard";
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
 import { SCENES, type SceneDef } from "../../shared/scenes";
 import { stage, useScene, useStage } from "../../lib/stage/store";
@@ -115,7 +116,7 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: 
         {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
         <div className="pointer-events-none absolute inset-0 z-[35]"><StageBox><OutlineBar /></StageBox></div>
         {/* The map has no free corner for Reset, so it sits in the "?" presenter card. */}
-        <ControlsOverlay extra={bar} />
+        <ControlsOverlay extra={bar} captions />
         {writing}
         <CaptionsBand />
         <StageProgress />
@@ -145,7 +146,6 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
       {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
       <div className="pointer-events-none absolute inset-0 z-[35]"><StageBox><OutlineBar /></StageBox></div>
       {bar}
-      <CaptionsBand />
       <ControlsOverlay />
       <StageProgress />
       <Annotations />
@@ -218,8 +218,9 @@ function Annotations() {
 }
 
 /** The presenter card: a visible ? button (bottom left) or the ? key opens it; Esc, the backdrop or
- * Close shuts it. It jumps to any scene and holds Reset, so a lost presenter is never stuck. */
-function ControlsOverlay({ extra }: { extra?: ReactNode }) {
+ * Close shuts it. It jumps to any scene and holds Reset, so a lost presenter is never stuck. Only
+ * /workshop passes `captions`: its card alone lists the C key and holds the captions row. */
+function ControlsOverlay({ extra, captions = false }: { extra?: ReactNode; captions?: boolean }) {
   const controls = useStage((s) => s.panels.controls);
   const session = useStage((s) => s.session);
   const { index } = useScene();
@@ -252,7 +253,7 @@ function ControlsOverlay({ extra }: { extra?: ReactNode }) {
                 <h3>Keys</h3>
                 <table>
                   <tbody>
-                    {KEY_HELP.map((k) => (
+                    {KEY_HELP.filter((k) => captions || k.keys !== CAPTIONS_KEY).map((k) => (
                       <tr key={k.keys}>
                         <td>{k.keys}</td>
                         <td>{k.action}</td>
@@ -261,7 +262,7 @@ function ControlsOverlay({ extra }: { extra?: ReactNode }) {
                   </tbody>
                 </table>
                 {extra}
-                <CaptionsControls />
+                {captions ? <CaptionsControls /> : null}
               </section>
             </div>
           </div>

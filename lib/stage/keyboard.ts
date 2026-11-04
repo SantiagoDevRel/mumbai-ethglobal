@@ -5,6 +5,9 @@
 import { useEffect } from "react";
 import { stage, type Command } from "./store";
 
+/** The live-captions key: /workshop only (components/stage/Captions.tsx). */
+export const CAPTIONS_KEY = "C";
+
 export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "→ / ←", action: "Next / previous scene" },
   { keys: "D", action: "Show or hide the write! frame (S7)" },
@@ -14,7 +17,7 @@ export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "0x, Space", action: "New owner field: fill in a random wallet address" },
   { keys: "R", action: "Reset the camera" },
   { keys: "P", action: "Plan B: replay mode" },
-  { keys: "C", action: "Live captions in this window (microphone → Deepgram)" },
+  { keys: CAPTIONS_KEY, action: "Live captions on /workshop (microphone → Deepgram)" },
   { keys: "Right-drag", action: "Draw a box to point at something (a right-click clears them)" },
   { keys: "? or /", action: "Show or hide these controls (or the ? button, bottom left)" },
   { keys: "Esc", action: "Close a popup or these controls" },

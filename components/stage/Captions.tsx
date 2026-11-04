@@ -5,7 +5,7 @@
 // map; it shows the last two lines, settled words in white and words still being heard dimmer.
 
 import { useEffect } from "react";
-import { chooseMicrophone, refreshMicrophones, toggleCaptions, useCaptions } from "../../lib/stage/captions";
+import { chooseFilter, chooseMicrophone, refreshMicrophones, saveAudio, toggleCaptions, useCaptions, useMicLevel } from "../../lib/stage/captions";
 import { StageBox } from "./StageFrame";
 
 function isTyping(target: EventTarget | null): boolean {
@@ -49,7 +49,8 @@ export function CaptionsBand() {
   );
 }
 
-/** The captions row in the "?" presenter card: on/off and the microphone. */
+/** The captions row in the "?" presenter card: on/off, the microphone and its level, Chrome's noise
+ * filter, and the audio Deepgram got, to check a bad transcript against it. */
 export function CaptionsControls() {
   const captions = useCaptions();
   useEffect(() => { refreshMicrophones(); }, []);
@@ -64,9 +65,24 @@ export function CaptionsControls() {
           {captions.devices.map((device) => <option key={device.id} value={device.id}>{device.label}</option>)}
         </select>
       </div>
+      {on ? <MicLevel /> : null}
+      <div className="captions-controls-row">
+        <label className="captions-filter"><input type="checkbox" checked={captions.filter} onChange={(event) => chooseFilter(event.target.checked)} /> Chrome noise filter</label>
+        <button type="button" disabled={captions.savedSeconds < 1} onClick={saveAudio}>Save the audio{captions.savedSeconds ? ` (${captions.savedSeconds} s)` : ""}</button>
+      </div>
       <p className="captions-controls-status">
         {captions.status === "live" ? <>Listening · {captions.micLabel}</> : captions.message ?? (on ? "Starting…" : "Off. Deepgram Nova-3 hears this window's microphone.")}
       </p>
+    </div>
+  );
+}
+
+/** The microphone's loudness while captions run: speaking should fill most of the bar. */
+function MicLevel() {
+  const level = useMicLevel();
+  return (
+    <div className="captions-level" role="meter" aria-label="Microphone level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level * 100)}>
+      <span style={{ width: `${Math.round(level * 100)}%` }} data-low={level < 0.45 ? "true" : undefined} />
     </div>
   );
 }
