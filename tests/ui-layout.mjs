@@ -321,7 +321,7 @@ try {
   await expect(scan).not.toContainText(/Name\. Color|Lifetime|expiration/);
   // The QR and both links carry the production /scan URL, read back from the QR's own modules.
   for (const link of [scan.locator("a.qr-image"), scan.locator(".qr-url")]) await expect(link).toHaveAttribute("href", SCAN_URL);
-  await expect(scan.locator(".qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(scan.locator(".qr-url")).toHaveText("ethglobal.arkiv.network/scan");
   assert.ok(encodes(await qrModules(scan.locator(".qr-image img")), SCAN_URL), `S7's QR encodes ${SCAN_URL}.`);
   {
     const column = await scan.boundingBox();
@@ -362,8 +362,8 @@ try {
   await expect(page.getByText(/Mock data|Live · Arkiv DB-Chain/)).toHaveCount(0);
   await expect(page.locator(".stage-counter")).toBeVisible();
   await expect(page.locator(".event-log")).toBeVisible();
-  await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
-  await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://mumbai-ethglobal.vercel.app/scan");
+  await expect(page.locator(".join-qr-corner .qr-url")).toHaveText("ethglobal.arkiv.network/scan");
+  await expect(page.locator(".join-qr-corner .qr-url")).toHaveAttribute("href", "https://ethglobal.arkiv.network/scan");
   assert.ok(encodes(await qrModules(page.locator(".join-qr-corner .qr-image img")), SCAN_URL), `The corner QR encodes ${SCAN_URL}.`);
   if (capture) { await page.waitForTimeout(1200); await page.screenshot({ path: path.join(capture, "map-1920-L1.png") }); }
   await page.evaluate(() => document.fonts.ready);
@@ -737,7 +737,7 @@ try {
   });
   // The scan column sits in the middle of the slide (x 960 of 1920) until S7's → moves it aside.
   await expect.poll(async () => { const box = await slides.locator(".join-qr-scan").boundingBox(); return box && Math.round(box.x + box.width / 2); }, { timeout: 20000 }).toBe(Math.round(960 * 1280 / 1920));
-  await expect(slides.locator(".join-qr-scan .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(slides.locator(".join-qr-scan .qr-url")).toHaveText("ethglobal.arkiv.network/scan");
   await expect(slides.locator(".join-qr-scan .qr-scan-label")).toHaveText("Create your first entity");
   await slides.keyboard.press("d");
   await expect(slides.locator(".join-qr-scan")).toHaveCount(0);

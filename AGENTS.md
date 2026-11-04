@@ -67,7 +67,7 @@ deck itself, so a changed slide shows there as it is; change its points with it.
 - Palette for UI chrome: Arkiv Blue `#181EA9`, Arkiv Orange `#FE7446`, Ink `#111111`, Sand `#F6F4EF`, Stone `#E9E6DE`. Official logo SVGs only (`public/brand/`). Dot colors are the seven names in `DOT_PALETTE` (`shared/encoding.ts`: yellow, blue, red, orange, white, green, black); entities store the name, never a hex code (Santiago, November 1: a hex reads like ciphertext), `dotHex` draws it, and the writer accepts no other.
 - Text font IBM Plex Sans; code IBM Plex Mono.
 - Never `git add .`; scan staged changes for secrets before every commit.
-- Vercel is connected to this repo: every push to `main` deploys production (`mumbai-ethglobal.vercel.app`), and other branches get preview deployments. Push to `main` only verified work.
+- Vercel is connected to this repo: every push to `main` deploys production (`ethglobal.arkiv.network`, since November 4, and `mumbai-ethglobal.vercel.app`; the QR sends phones to the first), and other branches get preview deployments. Push to `main` only verified work.
 - Checks run on GitHub Actions (`.github/workflows/ci.yml`) on every push, in parallel: typecheck, lint, unit, `ui-layout`, `phone-ticket`, `deck-walk`, and the deck captures (artifact `deck-captures`, read with `gh run download <id> -n deck-captures`); `ui-layout` uploads its own captures (/workshop, /workshop/slides, /outline, /slides and the phone) as `ui-captures`. Push work to a branch, wait for a green run, then merge to `main`. The writer tests against real Postgres need `DATABASE_URL` and run outside Actions.
 
 ## Changing the network or the SDK

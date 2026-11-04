@@ -18,7 +18,8 @@ import "./join-qr.css";
  * The QR and the link always carry the production URL, never this page's own host: a preview
  * deployment or a laptop still sends phones to production, whose /scan is public (no password) and
  * built for phones. tests/ui-layout.mjs reads the URL back from the QR's own pixels. */
-const SCAN_URL = new URL("/scan", "https://mumbai-ethglobal.vercel.app");
+// Since November 4 the room scans the arkiv.network domain (same Vercel project; mumbai-ethglobal.vercel.app still answers).
+const SCAN_URL = new URL("/scan", "https://ethglobal.arkiv.network");
 
 /** S7's scan column, in stage pixels. It is placed from the stage box's center, so it lands on the
  * same spot in /workshop's stretched box as on the slide's 1920x1080 one. */

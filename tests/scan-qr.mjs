@@ -8,7 +8,7 @@ import { expect } from "@playwright/test";
 import QRCode from "qrcode";
 import { isDeepStrictEqual } from "node:util";
 
-export const SCAN_URL = "https://mumbai-ethglobal.vercel.app/scan";
+export const SCAN_URL = "https://ethglobal.arkiv.network/scan";
 
 /** The modules of a QR image on the page, one array per row: 1 dark, 0 light. */
 export async function qrModules(img) {

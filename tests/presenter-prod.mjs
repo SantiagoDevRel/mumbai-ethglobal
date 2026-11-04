@@ -42,7 +42,7 @@ try {
   }, sceneIndex("L1"));
   await expect(map.locator('[data-scene="L1"]')).toBeVisible();
   await expect(map.locator(".join-qr-corner .qr-image img")).toBeVisible({ timeout: 20000 });
-  await expect(map.locator(".join-qr-corner .qr-url")).toHaveText("mumbai-ethglobal.vercel.app/scan");
+  await expect(map.locator(".join-qr-corner .qr-url")).toHaveText("ethglobal.arkiv.network/scan");
   // The data source and its blinker sit in the "?" presenter card, never on the stage (October 29).
   await expect(map.getByText("Live · Arkiv DB-Chain", { exact: true })).toHaveCount(0);
   await expect(map.locator(".source-label")).toHaveCount(0);
