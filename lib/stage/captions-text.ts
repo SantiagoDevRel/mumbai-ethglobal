@@ -4,7 +4,7 @@
 /** Words the room will hear that a general model would misspell (Deepgram keyterm prompting: plain
  * terms, proper nouns capitalized, at most 500 tokens; the docs suggest 20 to 50). */
 export const CAPTION_KEYTERMS = [
-  "Arkiv", "Arkiv DB-Chain", "DB-Chain", "DB-Chains", "Web3 database", "Rabdi", "Sorbet", "Tiramisu", "Golem",
+  "Arkiv", "Arkiv entities", "Arkiv DB-Chain", "DB-Chain", "DB-Chains", "Web3 database", "Rabdi", "Sorbet", "Tiramisu", "Golem",
   "ETHGlobal", "ETHGlobal Mumbai", "Devcon", "Ethereum", "Ethereum-aligned", "Solana", "Swarm", "Sourcify",
   "Rabby", "MetaMask", "wallet", "testnet", "faucet", "GLM", "SDK", "npm", "TypeScript", "createEntity",
   "entity", "entities", "Entity Expiration", "Lifetime Extension", "owner", "query", "indexing data",

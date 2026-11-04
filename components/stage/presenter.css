@@ -57,9 +57,9 @@
 /* Presenter chrome stays dim on the projector until the presenter reaches for it. */
 .controls-button,.writing-switch{opacity:.4;transition:opacity .2s}.controls-button:hover,.controls-button:focus-visible,.controls-button[aria-expanded=true],.writing-switch:hover,.writing-switch:focus-within,.writing-switch:has(em){opacity:1}
 /* Live captions (Captions.tsx): bottom center in stage pixels, the last two lines only; the newest
-   words stay at the bottom and older lines leave at the top. Settled words white, words still being
+   words stay at the bottom and older lines leave at the top; it clears the [ ARKIV ] logo under it. Settled words white, words still being
    heard dimmer. No animation: the text changes in place. */
-.captions-band{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);width:1500px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-sans);text-align:center}
+.captions-band{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);width:1500px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-sans);text-align:center}
 .captions-text{--line:52px;display:flex;flex-direction:column;justify-content:flex-end;max-height:calc(var(--line)*2 + 20px);overflow:hidden;padding:10px 28px;box-sizing:border-box;border-radius:14px;background:rgba(17,17,17,.82);color:#fff;font:500 40px/var(--line) var(--font-sans);letter-spacing:.005em}
 .captions-text p{flex:none;margin:0}
 .captions-interim{color:rgba(255,255,255,.66)}
