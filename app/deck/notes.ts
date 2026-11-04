@@ -10,7 +10,6 @@ import { D6_NOTES } from "./scenes/data/D6";
 import { MORE, TOUR } from "./scenes/me-tour";
 import { BOOTH_NOTES } from "./scenes/Booth";
 import { NT_NOTES } from "./scenes/NT";
-import { PA_NOTES } from "./scenes/PA";
 import { ST_NOTES } from "./scenes/ST";
 import { T1_NOTES } from "./scenes/T1";
 import { W1_NOTES } from "./scenes/W1";
@@ -48,7 +47,6 @@ export const NOTES: Record<SceneId, string[]> = {
     "The same kind of query, on your entities. No filter yet: every entity in this session, on the whole globe. Filter by hand in the bar at the top: a name, a country (the camera flies there) or a color. The query panel shows each clause on its own line, joined by AND.",
     "Own it: click a dot, press Transfer ownership, type 0x and a space for a fresh random wallet (or paste one), then sign once in Rabby (the MUMBAI account, the writer wallet). $owner changes on the next query, and only that wallet can update or delete the entity now. Extend: press Extend in the card (or select dots and E), sign in Rabby, and the ring refills: we switched on permissionless extension, so anyone can extend these.",
   ],
-  PA: PA_NOTES,
   B4: D6_NOTES,
   B5: B5_NOTES,
   T1: T1_NOTES,
@@ -56,7 +54,7 @@ export const NOTES: Record<SceneId, string[]> = {
   PZ: PRIZES_NOTES,
   BT: BOOTH_NOTES,
   L9: [
-    "The mascot says the four verbs, one pose each: Write it. Query it. Own it. Expire it. Then it comes apart into bricks that build THANK YOU, and a small copy waves. Then a photo flies out of it and develops: me with Arkiv. A click on the bricks plays it again. Thank you. The START BUILDING links (docs, Hub, MCP, prizes) open in a new tab.",
+    "The mascot comes apart into bricks that build THANK YOU, a small copy waves, and a photo flies out of it and develops: me with Arkiv. A click on the bricks plays it again. Thank you. The START BUILDING links (docs, Hub, MCP, prizes) open in a new tab.",
   ],
 };
 
@@ -74,7 +72,6 @@ export const REVEALS: Record<SceneId, string[]> = {
   S7: ["your entity: name, color, country and its expiration"],
   L1: [],
   L3: [],
-  PA: ["the query: project maps AND kind review", "each map entity in its owner's wallet", "your entity: today, your wallet, or a transfer"],
   B4: ["name, encrypted", "the arkiv-encryption skill and npm package"],
   B5: [],
   T1: ["Docs", "AI tools"],

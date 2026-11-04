@@ -342,7 +342,7 @@ try {
   const s7Card = page.locator("[data-entity-card]");
   await expect(s7Card.getByText("Your entity", { exact: true })).toBeVisible();
   await expect(s7Card.locator("[data-row] span:first-child")).toHaveText(["name", "color", "country", "expiration"]);
-  await expect(s7Card.locator("[data-row] span:last-child")).toHaveText(['"priya"', '"orange"', '"india"', "15 min"]);
+  await expect(s7Card.locator("[data-row] span:last-child")).toHaveText(['"santiago"', '"orange"', '"india"', "15 min"]);
   await expect(page.getByText("YOUR FORM = ONE ENTITY")).toHaveCount(0);
   await expect(s7Card).not.toContainText("Entity Expiration");
   await expect.poll(() => page.evaluate(() => {
@@ -690,9 +690,9 @@ try {
   await page.setViewportSize({ width: 1920, height: 1080 });
   await commands(page, [go("L9")]);
   await expect(page.locator('[data-screen="map"][data-scene="L9"]')).toBeVisible();
-  // The finale: the mascot says the four verbs (the first one holds 1.5 s), THANK YOU in bricks, and
+  // The finale: THANK YOU in bricks straight away (November 4: no more four verbs before it), and
   // real links that open in a new tab.
-  await expect(page.getByText("Write it.")).toBeVisible();
+  await expect(page.getByText("Write it.")).toHaveCount(0);
   await expect(page.getByRole("img", { name: "Thank you" })).toBeVisible();
   for (const href of ["https://docs.arkiv.network", "https://hub.arkiv.network", "https://mcp.arkiv.network/mumbai", "https://ethglobal.com/events/mumbai/prizes/arkiv"])
     await expect(page.locator(`a[href="${href}"][target="_blank"][rel="noreferrer"]`)).toBeVisible();

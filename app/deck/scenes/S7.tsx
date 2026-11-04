@@ -21,7 +21,7 @@ import { FootLogo, Reveal, T, Wash } from "../ui";
  * expiration is not a string attribute, so it has no quotes: the writer turns the lifetime into the
  * entity's `$expiresAt`, its Entity Expiration. 15 min is the phone's default. */
 const ROWS: [name: string, value: string][] = [
-  ["name", '"priya"'],
+  ["name", '"santiago"'],
   ["color", '"orange"'],
   ["country", '"india"'],
   ["expiration", `${LIFETIME_DEFAULT_SEC / 60} min`],

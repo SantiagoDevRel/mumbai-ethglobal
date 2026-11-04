@@ -1,29 +1,29 @@
 "use client";
 
-// L9, the close (Santiago, October 29): the mascot says the four verbs, one pose each, then comes apart
-// into cubes that stack into THANK YOU in bricks, and a small copy of it waves beside them while the
-// globe keeps its live dots behind. The START BUILDING links are real links on a card that takes the
-// pointer, so the globe under it no longer drags from there. Plays once per entry (a click on the
-// bricks plays it again); with reduced motion, and in the /outline previews, the last frame shows at
-// once. Geometry and timing live in ./bricks.ts, where the node tests check them.
+// L9, the close: the mascot, already in cubes, comes apart and stacks into THANK YOU in bricks, a small
+// copy of it waves beside them, and a photo of Santiago with Arkiv flies out of it, while the globe
+// keeps its live dots behind. November 4 (Santiago): no more four verbs before it ("es muy lento"):
+// the show starts at the break and runs `SPEED` times faster than ./bricks.ts's clock. The START
+// BUILDING links are real links on a card that takes the pointer, so the globe under it no longer
+// drags from there. Plays once per entry (a click on the bricks plays it again); with reduced motion,
+// and in the /outline previews, the last frame shows at once. Geometry and timing live in ./bricks.ts,
+// where the node tests check them.
 
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { ArrowUpRight } from "lucide-react";
 import { useContext, useEffect, useRef, useState, type MouseEvent } from "react";
 import type { SceneContentProps } from "../../../../lib/stage/deck-contract";
 import { usePrefersReducedMotion } from "../../../../components/stage/StageFrame";
 import { Mascot } from "../../Mascot";
 import { MASCOT_ART } from "../../mascot-art";
-import { GLASS, OverlayShell, PANEL_EASE, PublicCopy, Rise, T } from "../../ui";
+import { GLASS, OverlayShell, PublicCopy, Rise, T } from "../../ui";
 import {
   artGrid,
   BAND,
-  BEATS,
   BIG,
   BIG_TOP,
   BRICK_COLOR,
   BRICKS,
-  BUBBLE,
   buildModel,
   cubeAt,
   LAYER,
@@ -53,13 +53,20 @@ const LINKS = [
   { name: "Prizes", where: "ethglobal.com/events/mumbai/prizes/arkiv", href: "https://ethglobal.com/events/mumbai/prizes/arkiv" },
 ] as const;
 
+/** The show starts where the mascot breaks into cubes and plays this many times faster: about 3.6 s
+ * from the slide to the waving mascot, then the photo. */
+const START = TIME.break;
+const SPEED = 1.7;
+/** How long the show may wait for the mascot's cubes before it starts without them. */
+const SAMPLE_WAIT_MS = 700;
+
 export function L9(_props: SceneContentProps) {
   // The public copy (/slides) shows the last frame too: no slide moves there.
   const publicCopy = useContext(PublicCopy);
   const reduced = usePrefersReducedMotion() || publicCopy;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [run, setRun] = useState(0);
-  const [livePhase, setLivePhase] = useState(0);
+  const [livePhase, setLivePhase] = useState<number>(PHASE.build);
   const phase = reduced ? PHASE.done : livePhase;
 
   useEffect(() => {
@@ -70,7 +77,7 @@ export function L9(_props: SceneContentProps) {
     const still = reduced || canvas.closest("[data-preview]") !== null;
     const paint = painter(ctx);
     let look = lookFor(canvas, null);
-    let t = still ? TIME.end : 0;
+    let t = still ? TIME.end : START;
     let model: Model | null = null;
     // The stage rescales when React re-renders after the resize, so the canvas is measured two
     // frames later, once the new scale is on screen (going full screen on L9 keeps the bricks sharp).
@@ -89,12 +96,19 @@ export function L9(_props: SceneContentProps) {
     if (still) paint(look, model, t, true);
     else {
       sample();
-      let last = performance.now();
-      let shown = 0;
+      const entered = performance.now();
+      let last = entered;
+      let shown: number = PHASE.build;
       const tick = (now: number) => {
+        // The show opens on the mascot's cubes, so it waits (briefly) for them to be read from the art.
+        if (!model && !sampled && now - entered < SAMPLE_WAIT_MS) {
+          last = now;
+          frame = requestAnimationFrame(tick);
+          return;
+        }
         // Capped steps: a hidden tab pauses the show instead of skipping it, and a slow machine (down
-        // to 4 frames a second) still plays it in real time.
-        t += Math.min(0.25, Math.max(0, now - last) / 1000);
+        // to 4 frames a second) still plays it at its pace.
+        t += Math.min(0.25, Math.max(0, now - last) / 1000) * SPEED;
         last = now;
         // The cubes are fixed when the mascot breaks: read from the art, or none if it never loaded.
         if (!model && t >= TIME.break) model = sampled ?? buildModel([], []);
@@ -116,7 +130,7 @@ export function L9(_props: SceneContentProps) {
   }, [reduced, run]);
 
   const replay = () => {
-    setLivePhase(0);
+    setLivePhase(PHASE.build);
     setRun((count) => count + 1);
   };
 
@@ -130,10 +144,8 @@ export function L9(_props: SceneContentProps) {
           className="pointer-events-none absolute left-0"
           style={{ top: BAND.top, width: STAGE_W, height: BAND.height }}
         />
-        <Performer phase={phase} />
         <Waver phase={phase} reduced={reduced} />
-        <Bubble phase={phase} />
-        <Polaroid shown={phase >= PHASE.done} reduced={reduced} />
+        <Polaroid shown={phase >= PHASE.wave} reduced={reduced} />
         {phase === PHASE.done && !reduced ? (
           <button
             type="button"
@@ -148,55 +160,6 @@ export function L9(_props: SceneContentProps) {
         <StartBuilding />
       </div>
     </OverlayShell>
-  );
-}
-
-/** One pose per word, its head on the same spot: the first rises in, the next ones drop in with a hop. */
-function Performer({ phase }: { phase: number }) {
-  const beat = BEATS[phase];
-  return (
-    <AnimatePresence>
-      {beat ? (
-        <motion.div
-          key={beat.pose}
-          className="pointer-events-none absolute [[data-preview]_&]:hidden"
-          style={{ left: poseLeft(beat.pose), top: BIG_TOP }}
-          initial={{ opacity: 0, y: phase === 0 ? 32 : -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          // The last pose fades while its cubes appear on the canvas.
-          exit={{ opacity: 0, transition: { duration: beat.pose === "hourglass" ? 0.2 : 0.07 } }}
-          transition={{ opacity: { duration: 0.1 }, y: { type: "spring", stiffness: 520, damping: 20 } }}
-        >
-          <Mascot pose={beat.pose} height={BIG.height} />
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
-  );
-}
-
-/** The word, in a speech bubble whose tail points at the mascot. */
-function Bubble({ phase }: { phase: number }) {
-  const word = BEATS[phase]?.word;
-  return (
-    <AnimatePresence mode="wait">
-      {word ? (
-        <motion.div
-          key={word}
-          className="pointer-events-none absolute [[data-preview]_&]:hidden"
-          style={{ right: STAGE_W - BUBBLE.right, top: BUBBLE.top, transformOrigin: "100% 20%", filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.5))" }}
-          initial={{ opacity: 0, scale: 0.7 }}
-          animate={{ opacity: 1, scale: 1, transition: { opacity: { duration: 0.12 }, scale: { type: "spring", stiffness: 560, damping: 22 } } }}
-          exit={{ opacity: 0, scale: 0.86, transition: { duration: 0.12, ease: PANEL_EASE } }}
-        >
-          <div className="relative flex items-center rounded-[28px] bg-[var(--arkiv-sand)] px-10" style={{ height: BUBBLE.height }}>
-            <p className="whitespace-nowrap text-[68px] font-bold leading-none tracking-[-0.02em] text-[var(--arkiv-ink)]">{word}</p>
-            <svg aria-hidden className="absolute -right-16 -top-4" width={72} height={96} viewBox="0 0 72 96">
-              <path d="M0 52 L8 52 C30 48 52 32 68 4 C60 40 40 76 8 92 L0 92 Z" fill="var(--arkiv-sand)" />
-            </svg>
-          </div>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
   );
 }
 
@@ -232,8 +195,8 @@ const PHOTO_H = ((PHOTO.width - 2 * PHOTO.pad) * 3) / 4;
 /** From the waving mascot's middle to the photo's middle: the photo comes out of it. */
 const FROM = { x: SMALL.left + 70 - (PHOTO.left + PHOTO.width / 2), y: 880 - (PHOTO.top + (PHOTO.pad + PHOTO_H + PHOTO.foot) / 2) };
 
-/** Last beat of the close (Santiago, November 4: "que se vea que estoy ahi con arkiv"): once the small
- * mascot has waved, an instant photo shoots out of it, spins onto the space above the bricks and
+/** Last beat of the close (Santiago, November 4: "que se vea que estoy ahi con arkiv"): as the small
+ * mascot waves, an instant photo shoots out of it, spins onto the space above the bricks and
  * develops, from a white flash to color: Santiago holding Arkiv. Still, at its place, with reduced
  * motion, on /slides and in the previews. */
 function Polaroid({ shown, reduced }: { shown: boolean; reduced: boolean }) {

@@ -28,7 +28,7 @@ export const CAPTION_KEYTERMS = [
   // splotter"), headlines and labels the room reads while he says them
   "explorer", "Explore it", "Write it", "Query it", "Own it", "Expire it", "from zero to hero",
   "Account frozen", "Rules changed", "tamper-evident", "transaction", "Five steps", "Encrypt",
-  "encrypted", "private value", "key holder", "Picturing Arkiv", "Google Maps", "transferOwnership",
+  "encrypted", "private value", "key holder", "transferOwnership",
   "Mirror", "Build on Arkiv", "Swarm bonus", "rubric", "chai corner", "AI tools", "booth",
   // The team at the booth
   "Seweryn", "Shantelle", "Priya", "Paweł", "Matthias", "Alexey", "Marco",

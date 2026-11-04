@@ -17,12 +17,11 @@ export const POINTS: Record<SceneId, string[]> = {
   S7: ["\"Create your first entity\": big QR, scan and fill the form", "Your entity: expiration 5 to 15 min", "\"write!\": everyone taps Write together"],
   L1: ["Every dot is an entity the room just wrote", "One request per phone; our wallet signs", "Buttons: Write it (createEntity) · Query it (+ AND name)"],
   L3: ["The map is one query: filter it by hand", "Name, country (the camera flies) or color", "Transfer or extend from the entity card"],
-  PA: ["Zoomable: one wallet, two projects, every box an entity", "Query project AND kind: one project, like its own database", "Each entity in its owner's wallet; yours via wallet or transfer"],
   B4: ["All fields in an entity are public", "The entity you wrote: name, category, color; name encrypted", "arkiv-encryption: the skill and the npm package"],
   B5: ["The explorer: every entity, transaction and wallet", "Opens an entity from the map"],
   T1: ["Hub: faucet, access keys", "Docs: installation, fundamentals, querying", "AI tools: plugin, MCP and skills for your agent"],
   T2: ["Meme: your agent without the plugin vs with it", "Claude Code and Codex logos beside the title", "Setup steps live on the Hub: AI tools"],
   PZ: ["Mirror · Build on Arkiv · Node tooling, each with an entry tag", "Swarm bonus add-on: $500 from scratch, $500 Continuity", "(i) on each prize: its rubric; full rules on ETHGlobal"],
   BT: ["The team at the Arkiv booth, three rows of three", "Photo, name and role for each"],
-  L9: ["The mascot says the four verbs, then builds THANK YOU", "A photo flies out and develops: Santiago with Arkiv", "Docs · Hub · MCP · Prizes: click to open"],
+  L9: ["The mascot breaks into bricks that build THANK YOU", "A photo flies out and develops: Santiago with Arkiv", "Docs · Hub · MCP · Prizes: click to open"],
 };

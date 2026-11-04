@@ -19,9 +19,9 @@ test("the public copy shows no QR and no live map scene but the close", () => {
 });
 
 // Each slide shows complete, with no reveals: its last step, and both views of a slide whose → swaps
-// one for the other (W2's meme and hug, W4's network and your app, PA's query and its owners).
-test("each slide is one frame at its last step, and W2, W4 and PA keep both views", () => {
-  const twoViews = new Set(["W2", "W4", "PA"]);
+// one for the other (W2's meme and hug, W4's network and your app).
+test("each slide is one frame at its last step, and W2 and W4 keep both views", () => {
+  const twoViews = new Set(["W2", "W4"]);
   assert.deepEqual(
     FRAMES.map((frame) => frame.id),
     TALK_SCENES.flatMap((scene) => (twoViews.has(scene.id) ? [scene.id, `${scene.id}-2`] : [scene.id])),
@@ -32,7 +32,5 @@ test("each slide is one frame at its last step, and W2, W4 and PA keep both view
   }
   const steps = (id: string) => FRAMES.filter((frame) => frame.scene.id === id).map((frame) => frame.step);
   assert.deepEqual(steps("W2"), [0, 1]);
-  assert.deepEqual(steps("W4"), [2, 5], "W4: the whole network, then the whole app view");
-  assert.deepEqual(steps("PA"), [1, 3], "PA: one project's query, then every map entity with its owner");
-  assert.equal(new Set(FRAMES.map((frame) => frame.id)).size, FRAMES.length, "every frame has its own address");
+  assert.deepEqual(steps("W4"), [2, 5], "W4: the whole network, then the whole app view");  assert.equal(new Set(FRAMES.map((frame) => frame.id)).size, FRAMES.length, "every frame has its own address");
 });

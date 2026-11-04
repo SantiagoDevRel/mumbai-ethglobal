@@ -14,7 +14,6 @@ import { L9 } from "./scenes/finale/Finale";
 import { IX } from "./scenes/IX";
 import { L1, L3 } from "./scenes/live";
 import { NT } from "./scenes/NT";
-import { PA } from "./scenes/PA";
 import { S0 } from "./scenes/S0";
 import { S7 } from "./scenes/S7";
 import { Speaker } from "./scenes/Speaker";
@@ -38,7 +37,6 @@ export const deck: DeckRegistry = {
   S7: { Slide: S7, notes: NOTES.S7 },
   L1: { Overlay: L1, notes: NOTES.L1 },
   L3: { Overlay: L3, notes: NOTES.L3 },
-  PA: { Slide: PA, notes: NOTES.PA },
   B4: { Slide: D6, notes: NOTES.B4 },
   B5: { Slide: B5, notes: NOTES.B5 },
   T1: { Slide: T1, notes: NOTES.T1 },

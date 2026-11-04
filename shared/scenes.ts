@@ -15,7 +15,6 @@ export type SceneId =
   | "S7"
   | "L1"
   | "L3"
-  | "PA"
   | "B4"
   | "B5"
   | "T1"
@@ -96,10 +95,6 @@ export const SCENES: readonly SceneDef[] = [
   // L3 opens on the whole globe with no filter and no QR; the presenter filters by hand (name,
   // country, color) and a country filter flies the camera to that country (lib/stage/choreography.ts).
   { id: "L3", title: "Query it, live", at: 575, kind: "live", steps: 1, qr: NO_QR, camera: "globe", map: "dots", section: "build" },
-  // November 4 (Santiago): right after the room wrote and queried, "Picturing Arkiv" draws it: one
-  // wallet, its entities as boxes, two projects apart by an attribute, then each entity in its owner's
-  // wallet (app/deck/scenes/PA.tsx; the diagram zooms and pans).
-  { id: "PA", title: "Picturing Arkiv", at: 640, kind: "slide", steps: 4, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
   { id: "B4", title: "Encrypt what's private", at: 705, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
   { id: "B5", title: "Explore it", at: 755, kind: "slide", steps: 1, qr: NO_QR, camera: "keep", map: "dots", section: "build" },
   { id: "T1", title: "Hub, docs and AI tools", at: 795, kind: "slide", steps: 3, qr: NO_QR, camera: "keep", map: "dots", section: "tools" },
