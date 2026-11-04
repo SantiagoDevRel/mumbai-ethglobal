@@ -39,7 +39,7 @@ export function CaptionsBand() {
         <div className="captions-band" data-status={captions.status} aria-live="polite" aria-label="Live captions">
           {words ? (
             <div className="captions-text">
-              <p>{captions.final}{captions.final && captions.interim ? " " : ""}<span className="captions-interim">{captions.interim}</span></p>
+              <div className="captions-lines"><p>{captions.final}{captions.final && captions.interim ? " " : ""}<span className="captions-interim">{captions.interim}</span></p></div>
             </div>
           ) : null}
           {notice ? <p className="captions-notice">{notice}</p> : null}

@@ -60,8 +60,10 @@
    words stay at the bottom and older lines leave at the top; it clears the [ ARKIV ] logo under it. Settled words white, words still being
    heard dimmer. No animation: the text changes in place. */
 .captions-band{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);width:1500px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-sans);text-align:center}
-.captions-text{--line:52px;display:flex;flex-direction:column;justify-content:flex-end;max-height:calc(var(--line)*2 + 20px);overflow:hidden;padding:10px 28px;box-sizing:border-box;border-radius:14px;background:rgba(17,17,17,.82);color:#fff;font:500 40px/var(--line) var(--font-sans);letter-spacing:.005em}
-.captions-text p{flex:none;margin:0}
+.captions-text{--line:52px;padding:10px 28px;border-radius:14px;background:rgba(17,17,17,.82);color:#fff;font:500 40px/var(--line) var(--font-sans);letter-spacing:.005em}
+/* The clip sits inside the padding, so a line leaving at the top never shows a sliver. */
+.captions-lines{display:flex;flex-direction:column;justify-content:flex-end;max-height:calc(var(--line)*2);overflow:hidden}
+.captions-lines p{flex:none;margin:0}
 .captions-interim{color:rgba(255,255,255,.66)}
 .captions-notice{margin:0;padding:6px 14px;border-radius:var(--r-ctl);background:rgba(17,17,17,.82);color:var(--arkiv-orange);font:500 22px var(--font-sans)}
 /* Its row in the "?" card. */
