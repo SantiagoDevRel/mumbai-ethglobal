@@ -133,6 +133,7 @@ export function L9(_props: SceneContentProps) {
         <Performer phase={phase} />
         <Waver phase={phase} reduced={reduced} />
         <Bubble phase={phase} />
+        <Polaroid shown={phase >= PHASE.done} reduced={reduced} />
         {phase === PHASE.done && !reduced ? (
           <button
             type="button"
@@ -218,6 +219,60 @@ function Waver({ phase, reduced }: { phase: number; reduced: boolean }) {
     >
       <Mascot pose="wave" height={SMALL.height} />
     </motion.div>
+  );
+}
+
+/** Santiago with the Arkiv plush (Downloads/santiwitharkiv, cropped 4:3 to 1040 x 780). */
+export const SANTI_WITH_ARKIV = "/deck/me/santi-with-arkiv.jpg";
+
+/** Where the photo lands: above THANK YOU (y 812) and left of START BUILDING (x 1464), on the space
+ * the big mascot leaves once it has broken into bricks. */
+const PHOTO = { left: 872, top: 236, width: 520, pad: 20, foot: 84, tilt: -4 } as const;
+const PHOTO_H = ((PHOTO.width - 2 * PHOTO.pad) * 3) / 4;
+/** From the waving mascot's middle to the photo's middle: the photo comes out of it. */
+const FROM = { x: SMALL.left + 70 - (PHOTO.left + PHOTO.width / 2), y: 880 - (PHOTO.top + (PHOTO.pad + PHOTO_H + PHOTO.foot) / 2) };
+
+/** Last beat of the close (Santiago, November 4: "que se vea que estoy ahi con arkiv"): once the small
+ * mascot has waved, an instant photo shoots out of it, spins onto the space above the bricks and
+ * develops, from a white flash to color: Santiago holding Arkiv. Still, at its place, with reduced
+ * motion, on /slides and in the previews. */
+function Polaroid({ shown, reduced }: { shown: boolean; reduced: boolean }) {
+  const still = reduced;
+  const visible = shown || still;
+  return (
+    <motion.figure
+      aria-hidden={!visible}
+      className="pointer-events-none absolute m-0 bg-[#fbfaf6] [[data-preview]_&]:!opacity-100 [[data-preview]_&]:![transform:rotate(-4deg)]"
+      style={{
+        left: PHOTO.left,
+        top: PHOTO.top,
+        width: PHOTO.width,
+        padding: `${PHOTO.pad}px ${PHOTO.pad}px 0`,
+        borderRadius: 6,
+        boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 2px 0 rgba(0,0,0,0.2)",
+      }}
+      initial={false}
+      animate={visible ? { opacity: 1, x: 0, y: 0, scale: 1, rotate: PHOTO.tilt } : { opacity: 0, x: FROM.x, y: FROM.y, scale: 0.12, rotate: 24 }}
+      transition={visible && !still ? { opacity: { duration: 0.15 }, default: { type: "spring", stiffness: 140, damping: 17, mass: 0.9 } } : { duration: 0 }}
+    >
+      <div className="relative overflow-hidden rounded-[2px] bg-[#111]" style={{ height: PHOTO_H }}>
+        <motion.img
+          src={SANTI_WITH_ARKIV}
+          alt="Santiago with the Arkiv mascot"
+          width={PHOTO.width - 2 * PHOTO.pad}
+          height={PHOTO_H}
+          draggable={false}
+          className="block h-full w-full object-cover [[data-preview]_&]:![filter:none]"
+          initial={false}
+          // Develops like an instant photo: washed out and soft, then the colors come in.
+          animate={{ filter: visible && !still ? ["brightness(2.4) saturate(0) blur(6px)", "brightness(1.3) saturate(0.4) blur(2px)", "brightness(1) saturate(1) blur(0px)"] : "brightness(1) saturate(1) blur(0px)" }}
+          transition={visible && !still ? { duration: 1.8, delay: 0.35, ease: "easeOut", times: [0, 0.45, 1] } : { duration: 0 }}
+        />
+      </div>
+      <figcaption className="flex items-center justify-center text-[30px] font-semibold tracking-[-0.01em] text-[var(--arkiv-ink)]" style={{ height: PHOTO.foot }}>
+        Santiago <span className="mx-3 text-[var(--arkiv-orange)]">×</span> Arkiv
+      </figcaption>
+    </motion.figure>
   );
 }
 

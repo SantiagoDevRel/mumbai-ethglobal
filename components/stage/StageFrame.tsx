@@ -24,7 +24,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { CAPTIONS_KEY, KEY_HELP } from "../../lib/stage/keyboard";
+import { KEY_HELP } from "../../lib/stage/keyboard";
 import type { DeckRegistry } from "../../lib/stage/deck-contract";
 import { SCENES, type SceneDef } from "../../shared/scenes";
 import { stage, useScene, useStage } from "../../lib/stage/store";
@@ -253,7 +253,7 @@ function ControlsOverlay({ extra, captions = false }: { extra?: ReactNode; capti
                 <h3>Keys</h3>
                 <table>
                   <tbody>
-                    {KEY_HELP.filter((k) => captions || k.keys !== CAPTIONS_KEY).map((k) => (
+                    {KEY_HELP.filter((k) => captions || !k.captions).map((k) => (
                       <tr key={k.keys}>
                         <td>{k.keys}</td>
                         <td>{k.action}</td>

@@ -146,6 +146,8 @@ test("correctTerms fixes the talk's words the model hears as everyday English", 
   assert.equal(correctTerms("arkive and archiv"), "Arkiv and Arkiv");
   assert.equal(correctTerms("the first dev rel to do it, a devrel"), "the first DevRel to do it, a DevRel");
   assert.equal(correctTerms("development"), "development");
+  assert.equal(correctTerms("open the block splotter, the block spotter, the blocks plotter"), "open the block explorer, the block explorer, the block explorer");
+  assert.equal(correctTerms("a plotter draws"), "a plotter draws");
   // Two final segments joined (lib/stage/captions.ts corrects the joined text too).
   assert.equal(correctTerms(`${"and we watch entities"} ${"Expiration remove them"}`), "and we watch Entity Expiration remove them");
   const final = JSON.stringify({ type: "Results", is_final: true, channel: { alternatives: [{ transcript: "write archive entities" }] } });

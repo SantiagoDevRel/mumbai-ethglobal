@@ -4,8 +4,8 @@
 // on in this window. The band sits at the bottom center, in stage pixels, above the slides and the
 // map; it shows the last two lines, settled words in white and words still being heard dimmer.
 
-import { useEffect } from "react";
-import { chooseFilter, chooseMicrophone, refreshMicrophones, saveAudio, toggleCaptions, useCaptions, useMicLevel } from "../../lib/stage/captions";
+import { useEffect, type MouseEvent } from "react";
+import { chooseFilter, chooseMicrophone, refreshMicrophones, saveAudio, toggleCaptions, toggleCaptionsHidden, useCaptions, useMicLevel } from "../../lib/stage/captions";
 import { StageBox } from "./StageFrame";
 
 function isTyping(target: EventTarget | null): boolean {
@@ -13,19 +13,24 @@ function isTyping(target: EventTarget | null): boolean {
   return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }
 
-/** The C key toggles captions in this window only. */
+/** C turns captions on or off in this window; Shift+C hides or shows the band while they keep
+ * listening (Santiago, November 4: the words sometimes cover what he wants to show). */
 export function useCaptionsKey(): void {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey || event.repeat || isTyping(event.target)) return;
       if (event.key !== "c" && event.key !== "C") return;
       event.preventDefault();
-      toggleCaptions();
+      if (event.shiftKey) toggleCaptionsHidden();
+      else toggleCaptions();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 }
+
+/** A click on the band keeps the keyboard where it was, so Space and the arrows still move the talk. */
+const keepFocus = (event: MouseEvent) => event.preventDefault();
 
 export function CaptionsBand() {
   useCaptionsKey();
@@ -36,14 +41,22 @@ export function CaptionsBand() {
   return (
     <div className="pointer-events-none absolute inset-0 z-[38]">
       <StageBox>
-        <div className="captions-band" data-status={captions.status} aria-live="polite" aria-label="Live captions">
-          {words ? (
-            <div className="captions-text">
-              <div className="captions-lines"><p>{captions.final}{captions.final && captions.interim ? " " : ""}<span className="captions-interim">{captions.interim}</span></p></div>
-            </div>
-          ) : null}
-          {notice ? <p className="captions-notice">{notice}</p> : null}
-        </div>
+        {captions.hidden ? (
+          // Still listening: a small CC button brings the band back.
+          <button type="button" className="captions-show" onMouseDown={keepFocus} onClick={toggleCaptionsHidden} aria-label="Show captions" title="Show captions (Shift+C)">
+            CC
+          </button>
+        ) : (
+          <div className="captions-band" data-status={captions.status} aria-live="polite" aria-label="Live captions">
+            {words ? (
+              // A click on the words hides them; the CC button brings them back.
+              <button type="button" className="captions-text" onMouseDown={keepFocus} onClick={toggleCaptionsHidden} title="Hide captions (Shift+C)">
+                <span className="captions-lines"><span className="captions-para">{captions.final}{captions.final && captions.interim ? " " : ""}<span className="captions-interim">{captions.interim}</span></span></span>
+              </button>
+            ) : null}
+            {notice ? <p className="captions-notice">{notice}</p> : null}
+          </div>
+        )}
       </StageBox>
     </div>
   );

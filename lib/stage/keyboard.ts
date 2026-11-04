@@ -8,7 +8,8 @@ import { stage, type Command } from "./store";
 /** The live-captions key: /workshop only (components/stage/Captions.tsx). */
 export const CAPTIONS_KEY = "C";
 
-export const KEY_HELP: { keys: string; action: string }[] = [
+/** `captions`: the row belongs to the live captions, listed only where they run (/workshop). */
+export const KEY_HELP: { keys: string; action: string; captions?: true }[] = [
   { keys: "→ / ←", action: "Next / previous scene" },
   { keys: "D", action: "Show or hide the write! frame (S7)" },
   { keys: "E / Shift+E", action: "Extend the selected dots / every live dot (Rabby)" },
@@ -17,7 +18,8 @@ export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "0x, Space", action: "New owner field: fill in a random wallet address" },
   { keys: "R", action: "Reset the camera" },
   { keys: "P", action: "Plan B: replay mode" },
-  { keys: CAPTIONS_KEY, action: "Live captions on /workshop (microphone → Deepgram)" },
+  { keys: CAPTIONS_KEY, action: "Live captions on /workshop (microphone → Deepgram)", captions: true },
+  { keys: `Shift+${CAPTIONS_KEY}`, action: "Hide or show the captions (or click them; CC brings them back)", captions: true },
   { keys: "Right-drag", action: "Draw a box to point at something (a right-click clears them)" },
   { keys: "? or /", action: "Show or hide these controls (or the ? button, bottom left)" },
   { keys: "Esc", action: "Close a popup or these controls" },

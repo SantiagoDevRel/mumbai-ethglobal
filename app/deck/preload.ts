@@ -6,6 +6,8 @@
 
 import { useEffect } from "react";
 import { MASCOT_ART } from "./mascot-art";
+import { TEAM, teamPhoto } from "./scenes/Booth";
+import { SANTI_WITH_ARKIV } from "./scenes/finale/Finale";
 import { BEFORE_ARKIV, flagSrc, photoSrc, TOUR } from "./scenes/me-tour";
 
 /** Pictures the slides use besides the mascot art: ME's photos, flags and logos, the W2
@@ -33,6 +35,8 @@ const DECK_PICTURES = [
   "/deck/logos/openai-blossom-white.svg",
   "/brand/a-white.svg",
   "/brand/a-orange.svg",
+  ...TEAM.map((person) => teamPhoto(person.file)),
+  SANTI_WITH_ARKIV,
 ];
 
 /** Kept for the whole talk, so the decoded images stay in memory. */

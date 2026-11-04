@@ -39,13 +39,15 @@ export interface CaptionsState {
   filter: boolean;
   /** Seconds of audio this window has kept for "Save the audio". */
   savedSeconds: number;
+  /** The band is hidden while captions keep listening (a click on the words, or Shift+C). */
+  hidden: boolean;
 }
 
 function stored(key: string): string {
   try { return localStorage.getItem(key) ?? ""; } catch { return ""; }
 }
 
-let state: CaptionsState = { status: "off", message: null, final: "", interim: "", deviceId: "", devices: [], micLabel: null, filter: false, savedSeconds: 0 };
+let state: CaptionsState = { status: "off", message: null, final: "", interim: "", deviceId: "", devices: [], micLabel: null, filter: false, savedSeconds: 0, hidden: false };
 let hydrated = false;
 const listeners = new Set<() => void>();
 function set(patch: Partial<CaptionsState>) { state = { ...state, ...patch }; for (const listener of listeners) listener(); }
@@ -237,12 +239,18 @@ export function stopCaptions(message: string | null = null): void {
   stopRecorder();
   closeSocket();
   releaseMic();
-  set({ status: message ? "error" : "off", message, final: "", interim: "", micLabel: null });
+  set({ status: message ? "error" : "off", message, final: "", interim: "", micLabel: null, hidden: false });
 }
 
 export function toggleCaptions(): void {
   if (wanted) stopCaptions();
   else void startCaptions();
+}
+
+/** Hides or shows the band; captions keep listening either way. Does nothing while they are off. */
+export function toggleCaptionsHidden(): void {
+  if (state.status === "off") return;
+  set({ hidden: !state.hidden });
 }
 
 /** Choose the microphone; a running stream restarts on it. */

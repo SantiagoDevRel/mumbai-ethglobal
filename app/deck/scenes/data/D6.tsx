@@ -21,9 +21,9 @@ import { dotHex } from "../../../../shared/encoding";
 
 const COLS = "320px 200px 620px minmax(0, 1fr)";
 
-/** The name, in lower case like everything the phones write. */
-const NAME = "priya";
-/** The name under AES-GCM (12-byte IV, 5 bytes of ciphertext, 16-byte tag) in base64: 44 characters
+/** The name, in lower case like everything the phones write (Santiago, November 4: his own name). */
+const NAME = "santiago";
+/** The name under AES-GCM (12-byte IV, 8 bytes of ciphertext, 16-byte tag) in base64: 48 characters
  * in full, shortened here. */
 const CIPHER = "kZ8rQm…Vf2w";
 

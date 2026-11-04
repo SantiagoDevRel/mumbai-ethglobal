@@ -18,7 +18,7 @@ test("L3 opens on the whole globe with no filter, and no → adds one", () => {
   assert.equal(state.camera.cue, "globe");
   assert.equal(SCENES[state.sceneIndex]!.qr.placement, "none", "no QR on L3");
   // The presenter filters by hand: → leaves the scene instead of adding a filter.
-  assert.equal(SCENES[next(state).sceneIndex]!.id, "B4");
+  assert.equal(SCENES[next(state).sceneIndex]!.id, "PA");
 });
 
 test("a country filter on L3 flies the camera there; a name or a color leaves it alone", () => {
@@ -54,7 +54,7 @@ test("filters move the camera only on L3, and the cue is lower case", () => {
 test("filters set by hand belong to that visit: leaving L3 and coming back starts unfiltered", () => {
   let state = filter(filter(at("L3"), { country: "in" }), { color: "orange", namePrefix: "pri" });
   state = next(state);
-  assert.equal(SCENES[state.sceneIndex]!.id, "B4");
+  assert.equal(SCENES[state.sceneIndex]!.id, "PA");
   assert.deepEqual(state.chainFilters, { kinds: ["dot"] });
   state = prev(state);
   assert.equal(SCENES[state.sceneIndex]!.id, "L3");
@@ -113,7 +113,7 @@ test("Reset starts over at S0 on the new session and clears what the presenter d
 });
 
 test("slides after the live part close every panel, and so does the close", () => {
-  for (const id of ["B4", "B5", "T1", "T2", "PZ", "L9"] as const) {
+  for (const id of ["PA", "B4", "B5", "T1", "T2", "PZ", "BT", "L9"] as const) {
     const { panels } = at(id);
     assert.deepEqual([panels.query, panels.filters, panels.inspector], [false, false, false], id);
   }
@@ -135,8 +135,11 @@ test("one idea per scene, in the outline's order", () => {
   // Own it (L6) and Expire it (L2) are gone (October 29); What Arkiv DB-Chain is not (NT) follows the five steps.
   assert.deepEqual(
     SCENES.map((scene) => scene.id),
-    ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "NT", "S7", "L1", "L3", "B4", "B5", "T1", "T2", "PZ", "L9"],
+    ["S0", "ME", "IX", "W1", "W2", "W3", "W4", "ST", "NT", "S7", "L1", "L3", "PA", "B4", "B5", "T1", "T2", "PZ", "BT", "L9"],
   );
+  // November 4: Picturing Arkiv draws what the room just did, right after the live part; the booth comes before the close.
+  assert.equal(order("PA"), order("L3") + 1);
+  assert.equal(order("BT"), order("L9") - 1);
   assert.equal(order("L3"), order("L1") + 1, "the query runs right after the write: L1's Write it and Query it buttons open the code on the map");
   assert.equal(new Set(SCENES.map((scene) => scene.title)).size, SCENES.length, "no title twice");
   for (let i = 1; i < SCENES.length; i++) assert.ok(SCENES[i]!.at > SCENES[i - 1]!.at, SCENES[i]!.id);

@@ -24,6 +24,14 @@ export const CAPTION_KEYTERMS = [
   "ETHGlobal", "ETHGlobal Mumbai", "Mumbai", "Devcon", "web2", "web3", "santiagodevrel", "DevRel",
   "ChainSafe", "Cosmos", "Lisk", "web3.js", "Web3 Africa tour", "Continuity", "Node tooling",
   "Santiago", "I'm Santiago", "developer relations", "first DevRel", "my voice", "Telegram",
+  // The words on the slides themselves (Santiago, November 4: "block explorer" came out "block
+  // splotter"), headlines and labels the room reads while he says them
+  "explorer", "Explore it", "Write it", "Query it", "Own it", "Expire it", "from zero to hero",
+  "Account frozen", "Rules changed", "tamper-evident", "transaction", "Five steps", "Encrypt",
+  "encrypted", "private value", "key holder", "Picturing Arkiv", "Google Maps", "transferOwnership",
+  "Mirror", "Build on Arkiv", "Swarm bonus", "rubric", "chai corner", "AI tools", "booth",
+  // The team at the booth
+  "Seweryn", "Shantelle", "Priya", "Paweł", "Matthias", "Alexey", "Marco",
 ] as const;
 
 const DEEPGRAM_LISTEN = "wss://api.deepgram.com/v1/listen";
@@ -73,6 +81,8 @@ const CORRECTIONS: [RegExp, string | ((match: string) => string)][] = [
   [/\bjson[\s-]?rpc\b/gi, "JSON-RPC"],
   [/\btiramisu\b/gi, "Tiramisu"],
   [/\bdev[\s-]?rel\b/gi, "DevRel"],
+  // November 4 rehearsal: "block explorer" came out "block splotter".
+  [/\bblocks?['’]?\s?(?:s?plotter|spotter|exploder)\b/gi, "block explorer"],
 ];
 export function correctTerms(text: string): string {
   return CORRECTIONS.reduce((out, [pattern, word]) => (typeof word === "string" ? out.replace(pattern, word) : out.replace(pattern, word)), text);
