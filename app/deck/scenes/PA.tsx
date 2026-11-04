@@ -53,7 +53,7 @@ const VIDEO_BOXES: Box[] = [
 ];
 
 /** The wallet at the top: Santiago's, over the gap between the two projects (the query bar takes the left). */
-const ME = { x: 970, y: 8, w: 300, h: 80 } as const;
+const ME = { x: 940, y: 8, w: 360, h: 80 } as const;
 
 const UNDER = [
   "One wallet, two projects. Every box is an entity.",
@@ -150,9 +150,9 @@ function WalletNode() {
         <Wallet size={28} strokeWidth={2.2} color="#111111" aria-hidden />
       </span>
       <span className="flex min-w-0 flex-col">
-        <span className="text-[26px] font-semibold leading-[1.15]">Santiago&apos;s wallet</span>
-        <span className="font-mono text-[20px] leading-[1.2]" style={{ color: T.t64 }}>
-          0x5a…d3v
+        <span className="whitespace-nowrap text-[26px] font-semibold leading-[1.15]">Santiago&apos;s wallet</span>
+        <span className="whitespace-nowrap font-mono text-[20px] leading-[1.2]" style={{ color: T.t64 }}>
+          0x5a…d3
         </span>
       </span>
     </div>

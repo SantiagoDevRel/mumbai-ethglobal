@@ -227,7 +227,7 @@ export const SANTI_WITH_ARKIV = "/deck/me/santi-with-arkiv.jpg";
 
 /** Where the photo lands: above THANK YOU (y 812) and left of START BUILDING (x 1464), on the space
  * the big mascot leaves once it has broken into bricks. */
-const PHOTO = { left: 872, top: 236, width: 520, pad: 20, foot: 84, tilt: -4 } as const;
+const PHOTO = { left: 520, top: 236, width: 520, pad: 20, foot: 84, tilt: -4 } as const;
 const PHOTO_H = ((PHOTO.width - 2 * PHOTO.pad) * 3) / 4;
 /** From the waving mascot's middle to the photo's middle: the photo comes out of it. */
 const FROM = { x: SMALL.left + 70 - (PHOTO.left + PHOTO.width / 2), y: 880 - (PHOTO.top + (PHOTO.pad + PHOTO_H + PHOTO.foot) / 2) };
