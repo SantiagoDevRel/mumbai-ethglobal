@@ -81,6 +81,8 @@ export const ErrorCode = z.enum([
   "device_limit", // 429: MAX_ENTITIES_PER_DEVICE per device per session
   "map_full", // 429: "The map is full!"
   "network_not_configured", // 503
+  "captions_not_configured", // 503: DEEPGRAM_API_KEY is missing
+  "captions_unavailable", // 502: Deepgram did not grant a token
   "unauthorized", // 401 presenter endpoints and a wrong password
   "too_many_attempts", // 429: too many wrong passwords from one IP
   "internal", // 500
@@ -198,6 +200,16 @@ export const RabdiNetwork = z.object({
 });
 export type RabdiNetwork = z.infer<typeof RabdiNetwork>;
 
+/** GET /api/presenter/captions: a temporary Deepgram token for the live captions
+ * (components/stage/Captions.tsx). The browser opens Deepgram's streaming WebSocket with it; the API
+ * key stays in the server-only DEEPGRAM_API_KEY (lib/server/captions.ts). */
+export const CaptionsToken = z.object({
+  accessToken: z.string().min(20).regex(/^\S+$/),
+  /** Seconds the token can still open a stream. */
+  expiresIn: z.number().positive(),
+});
+export type CaptionsToken = z.infer<typeof CaptionsToken>;
+
 /** POST /api/rpc: read-only JSON-RPC proxy through the keyed RPC (presenter token or login token).
  * Only these methods are forwarded; anything else gets a JSON-RPC error. */
 export const RPC_READ_ALLOWLIST = [
@@ -238,6 +250,7 @@ export const WRITER_ROUTES = {
     resume: "/api/presenter/resume",
     status: "/api/presenter/status",
     rabdi: "/api/presenter/rabdi",
+    captions: "/api/presenter/captions",
   },
 } as const;
 

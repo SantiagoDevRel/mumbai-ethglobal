@@ -25,9 +25,10 @@ import { countdownTicket, type SessionSnapshot } from "./countdown";
 import { sameSecret, signPresenter, verifyPresenter } from "./presenter-token";
 import { runPhaseZero } from "./phase-zero";
 import { rabdiNetwork, type RabdiEnv } from "./rabdi";
+import { grantCaptionsToken, type CaptionsEnv } from "./captions";
 import type { Db, Query } from "./db";
 
-export interface WriterEnv extends RabdiEnv {
+export interface WriterEnv extends RabdiEnv, CaptionsEnv {
   ARKIV_PROFILE?: string;
   RPC?: string;
   ACCESS_KEY?: string;
@@ -44,6 +45,8 @@ export interface WriterConfig {
   writerAddress: Hex;
   /** Runs work after the response is sent (Next's `after`). */
   defer: (task: () => Promise<void>) => void;
+  /** Outgoing HTTP to Deepgram (live captions); tests pass a fake. */
+  fetch?: typeof fetch;
 }
 
 const REGISTRY = "0x4400000000000000000000000000000000000044";
@@ -110,7 +113,7 @@ async function jsonBody(request: Request): Promise<unknown> {
   try { return JSON.parse(text); } catch { return fail("invalid", 400, "Send valid JSON."); }
 }
 
-export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
+export function createWriter({ db, env, writerAddress, defer, fetch: fetchImpl = fetch }: WriterConfig) {
   const t = db.t;
   const address = writerAddress.toLowerCase();
   type Clients = ReturnType<typeof createSdkClients>;
@@ -664,6 +667,12 @@ export function createWriter({ db, env, writerAddress, defer }: WriterConfig) {
       const rabdi = rabdiNetwork(env);
       if (!rabdi.ok) fail("network_not_configured", 503, rabdi.message);
       return Response.json(rabdi.network);
+    }
+    // Live captions: a temporary Deepgram token; the API key stays here (lib/server/captions.ts).
+    if (path === WRITER_ROUTES.presenter.captions && request.method === "GET") {
+      const captions = await grantCaptionsToken(env, fetchImpl);
+      if (!captions.ok) fail(captions.code, captions.status, captions.message);
+      return Response.json(captions.token);
     }
     if (request.method !== "POST") fail("invalid", 404, "Route not found.");
     if (path === "/api/presenter/check") {

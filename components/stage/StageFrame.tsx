@@ -11,6 +11,7 @@
 //   slide    slide scenes' Slide, over the map                      z-25
 //   qr       the QR, where the scene places it                      z-30
 //   outline  the outline bar across the top (OutlineBar)            z-35
+//   captions live captions at the bottom, when on (Captions)        z-38
 //   controls the "?" keyboard overlay                               z-40
 // /workshop/slides: every slide scene's Slide, a card for live scenes, the S7 QR, the outline bar and the
 // "?" overlay. Both keep the presenter chrome in window pixels: the ? button (and the Writing switch
@@ -27,6 +28,7 @@ import type { DeckRegistry } from "../../lib/stage/deck-contract";
 import { SCENES, type SceneDef } from "../../shared/scenes";
 import { stage, useScene, useStage } from "../../lib/stage/store";
 import { OutlineBar } from "./OutlineBar";
+import { CaptionsBand, CaptionsControls } from "./Captions";
 
 export const STAGE_W = 1920;
 export const STAGE_H = 1080;
@@ -115,6 +117,7 @@ export function MapFrame({ map, overlay, hud, slide, qr, bar, writing }: { map: 
         {/* The map has no free corner for Reset, so it sits in the "?" presenter card. */}
         <ControlsOverlay extra={bar} />
         {writing}
+        <CaptionsBand />
         <StageProgress />
         <Annotations />
       </div>
@@ -142,6 +145,7 @@ export function SlidesFrame({ deck, liveCard, qr, bar }: { deck: DeckRegistry; l
       {qr ? <div className="pointer-events-none absolute inset-0 z-30">{qr}</div> : null}
       <div className="pointer-events-none absolute inset-0 z-[35]"><StageBox><OutlineBar /></StageBox></div>
       {bar}
+      <CaptionsBand />
       <ControlsOverlay />
       <StageProgress />
       <Annotations />
@@ -257,6 +261,7 @@ function ControlsOverlay({ extra }: { extra?: ReactNode }) {
                   </tbody>
                 </table>
                 {extra}
+                <CaptionsControls />
               </section>
             </div>
           </div>

@@ -14,6 +14,7 @@ export const KEY_HELP: { keys: string; action: string }[] = [
   { keys: "0x, Space", action: "New owner field: fill in a random wallet address" },
   { keys: "R", action: "Reset the camera" },
   { keys: "P", action: "Plan B: replay mode" },
+  { keys: "C", action: "Live captions in this window (microphone → Deepgram)" },
   { keys: "Right-drag", action: "Draw a box to point at something (a right-click clears them)" },
   { keys: "? or /", action: "Show or hide these controls (or the ? button, bottom left)" },
   { keys: "Esc", action: "Close a popup or these controls" },
