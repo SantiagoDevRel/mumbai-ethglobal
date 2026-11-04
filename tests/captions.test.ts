@@ -115,10 +115,12 @@ test("the streaming URL asks Nova-3 for English with interim words and every key
   assert.equal(url.searchParams.get("language"), "en");
   assert.equal(url.searchParams.get("interim_results"), "true");
   assert.deepEqual(url.searchParams.getAll("keyterm"), [...CAPTION_KEYTERMS]);
-  assert.ok(CAPTION_KEYTERMS.includes("Arkiv") && CAPTION_KEYTERMS.includes("Rabdi"));
+  for (const term of ["Arkiv", "Rabdi", "Tiramisu", "DB-Chain", "entities", "records", "attributes", "values"] as const) assert.ok(CAPTION_KEYTERMS.includes(term), term);
+  assert.equal(new Set(CAPTION_KEYTERMS.map((term) => term.toLowerCase())).size, CAPTION_KEYTERMS.length, "No keyterm twice.");
   for (const term of CAPTION_KEYTERMS) assert.doesNotMatch(term, /[,;\n]/, "Deepgram takes one plain term per keyterm.");
   // Deepgram counts at most 500 tokens across keyterms; words are a safe upper bound proxy here.
-  assert.ok(CAPTION_KEYTERMS.join(" ").split(/[\s-]+/).length < 150);
+  // Checked live on November 4: Deepgram accepted this list (it answers CONFIGURE_KEYTERM_LIMIT_EXCEEDED over 500).
+  assert.ok(CAPTION_KEYTERMS.join(" ").split(/[\s-]+/).length < 200);
   assert.equal(/token|key=|auth/i.test(url.search.replace(/keyterm=/g, "")), false);
 });
 
@@ -139,6 +141,9 @@ test("correctTerms fixes the talk's words the model hears as everyday English", 
   assert.equal(correctTerms("we watch entities Expiration remove them"), "we watch Entity Expiration remove them");
   assert.equal(correctTerms("lifetime extension"), "Lifetime Extension");
   assert.equal(correctTerms("archived archives"), "archived archives", "Only the whole word changes.");
+  assert.equal(correctTerms("the db chain and two DB chains"), "the DB-Chain and two DB-Chains");
+  assert.equal(correctTerms("welcome to eth global mumbai, use json rpc on tiramisu"), "welcome to ETHGlobal mumbai, use JSON-RPC on Tiramisu");
+  assert.equal(correctTerms("arkive and archiv"), "Arkiv and Arkiv");
   // Two final segments joined (lib/stage/captions.ts corrects the joined text too).
   assert.equal(correctTerms(`${"and we watch entities"} ${"Expiration remove them"}`), "and we watch Entity Expiration remove them");
   const final = JSON.stringify({ type: "Results", is_final: true, channel: { alternatives: [{ transcript: "write archive entities" }] } });
