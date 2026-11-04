@@ -190,7 +190,7 @@ export const SANTI_WITH_ARKIV = "/deck/me/santi-with-arkiv.jpg";
 
 /** Where the photo lands: above THANK YOU (y 812) and left of START BUILDING (x 1464), on the space
  * the big mascot leaves once it has broken into bricks. */
-const PHOTO = { left: 520, top: 236, width: 520, pad: 20, foot: 84, tilt: -4 } as const;
+const PHOTO = { left: 520, top: 236, width: 520, pad: 20, foot: 64, tilt: -4 } as const;
 const PHOTO_H = ((PHOTO.width - 2 * PHOTO.pad) * 3) / 4;
 /** From the waving mascot's middle to the photo's middle: the photo comes out of it. */
 const FROM = { x: SMALL.left + 70 - (PHOTO.left + PHOTO.width / 2), y: 880 - (PHOTO.top + (PHOTO.pad + PHOTO_H + PHOTO.foot) / 2) };
@@ -232,9 +232,8 @@ function Polaroid({ shown, reduced }: { shown: boolean; reduced: boolean }) {
           transition={visible && !still ? { duration: 1.8, delay: 0.35, ease: "easeOut", times: [0, 0.45, 1] } : { duration: 0 }}
         />
       </div>
-      <figcaption className="flex items-center justify-center text-[30px] font-semibold tracking-[-0.01em] text-[var(--arkiv-ink)]" style={{ height: PHOTO.foot }}>
-        Santiago <span className="mx-3 text-[var(--arkiv-orange)]">×</span> Arkiv
-      </figcaption>
+      {/* The instant photo's blank bottom edge, no caption (Santiago, November 4). */}
+      <div aria-hidden style={{ height: PHOTO.foot }} />
     </motion.figure>
   );
 }

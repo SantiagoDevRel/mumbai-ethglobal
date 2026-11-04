@@ -2,7 +2,7 @@
 
 // BT · Find us at the booth (Santiago, November 4): the Arkiv team at ETHGlobal Mumbai, three rows of
 // three in his order, each with the photo from the team's Slack (public/deck/team, 360 x 360, cropped
-// to the face, metadata stripped) and the role he gave. Marco's role is the title on his Slack profile.
+// to the face, metadata stripped; Marco's is the one Santiago sent) and the role he gave. Marco's role is the title on his Slack profile.
 
 import type { SceneContentProps } from "../../../lib/stage/deck-contract";
 import { PANEL, Slide, T } from "../ui";
