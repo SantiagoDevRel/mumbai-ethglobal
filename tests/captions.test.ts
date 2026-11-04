@@ -139,6 +139,8 @@ test("correctTerms fixes the talk's words the model hears as everyday English", 
   assert.equal(correctTerms("we watch entities Expiration remove them"), "we watch Entity Expiration remove them");
   assert.equal(correctTerms("lifetime extension"), "Lifetime Extension");
   assert.equal(correctTerms("archived archives"), "archived archives", "Only the whole word changes.");
+  // Two final segments joined (lib/stage/captions.ts corrects the joined text too).
+  assert.equal(correctTerms(`${"and we watch entities"} ${"Expiration remove them"}`), "and we watch Entity Expiration remove them");
   const final = JSON.stringify({ type: "Results", is_final: true, channel: { alternatives: [{ transcript: "write archive entities" }] } });
   assert.deepEqual(readResult(final), { text: "write Arkiv entities", isFinal: true });
 });

@@ -10,7 +10,7 @@
 import { useSyncExternalStore } from "react";
 import { presenterRequest } from "../data/presenter-auth";
 import { CaptionsToken, WRITER_ROUTES } from "../../shared/writer-api";
-import { deepgramListenUrl, readResult, tailWords } from "./captions-text";
+import { correctTerms, deepgramListenUrl, readResult, tailWords } from "./captions-text";
 
 /** Clear the band after this much silence, so old words don't sit under the next slide. */
 const SILENCE_CLEAR_MS = 6_000;
@@ -82,7 +82,8 @@ function releaseMic() {
 
 function onWords(text: string, isFinal: boolean) {
   if (!text && !isFinal) return;
-  if (isFinal) set({ final: tailWords(`${state.final} ${text}`), interim: "" });
+  // Corrected again on the joined text: a term can arrive split across two final segments.
+  if (isFinal) set({ final: tailWords(correctTerms(`${state.final} ${text}`)), interim: "" });
   else set({ interim: text });
   clearTimeout(silenceTimer);
   silenceTimer = setTimeout(() => set({ final: "", interim: "" }), SILENCE_CLEAR_MS);
