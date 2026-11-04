@@ -44,6 +44,17 @@ export function readResult(data: unknown): { text: string; isFinal: boolean } | 
   if (!m || m.type !== "Results") return null;
   const text = m.channel?.alternatives?.[0]?.transcript;
   if (typeof text !== "string") return null;
-  return { text: text.trim(), isFinal: m.is_final === true };
+  return { text: correctTerms(text.trim()), isFinal: m.is_final === true };
+}
+
+/** Words the model still hears as everyday English even with keyterms (November 4 test: "Today we
+ * write archive entities", "we watch entities Expiration"). In this talk "archive" always means Arkiv. */
+const CORRECTIONS: [RegExp, string][] = [
+  [/\barchive\b/gi, "Arkiv"],
+  [/\bentit(?:y|ies) expiration\b/gi, "Entity Expiration"],
+  [/\blifetime extension\b/gi, "Lifetime Extension"],
+];
+export function correctTerms(text: string): string {
+  return CORRECTIONS.reduce((out, [pattern, word]) => out.replace(pattern, word), text);
 }
 

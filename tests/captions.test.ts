@@ -9,7 +9,7 @@ import { createWriter } from "../lib/server/writer.ts";
 import type { Db } from "../lib/server/db.ts";
 import { DEEPGRAM_GRANT_URL } from "../lib/server/captions.ts";
 import { CaptionsToken, WRITER_ROUTES } from "../shared/writer-api.ts";
-import { CAPTION_KEYTERMS, deepgramListenUrl, readResult, tailWords } from "../lib/stage/captions-text.ts";
+import { CAPTION_KEYTERMS, correctTerms, deepgramListenUrl, readResult, tailWords } from "../lib/stage/captions-text.ts";
 
 const presenter = "test-presenter-credential";
 const auth = { authorization: `Bearer ${presenter}` };
@@ -131,6 +131,16 @@ test("readResult reads Deepgram Results and ignores everything else", () => {
   assert.equal(readResult(result(42, true)), null);
   assert.equal(readResult("not json"), null);
   assert.equal(readResult(new ArrayBuffer(4)), null);
+});
+
+test("correctTerms fixes the talk's words the model hears as everyday English", () => {
+  assert.equal(correctTerms("Today we write archive entities on Rabdi."), "Today we write Arkiv entities on Rabdi.");
+  assert.equal(correctTerms("Archive is the Web3 database"), "Arkiv is the Web3 database");
+  assert.equal(correctTerms("we watch entities Expiration remove them"), "we watch Entity Expiration remove them");
+  assert.equal(correctTerms("lifetime extension"), "Lifetime Extension");
+  assert.equal(correctTerms("archived archives"), "archived archives", "Only the whole word changes.");
+  const final = JSON.stringify({ type: "Results", is_final: true, channel: { alternatives: [{ transcript: "write archive entities" }] } });
+  assert.deepEqual(readResult(final), { text: "write Arkiv entities", isFinal: true });
 });
 
 test("tailWords keeps the newest words, cut at a word", () => {
