@@ -28,7 +28,6 @@ const DECK_PICTURES = [
   "/deck/logos/solana-logomark.svg",
   "/deck/logos/swarm-logo.svg",
   "/deck/logos/swarm-logo-lockup.svg",
-  "/deck/logos/ipfs-logo-text.svg",
   "/deck/logos/metamask-fox.svg",
   "/deck/logos/rabby-symbol.svg",
   "/deck/logos/claude-code-ivory.svg",

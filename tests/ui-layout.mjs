@@ -1140,7 +1140,8 @@ try {
       const faded = (locator) => expect.poll(() => locator.evaluate((element) => { for (let e = element; e; e = e.parentElement) if (Number(getComputedStyle(e).opacity) < 0.05) return true; return false; })).toBe(true);
       await commands(page, [go("W4")]);
       const solana = slides.getByRole("img", { name: "Solana", exact: true });
-      const ipfs = slides.getByRole("img", { name: "IPFS", exact: true });
+      const swarm = slides.getByRole("img", { name: "Swarm", exact: true });
+      const ipfs = slides.getByRole("img", { name: "IPFS", exact: true }); // gone since November 5: Swarm only
       const ethereum = slides.getByRole("img", { name: "Ethereum", exact: true });
       // While a part is hidden it is aria-hidden too, so look it up by its alt, not its role.
       const arkiv = slides.locator('img[src="/brand/a-white.svg"]'); // the network's hub, not the slide's wordmark
@@ -1163,14 +1164,15 @@ try {
       await commands(page, [{ type: "next" }]);
       await settled(slides.getByText("Keeps your Arkiv entities", { exact: true }));
       await expect(solana).toHaveCount(0);
-      await expect(ipfs).toHaveCount(0);
+      await expect(swarm).toHaveCount(0);
       await commands(page, [{ type: "next" }]);
       for (const name of ["Ethereum", "Base", "Optimism", "Arbitrum", "Solana"]) await expect(slides.getByRole("img", { name, exact: true })).toBeVisible();
-      await expect(ipfs).toHaveCount(0);
+      await expect(swarm).toHaveCount(0);
       await commands(page, [{ type: "next" }]);
-      await expect(ipfs).toBeVisible();
-      await expect(slides.getByRole("img", { name: "Swarm", exact: true })).toBeVisible();
-      await settled(ipfs);
+      await expect(swarm).toBeVisible();
+      await settled(swarm);
+      await expect(ipfs).toHaveCount(0);
+      await expect(slides.locator('img[src*="ipfs"]')).toHaveCount(0);
       for (const text of ["Your logic", "Wherever you want", "A web2 backend", "Storage", "Heavy files"]) await expect(slides.getByText(text, { exact: true })).toBeVisible();
       for (const gone of ["Arkiv runs no smart contracts", "Smart contracts on any EVM chain", "Big files"]) await expect(slides.getByText(gone, { exact: true })).toHaveCount(0);
       const tiled = await slides.locator("[data-column] img").evaluateAll((images) => images.filter((image) => { for (let e = image.parentElement; e && !e.hasAttribute("data-column"); e = e.parentElement) if (getComputedStyle(e).backgroundColor !== "rgba(0, 0, 0, 0)") return true; return false; }).map((image) => image.alt));

@@ -11,7 +11,7 @@ export const POINTS: Record<SceneId, string[]> = {
   W1: ["Web2 is great: fast and familiar. But…", "Account frozen · Data changed · Rules changed", "One company decides for you"],
   W2: ["Meme: you can't stop looking at web3 data", "Your web2 database is not happy about it", "→ The hug: ARKIV in the middle keeps the best of both"],
   W3: ["From web2 databases: structure, indexing, a query language", "From web3: ownership, tamper-evidence, a block explorer", "Its own: a lifetime, who may extend it, who may edit it"],
-  W4: ["The network: DB-Chains joined by Arkiv, bridged to Ethereum", "Live: Rabdi and Sorbet (Sourcify)", "Your app, one → each: DB-Chain, logic anywhere, Swarm or IPFS"],
+  W4: ["The network: DB-Chains joined by Arkiv, bridged to Ethereum", "Live: Rabdi and Sorbet (Sourcify)", "Your app, one → each: DB-Chain, logic anywhere, Swarm"],
   ST: ["Use Rabdi testnet: everything is free", "SDK · wallet · faucet · RPC access key · free reads", "Live: Add network, then Get balance; the tags are links"],
   NT: ["Not a smart-contract chain", "Not built for big files: 128 KB per entity", "Not private by default: you can encrypt values yourself"],
   S7: ["\"Create your first entity\": big QR, scan and fill the form", "Your entity: expiration 5 to 15 min", "\"write!\": everyone taps Write together"],

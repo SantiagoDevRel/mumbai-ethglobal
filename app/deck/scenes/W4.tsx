@@ -18,7 +18,7 @@
 //            OP, Arbitrum, Solana), or a web2 backend. "Arkiv runs no smart contracts" is NT's line
 //            now (Santiago, October 30). The app talks to each side: contracts on other chains can't
 //            read entities directly, so nothing joins the DB-Chain to them.
-//   step 5 · storage for heavy files: Swarm and IPFS.
+//   step 5 · storage for heavy files: Swarm only (Santiago, November 5: no IPFS logo).
 // Each app column fades and rises in on its →, like the deck's Reveal; its line from the app fades in
 // with it. The DB-Chain's orange line owns the trunk; the others branch off where it turns.
 // Logos: official files, colors unchanged. The network view sets Ethereum's mark on a Sand circle;
@@ -43,9 +43,6 @@
 //   swarm-logo-lockup.svg · Swarm's documentation repository (Swarm publishes no press kit), the
 //     orange logo with its name, unchanged:
 //     https://raw.githubusercontent.com/ethersphere/bee-docs/master/static/img/logo.svg
-//   ipfs-logo-text.svg · the IPFS documentation repository, the logo with white lettering for dark
-//     backgrounds, unchanged (© Protocol Labs, Inc., Creative Commons Attribution-ShareAlike):
-//     https://raw.githubusercontent.com/ipfs/ipfs-docs/main/docs/.vuepress/public/images/ipfs-logo-text.svg
 //   The [A] marks are Arkiv's own (public/brand/a-white.svg, a-orange.svg).
 
 import { AppWindow, ArrowDown, Server } from "lucide-react";
@@ -265,10 +262,9 @@ const CHAINS = [
   { src: "/deck/logos/arbitrum-logomark.svg", name: "Arbitrum", width: 68, height: 77 },
   { src: "/deck/logos/solana-logomark.svg", name: "Solana", width: 80, height: 70 },
 ];
-/** Storage for heavy files: each logo with its name, straight on the panel. */
+/** Storage for heavy files: Swarm's logo with its name, straight on the panel. */
 const STORES = [
   { src: "/deck/logos/swarm-logo-lockup.svg", name: "Swarm", width: 254, height: 67 },
-  { src: "/deck/logos/ipfs-logo-text.svg", name: "IPFS", width: 228, height: 97 },
 ];
 
 /** An official logo at its own aspect, with no tile behind it. */
@@ -392,7 +388,7 @@ function YourApp({ step }: { step: number }) {
         </div>
       </AppColumn>
 
-      {/* Storage for heavy files: Swarm and IPFS. */}
+      {/* Storage for heavy files: Swarm. */}
       <AppColumn step={step} at={APP_AT + 2} col={COLS.c}>
         <div data-column="storage" className={SIDE_PANEL}>
           <span className="text-[44px] font-bold leading-none">Storage</span>
@@ -427,5 +423,5 @@ export const W4_NOTES: string[] = [
   "And on the left, the DB-Chains: chains built to store and query app data, joined by Arkiv's chain. A DB-Chain runs a database engine instead of the EVM. Two are live: Rabdi, the one you build on this weekend, and Sorbet, which holds Sourcify's verified contracts. Tiramisu, Braga, Kaolin and Mendoza were our previous testnets.",
   "And here's your app. It talks to a DB-Chain through the SDK, or straight to JSON-RPC from any language, and the DB-Chain keeps your Arkiv entities: data you search and filter. This weekend, that's Rabdi.",
   "Your logic lives wherever you want: on Ethereum, Base, Optimism, Arbitrum or Solana, or in a web2 backend. Those chains can't read your entities directly: your app talks to each side.",
-  "Heavy files, like photos and video, go to storage built for them: Swarm or IPFS. Your entity keeps the reference.",
+  "Heavy files, like photos and video, go to storage built for them, like Swarm. Your entity keeps the reference.",
 ];

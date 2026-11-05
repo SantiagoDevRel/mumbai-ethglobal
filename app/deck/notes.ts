@@ -66,7 +66,7 @@ export const REVEALS: Record<SceneId, string[]> = {
   W1: ["card · Account frozen", "card · Data changed", "card · Rules changed, and \"One company decides for you.\""],
   W2: ["the hug: all three robots together"],
   W3: ["column: from web3", "column: of its own, and the closing line"],
-  W4: ["the network: Arkiv, bridged to Ethereum", "the network: the DB-Chains, live and previous", "your app: SDK or JSON-RPC into the DB-Chain", "your logic: chain logos or a web2 backend", "storage: Swarm and IPFS"],
+  W4: ["the network: Arkiv, bridged to Ethereum", "the network: the DB-Chains, live and previous", "your app: SDK or JSON-RPC into the DB-Chain", "your logic: chain logos or a web2 backend", "storage: Swarm"],
   ST: ["step 2 · a wallet, with Add network", "step 3 · test funds", "step 4 · an RPC access key", "step 5 · free reads, with Get balance"],
   NT: ["not built for big files", "not private by default"],
   S7: ["your entity: name, color, country and its expiration"],
